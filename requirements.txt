@@ -1,0 +1,6 @@
+nibabel
+numpy
+Pillow
+opencv-python
+matplotlib
+huggingface_hub

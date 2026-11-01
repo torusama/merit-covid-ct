@@ -1,0 +1,28 @@
+# Large datasets and source archives
+/data/
+/archives/
+
+# Generated viewer exports and Python cache
+/outputs/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Third-party reference clone; use its upstream repository instead
+/references/
+
+# Local editor and environment files
+.vscode/
+.idea/
+.venv/
+venv/
+env/
+.env
+
+# Model artifacts and experiment outputs
+checkpoints/
+runs/
+wandb/
+*.pt
+*.pth
+*.ckpt
