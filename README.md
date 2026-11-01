@@ -17,12 +17,38 @@ Can master-aware inter-slice evidence routing improve COVID-19 lesion segmentati
 
 ## Data
 
-| Dataset | Role | Cases | Labels |
-| --- | --- | ---: | --- |
-| `data/covid19_20/` | Primary development and internal evaluation | 199 | Binary COVID lesion mask |
-| `data/zenodo20/` | Independent external test set | 20 | Binary COVID lesion mask, left/right lung masks, combined mask |
+| Dataset | Role | Cases | Labels | Public source |
+| --- | --- | ---: | --- | --- |
+| `data/covid19_20/` | Primary development and internal evaluation | 199 | Binary COVID lesion mask | [Hugging Face](https://huggingface.co/datasets/MedOtter/COVID-19-20) |
+| `data/zenodo20/` | Independent external test set | 20 | Binary COVID lesion mask, left/right lung masks, combined mask | [Zenodo record 3757476](https://zenodo.org/records/3757476) |
 
 The two datasets are never merged before a random image split. All splits must be at patient/volume level.
+
+## Reproduce the data after cloning
+
+The repository deliberately excludes CT volumes and source archives. They are large binary files and can be downloaded from their public sources with the scripts below. Allocate at least **12 GB of free disk space** for both datasets, their source archives, and generated metadata.
+
+```powershell
+git clone https://github.com/torusama/merit-covid-ct.git
+cd merit-covid-ct
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# Download and verify both datasets, then create their cases.json manifests.
+python tools/download_datasets.py --dataset all
+```
+
+The command downloads the 20-case source archives directly from Zenodo and downloads the 199-case training split directly from Hugging Face. No Kaggle account or manually copied local file is required.
+
+Download one dataset only when needed:
+
+```powershell
+python tools/download_datasets.py --dataset zenodo20
+python tools/download_datasets.py --dataset covid19_20
+```
+
+The Zenodo downloader resumes interrupted downloads from a `.part` file and verifies each downloaded file against the size listed in the official Zenodo record. The Hugging Face downloader verifies that all 199 CT/mask pairs have matching geometry.
 
 ## Model
 
@@ -141,6 +167,7 @@ references/       MADGNet source consulted for comparison
 python tools/view_slices.py
 
 # Rebuild the local dataset layouts if needed
+python tools/download_zenodo20.py
 python tools/prepare_zenodo20.py
 python tools/download_covid19_20.py
 
