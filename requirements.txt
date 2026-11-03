@@ -5,3 +5,6 @@ opencv-python
 matplotlib
 huggingface_hub
 requests
+torch>=2.2
+scipy>=1.11
+pytest>=8

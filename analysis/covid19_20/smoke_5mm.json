@@ -1,0 +1,250 @@
+{
+  "device": "cpu",
+  "case_id": "volume-covid19-A-0025",
+  "fold": 0,
+  "partition": "train",
+  "identity": {
+    "group_source": "volume_id_fallback",
+    "patient_ids_available": false,
+    "identity_note": "Patient identity is unverified. Group/volume independence does not establish patient independence across series."
+  },
+  "config": {
+    "slab_size": 11,
+    "size_hw": [
+      256,
+      256
+    ],
+    "hu_window": [
+      -1000,
+      400
+    ],
+    "intensity_encoding": "auto_hu",
+    "assume_mm": true
+  },
+  "num_workers": 0,
+  "image_slab_shape": [
+    1,
+    11,
+    256,
+    256
+  ],
+  "master_mask_shape": [
+    1,
+    256,
+    256
+  ],
+  "master_slice_index": 30,
+  "z_offsets_mm": [
+    -25.0,
+    -20.0,
+    -15.0,
+    -10.0,
+    -5.0,
+    0.0,
+    5.0,
+    10.0,
+    15.0,
+    20.0,
+    25.0
+  ],
+  "slice_indices": [
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35
+  ],
+  "mask_values": [
+    0.0,
+    1.0
+  ],
+  "batches": {
+    "1": {
+      "image_slab": [
+        1,
+        1,
+        11,
+        256,
+        256
+      ],
+      "master_mask": [
+        1,
+        1,
+        256,
+        256
+      ]
+    },
+    "2": {
+      "image_slab": [
+        2,
+        1,
+        11,
+        256,
+        256
+      ],
+      "master_mask": [
+        2,
+        1,
+        256,
+        256
+      ]
+    }
+  },
+  "metadata": {
+    "original_shape_xyz": [
+      512,
+      512,
+      61
+    ],
+    "canonical_shape_xyz": [
+      512,
+      512,
+      61
+    ],
+    "original_affine": [
+      [
+        -0.8460000157356262,
+        0.0,
+        0.0,
+        216.3730010986328
+      ],
+      [
+        0.0,
+        -0.8460000157356262,
+        0.0,
+        216.37339782714844
+      ],
+      [
+        0.0,
+        0.0,
+        5.0,
+        -252.5
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "original_affine_mm": [
+      [
+        -0.8460000157356262,
+        0.0,
+        0.0,
+        216.3730010986328
+      ],
+      [
+        0.0,
+        -0.8460000157356262,
+        0.0,
+        216.37339782714844
+      ],
+      [
+        0.0,
+        0.0,
+        5.0,
+        -252.5
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "canonical_affine_mm": [
+      [
+        0.8460000157356262,
+        0.0,
+        0.0,
+        -215.9330069422722
+      ],
+      [
+        0.0,
+        0.8460000157356262,
+        0.0,
+        -215.93261021375656
+      ],
+      [
+        0.0,
+        0.0,
+        5.0,
+        -252.5
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "canonical_to_original_orientation": [
+      [
+        0.0,
+        -1.0
+      ],
+      [
+        1.0,
+        -1.0
+      ],
+      [
+        2.0,
+        1.0
+      ]
+    ],
+    "original_orientation": [
+      "L",
+      "P",
+      "S"
+    ],
+    "canonical_orientation": [
+      "R",
+      "A",
+      "S"
+    ],
+    "native_spacing_mm": [
+      0.8460000157356262,
+      0.8460000157356262,
+      5.0
+    ],
+    "processed_size_hw": [
+      256,
+      256
+    ],
+    "native_size_hw": [
+      512,
+      512
+    ],
+    "spatial_unit_in_header": "mm",
+    "assume_mm": true,
+    "scaled_intensity_range": [
+      -2048.0,
+      1672.0
+    ],
+    "intensity_encoding": "auto_hu",
+    "label_values": [
+      0,
+      1
+    ],
+    "native_lesion_voxels": 402334,
+    "nifti_scaling": {
+      "slope": 1.0,
+      "intercept": 0.0
+    },
+    "hu_window": [
+      -1000,
+      400
+    ],
+    "padding": "replicate_boundary",
+    "z_resampled": false
+  },
+  "visualization": "outputs\\covid19_20_slab_5mm.png",
+  "note": "Real CT/ground truth data smoke test only; no model predictions or model metrics."
+}

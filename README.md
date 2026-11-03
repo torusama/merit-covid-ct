@@ -137,6 +137,12 @@ Report:
 
 ## Implementation milestones
 
+Stages 1–3 data preparation and model-independent evaluation are implemented in
+`ct_pipeline/`. See [the PowerShell guide and data/metric conventions](docs/data_pipeline.md)
+and [the local validation report](analysis/covid19_20/README.md). The generated split
+currently uses volume IDs because patient identity has not been independently verified.
+No model training or segmentation performance results have been produced.
+
 1. Create patient-level 5-fold split files for COVID-19-20.
 2. Implement CT preprocessing: HU clipping, normalization, resize/resample policy, and 11-slice slab sampling.
 3. Build a PyTorch dataset loader that returns CT slab, master-slice index, physical Z positions, and master mask.
