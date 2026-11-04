@@ -218,8 +218,9 @@ Python 3.13 và PyTorch bản CPU. Xem [hướng dẫn chi tiết](docs/data_pip
 
 ## 8. Phần có trên GitHub và phần chỉ có ở máy local
 
-GitHub chứa source, tests, cấu hình, split, tài liệu, audit/smoke reports và hai
-PNG minh họa. Các file có sẵn từ repository gốc cũng được giữ lại.
+GitHub chứa source, tests, cấu hình, split, tài liệu, audit/smoke reports, hai
+PNG minh họa trong `outputs/` và bộ CSV/summary/biểu đồ bổ sung trong
+`analysis/covid19_20/` (xem mục 10). Các file có sẵn từ repository gốc cũng được giữ lại.
 
 Các thành phần sau không được push theo `.gitignore`:
 
@@ -241,3 +242,53 @@ training hoặc external evaluation. Các file/script Zenodo20 có sẵn thuộc
 repository gốc; lần triển khai này không tải hoặc xử lý thêm dataset đó.
 
 **Phạm vi thay đổi dừng ở nền tảng dữ liệu và evaluator giai đoạn 1–3.**
+
+## 10. Bổ sung CSV và biểu đồ ngày 04/11/2026
+
+Để người đọc dễ xem thông tin 199 volume như bộ báo cáo Zenodo20 có sẵn, bổ sung:
+
+| File | Chức năng |
+| --- | --- |
+| [ct_pipeline/reporting.py](ct_pipeline/reporting.py) | Thống kê GT ở độ phân giải gốc, đối chiếu audit và tổng hợp cohort. |
+| [tools/summarize_covid19_20.py](tools/summarize_covid19_20.py) | Xuất CSV, summary JSON, ba PNG và REPORT.md. |
+| [tests/test_reporting.py](tests/test_reporting.py) | 8 tests mới về số lát/voxel/diện tích/thể tích, mask rỗng, orientation, dữ liệu không hợp lệ, audit cũ không khớp và đơn vị thiếu. |
+| [docs/dataset_reports.md](docs/dataset_reports.md) | Giải thích bằng tiếng Việt các file và chỉ số của Zenodo20 và COVID-19-20. |
+| [analysis/covid19_20/case_statistics.csv](analysis/covid19_20/case_statistics.csv) | Mỗi dòng là một volume; lưu metadata, GT statistics và partition của từng fold. |
+| [analysis/covid19_20/summary.json](analysis/covid19_20/summary.json) | Các con số tổng hợp và số voxel lesion trên từng lát. |
+| [analysis/covid19_20/dataset_overview.png](analysis/covid19_20/dataset_overview.png) | Tổng quan spacing, số lát, lesion burden và lát có/không có tổn thương. |
+| [analysis/covid19_20/lesion_trajectories.png](analysis/covid19_20/lesion_trajectories.png) | Diện tích GT qua các lát ở các ca ví dụ. |
+| [analysis/covid19_20/ct_mask_examples.png](analysis/covid19_20/ct_mask_examples.png) | Các hàng CT/GT/overlay ở lát giữa các ca ví dụ. |
+| [analysis/covid19_20/REPORT.md](analysis/covid19_20/REPORT.md) | Tổng kết dễ đọc, ý nghĩa cột CSV, số liệu và giới hạn. |
+
+`analysis/covid19_20/README.md` và `docs/data_pipeline.md` được thêm liên kết và
+lệnh chạy lại. Sau bổ sung, **56 tests đạt** (48 tests cũ và 8 tests mới).
+
+Kết quả đọc lại dữ liệu thật:
+
+- CSV có **199 dòng dữ liệu và 71 cột**, mỗi dòng là một volume, không phải một bệnh nhân đã xác minh.
+- Tổng **13.705 lát**, gồm **4.981 lát có tổn thương GT** và **8.724 lát có mask rỗng**.
+- Số voxel tổn thương từng ca khớp với audit; các ma trận affine và metadata gốc
+  được giữ trong các cột `audit_*`. CSV dùng UTF-8 BOM để mở bằng Excel.
+- Patient ID chưa biết được để trống. Ba ca thiếu đơn vị được đánh dấu riêng bằng
+  `spatial_units_assumed_mm=True`; các ca có đơn vị mm không bị đánh dấu giả định.
+- Đã đối chiếu số dòng, case ID duy nhất, tổng số lát, partition trong 5 fold,
+  các trường audit được xuất và liên kết trong tài liệu; đã xem cả ba PNG mới.
+
+Người mới nên đọc [REPORT.md](analysis/covid19_20/REPORT.md) trước, mở CSV bằng
+Excel, rồi xem các PNG. Muốn hiểu báo cáo Zenodo20 có sẵn và các khác biệt giữa
+hai dataset, xem [hướng dẫn đọc báo cáo](docs/dataset_reports.md).
+
+Tạo lại CSV, summary và hình ảnh bằng PowerShell từ thư mục gốc repository:
+
+```powershell
+.\.venv\Scripts\python.exe tools/summarize_covid19_20.py --assume-mm
+```
+
+Lệnh yêu cầu dataset, audit đầy đủ và split đã có. `--assume-mm` là khai báo chấp
+nhận giả định đơn vị mm cho ba ca đã nêu, không phải xác minh đơn vị từ nguồn.
+
+Min/max intensity được tái sử dụng từ audit đầy đủ trước đây; headers và mask của
+199 ca được đọc lại. Không tính tỷ lệ lesion/phổi vì thiếu lung mask; không làm
+components/resize-loss trong bản báo cáo này. Patient identity và đơn vị mm giả
+định của ba ca giữ nguyên trạng thái chưa xác minh. Không xử lý thêm Zenodo20,
+không thay đổi split, không training.

@@ -1,5 +1,10 @@
 # Báo cáo triển khai giai đoạn 1–3
 
+**Bổ sung ngày 04/11/2026:** xem [bản tổng quan dễ đọc](REPORT.md),
+[CSV mỗi dòng một volume](case_statistics.csv) và [hướng dẫn đọc báo cáo hai dataset](../../docs/dataset_reports.md).
+Bộ báo cáo mới có summary JSON, biểu đồ tổng quan, đường diễn tiến GT qua các lát
+và ảnh CT/GT/overlay. Các kết quả ngày 03/11 bên dưới được giữ làm lịch sử kiểm tra.
+
 Ngày kiểm tra: 2026-11-03 (Asia/Bangkok).
 Repository được clone vào `C:\1_HDD\paper\merit-covid-ct` từ commit
 `aec40edd18de94cf6d0ce94dbf7c21080eafbbf8`. Báo cáo ghi nhận kết quả kiểm tra

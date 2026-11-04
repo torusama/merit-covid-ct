@@ -170,3 +170,27 @@ CLI không tìm threshold từ test GT.
 
 Mọi mask/prediction tổng hợp trong `tests/` chỉ dùng kiểm tra phần mềm. Các giá trị
 Dice/IoU trong unit tests không phải kết quả thí nghiệm COVID-19-20.
+
+## CSV và biểu đồ mô tả 199 volume
+
+Sau khi có manifest và audit đầy đủ, chạy:
+
+```powershell
+.\.venv\Scripts\python.exe tools/summarize_covid19_20.py --assume-mm
+```
+
+Lệnh tạo `case_statistics.csv`, `summary.json`, `dataset_overview.png`,
+`lesion_trajectories.png`, `ct_mask_examples.png` và `REPORT.md` trong
+`analysis/covid19_20/`. CSV dùng UTF-8 BOM và mỗi dòng tương ứng một volume.
+Patient ID chưa biết được để trống; không coi volume ID là patient ID.
+
+Thống kê mask dùng native-resolution canonical RAS, trước resize; không nội suy Z.
+Script kiểm tra lại headers CT/mask và toàn bộ mask từng ca, đối chiếu geometry và
+voxel count với audit cũ. Min/max CT tái sử dụng kết quả audit cũ, không đọc lại
+toàn bộ intensity CT của 199 ca. Chỉ các ca minh họa mới được đọc CT để xuất PNG.
+Spacing/diện tích/thể tích của ba ca thiếu đơn vị phụ thuộc `--assume-mm`.
+
+Tỷ lệ lesion lấy mẫu số là toàn bộ volume CT, không phải volume phổi vì không có
+lung mask. GT Dice giữa các lát liên tiếp mô tả tính liên tục nhãn, không phải
+chất lượng mô hình. Xem [hướng dẫn đọc báo cáo](dataset_reports.md) để đối chiếu
+với các báo cáo Zenodo20 đã có sẵn.
