@@ -11,14 +11,15 @@ import yaml
 class Config:
     dataset_root: Path = Path("data/covid19_20")
     output_dir: Path = Path("outputs")
+    split_path: Path = Path("splits/covid19_20_5fold.json")
     seed: int = 42
     num_folds: int = 5
     num_slices: int = 11
     master_index: int = 5
     image_size: tuple[int, int] | None = None
-    orientation: str = "RAS"
+    orientation: str = "LPS"
     normalization: str = "none"
-    hu_window: tuple[float, float] = (-1000.0, 400.0)
+    hu_window: tuple[float, float] | None = None
     boundary: str = "edge"
     batch_size: int = 1
     num_workers: int = 0
@@ -40,12 +41,16 @@ class Config:
             raise ValueError("learning_rate must be finite and positive")
         if self.image_size is not None and (len(self.image_size) != 2 or any(type(v) is not int or v < 1 for v in self.image_size)):
             raise ValueError("image_size must be null or two positive integers")
-        if self.orientation != "RAS":
-            raise ValueError("The foundation supports RAS orientation only")
-        if self.normalization not in ("none", "zscore", "hu_window", "windowed_255"):
+        if self.orientation != "LPS":
+            raise ValueError("The integrated pipeline uses the agreed LPS orientation")
+        if self.normalization not in ("none", "hu_window", "normalized_0_1", "auto_hu"):
             raise ValueError("Unknown normalization policy")
-        if len(self.hu_window) != 2 or not all(math.isfinite(v) for v in self.hu_window) or self.hu_window[0] >= self.hu_window[1]:
+        if self.hu_window is not None and (len(self.hu_window) != 2 or not all(math.isfinite(v) for v in self.hu_window) or self.hu_window[0] >= self.hu_window[1]):
             raise ValueError("hu_window requires finite increasing bounds")
+        if self.normalization in ("hu_window", "auto_hu") and self.hu_window is None:
+            raise ValueError("Window normalization requires an explicit hu_window")
+        if self.normalization in ("none", "normalized_0_1") and self.hu_window is not None:
+            raise ValueError("A hu_window requires explicit window normalization")
         if self.boundary not in ("edge", "reflect"):
             raise ValueError("boundary must be edge or reflect")
         if self.device not in ("cpu", "auto", "cuda", "mps") and not self.device.startswith("cuda:"):
@@ -58,7 +63,7 @@ def load_config(path: str | Path) -> Config:
     if not isinstance(values, dict):
         raise ValueError("Configuration must be a YAML mapping")
     defaults = Config()
-    for key in ("dataset_root", "output_dir"):
+    for key in ("dataset_root", "output_dir", "split_path"):
         values[key] = (path.parent / values.get(key, getattr(defaults, key))).resolve()
     for key in ("image_size", "hu_window"):
         if values.get(key) is not None:

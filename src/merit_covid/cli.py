@@ -18,7 +18,7 @@ def check_dataset_main():
     parser.add_argument("--dataset", choices=("covid19_20", "zenodo20"))
     parser.add_argument("--headers-only", action="store_true", help="Skip voxel/label validation; report the limited scope")
     parser.add_argument("--limit", type=int, help="Explicit small-case smoke check")
-    parser.add_argument("--assumed-unit", choices=("mm", "meter", "micron"), help="Only for unknown NIfTI units, with documented evidence")
+    parser.add_argument("--assumed-unit", choices=("mm",), help="Explicit agreed mm assumption for unknown NIfTI units")
     parser.add_argument("--write-manifest", type=Path, help="Create a separate versioned manifest; never overwrite")
     args = parser.parse_args()
     cases = load_manifest(args.manifest, dataset=args.dataset)

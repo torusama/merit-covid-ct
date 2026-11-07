@@ -10,12 +10,12 @@ from .manifest import Case, validate_cases
 
 
 def _group(case: Case) -> str:
-    return f"patient:{case.patient_id}" if case.patient_id is not None else f"volume:{case.case_id}"
+    return f"patient:{case.patient_id}" if case.patient_id is not None else f"group:{case.group_id}" if case.group_id is not None else f"volume:{case.case_id}"
 
 
 def manifest_fingerprint(cases: list[Case]) -> str:
     # Exclude machine-specific paths; retain identity and grouping evidence.
-    records = sorted((c.dataset, c.case_id, c.patient_id) for c in cases)
+    records = sorted((c.dataset, c.case_id, c.patient_id, c.group_id) for c in cases)
     return hashlib.sha256(json.dumps(records, separators=(",", ":")).encode()).hexdigest()
 
 
@@ -26,36 +26,21 @@ def make_splits(cases: list[Case], *, seed: int = 42, num_folds: int = 5,
         raise ValueError("Only covid19_20 may enter development splits; Zenodo20 is external only")
     if expected_count is not None and len(cases) != expected_count:
         raise ValueError(f"Expected {expected_count} cases, found {len(cases)}")
-    if num_folds < 3:
-        raise ValueError("At least three folds required for disjoint train/validation/internal_test")
-    groups = {}
-    for case in sorted(cases, key=lambda c: c.case_id):
-        groups.setdefault(_group(case), []).append(case.case_id)
-    if len(groups) < num_folds:
-        raise ValueError("Too few distinct patient/volume groups for requested folds")
-    keys = sorted(groups)
-    random.Random(seed).shuffle(keys)
-    # Stable size sorting keeps random tie order and balances patient-group sizes.
-    keys.sort(key=lambda k: len(groups[k]), reverse=True)
-    buckets = [[] for _ in range(num_folds)]
-    for key in keys:
-        target = min(range(num_folds), key=lambda i: len(buckets[i]))
-        buckets[target].extend(groups[key])
-    folds = []
-    for index in range(num_folds):
-        val = (index + 1) % num_folds
-        folds.append({
-            "fold": index,
-            "train": sorted(c for i, bucket in enumerate(buckets) if i not in (index, val) for c in bucket),
-            "validation": sorted(buckets[val]),
-            "internal_test": sorted(buckets[index]),
-        })
-    result = {"schema_version": 1, "dataset": "covid19_20", "seed": seed,
-              "num_folds": num_folds, "case_count": len(cases),
-              "manifest_fingerprint": manifest_fingerprint(cases),
-              "grouping": "verified patient_id when present; otherwise volume case_id",
-              "folds": folds}
-    validate_splits(result, cases)
+    if num_folds!=5:
+        raise ValueError('The agreed Duong protocol requires five folds')
+    from .pipeline.cases import Case as PipelineCase
+    from .pipeline.splits import create_splits
+    linked=[PipelineCase(c.case_id,c.image,c.infection_mask,c.patient_id or c.group_id or c.case_id) for c in cases]
+    identity={'patient_ids_available':all(c.patient_id is not None for c in cases)}
+    canonical=create_splits(linked,identity,seed=seed,validation_fraction=0.2)
+    return _main_view(canonical,cases)
+
+def _main_view(canonical,cases):
+    result={'schema_version':1,'dataset':'covid19_20','seed':canonical['seed'],'num_folds':5,'case_count':len(cases),
+            'manifest_fingerprint':manifest_fingerprint(cases),'_canonical':canonical,
+            'folds':[{'fold':f['fold'],'train':list(f['train']['case_ids']),'validation':list(f['validation']['case_ids']),
+                      'internal_test':list(f['test']['case_ids'])} for f in canonical['folds']]}
+    validate_splits(result,cases)
     return result
 
 
@@ -90,16 +75,31 @@ def validate_splits(payload: dict, cases: list[Case]) -> None:
         tests.update(fold["internal_test"])
     if tests != Counter({c: 1 for c in expected}):
         raise ValueError("Each volume must occur exactly once in outer internal_test folds")
+    if "_canonical" in payload:
+        from .pipeline.cases import Case as PipelineCase
+        from .pipeline.splits import validate_splits as validate_canonical
+        linked = [PipelineCase(c.case_id, c.image, c.infection_mask, c.patient_id or c.group_id or c.case_id) for c in cases]
+        validate_canonical(payload["_canonical"], linked)
+        for view, source in zip(folds, payload["_canonical"]["folds"], strict=True):
+            if any(view[key] != source[role]["case_ids"] for key, role in (("train", "train"), ("validation", "validation"), ("internal_test", "test"))):
+                raise ValueError("Split compatibility view differs from canonical data")
 
 
 def save_splits(payload: dict, path: str | Path) -> None:
+    canonical = payload["_canonical"]
+    for view, source in zip(payload["folds"], canonical["folds"], strict=True):
+        if any(view[key] != source[role]["case_ids"] for key, role in (("train", "train"), ("validation", "validation"), ("internal_test", "test"))):
+            raise ValueError("Split compatibility view differs from canonical data")
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2, allow_nan=False)
+        json.dump(payload["_canonical"], handle, indent=2, allow_nan=False)
 
 
 def load_splits(path: str | Path, cases: list[Case]) -> dict:
     result = json.loads(Path(path).read_text(encoding="utf-8"))
-    validate_splits(result, cases)
-    return result
+    from .pipeline.cases import Case as PipelineCase
+    from .pipeline.splits import validate_splits as validate_canonical
+    linked=[PipelineCase(c.case_id,c.image,c.infection_mask,c.patient_id or c.group_id or c.case_id) for c in cases]
+    validate_canonical(result,linked)
+    return _main_view(result,cases)

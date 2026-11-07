@@ -50,11 +50,16 @@ class SlabDataset:
             superior_axis = int(np.flatnonzero(axes[:, 0] == 2)[0])
             self.index.extend((i, z) for z in range(image.shape[superior_axis]))
 
+    def __getstate__(self):
+        return {**self.__dict__, "_cache": OrderedDict()}
+
     def __len__(self):
         return len(self.index)
 
     def prepared_volume(self, case_index: int):
         if case_index not in self._cache:
+            if len(self._cache) >= self.cache_size:
+                self._cache.popitem(last=False)  # Release before decoding.
             case = self.cases[case_index]
             volume = load_case(case, require_mask=self.mode != "inference", assumed_unit=self.assumed_unit)
             self._cache[case_index] = preprocess(volume, self.config, intensity=case.intensity)

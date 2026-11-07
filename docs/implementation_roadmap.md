@@ -1,3 +1,5 @@
+> Historical main snapshot before MERGE. Current integration and verification: [merge_report.md](merge_report.md).
+
 # Implementation roadmap
 
 ## Completed

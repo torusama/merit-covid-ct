@@ -1,3 +1,5 @@
+> Historical main snapshot before MERGE. Current integration and verification: [merge_report.md](merge_report.md).
+
 # Source audit
 
 Audit baseline: `aec40ed` on `main`, after `git pull --ff-only` (already up to date).

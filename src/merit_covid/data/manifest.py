@@ -55,12 +55,15 @@ class Case:
     affine: tuple[tuple[float, ...], ...] | None = None
     orientation: tuple[str, str, str] | None = None
     intensity: str = "unknown"
+    group_id: str | None = None
 
     def __post_init__(self):
         if self.dataset not in DATASETS or not isinstance(self.case_id, str) or not self.case_id.strip():
             raise ValueError("A supported dataset and non-empty case_id are required")
         if self.patient_id is not None and (not isinstance(self.patient_id, str) or not self.patient_id.strip()):
             raise ValueError(f"{self.case_id}: patient_id must be a verified non-empty string or null")
+        if self.group_id is not None and (not isinstance(self.group_id, str) or not self.group_id.strip()):
+            raise ValueError(f"{self.case_id}: group_id must be a non-empty string or null")
         if not isinstance(self.source, str) or not self.source:
             raise ValueError(f"{self.case_id}: source must be a non-empty string")
         if self.intensity not in ("unknown", "HU", "windowed_255"):
@@ -135,11 +138,17 @@ def load_manifest(path: str | Path, *, dataset: str | None = None, check_files: 
                 affine=tuple(tuple(r) for r in row["affine"]) if row.get("affine") is not None else None,
                 orientation=tuple(row["orientation"]) if row.get("orientation") is not None else None,
                 intensity=row.get("intensity", "unknown"),
+                group_id=row.get("group_id"),
             )
             cases.append(Case(**values))
         except (KeyError, TypeError, ValueError) as exc:
             raise ValueError(f"Invalid manifest record {index}: {exc}") from exc
     validate_cases(cases, check_files=check_files)
+    if cases and all(case.dataset == "covid19_20" for case in cases):
+        for field_name in ("patient_id", "group_id"):
+            supplied = [getattr(case, field_name) is not None for case in cases]
+            if any(supplied) and not all(supplied):
+                raise ValueError(f"Incomplete {field_name}: do not mix patient/group identities with volume IDs")
     return cases
 
 

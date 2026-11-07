@@ -24,9 +24,9 @@ def test_empty_semantics_and_patient_macro():
     perfect = binary_metrics(empty, empty)
     assert perfect == dict(dice=1, iou=1, sensitivity=1, precision=1)
     missed = binary_metrics(empty, positive)
-    assert missed == dict(dice=0, iou=0, sensitivity=0, precision=1)
+    assert missed == dict(dice=0, iou=0, sensitivity=0, precision=0)
     false_positive = binary_metrics(positive, empty)
-    assert false_positive == dict(dice=0, iou=0, sensitivity=1, precision=0)
+    assert false_positive == dict(dice=0, iou=0, sensitivity=0, precision=0)
     assert aggregate_patients({"patient-a": perfect, "patient-b": missed})["dice"] == 0.5
 
 
@@ -37,13 +37,13 @@ def test_invalid_metric_input():
         binary_metrics(np.array([0.5]), np.array([1]))
 
 
-def test_linked_patient_volumes_pool_before_macro():
+def test_linked_patient_volumes_mean_before_macro():
     one = np.ones((1, 1, 1), dtype=np.uint8)
     zero = np.zeros_like(one)
     result = evaluate_patients({"a": one, "b": zero, "c": one},
                                {"a": one, "b": one, "c": one},
                                {"a": "verified-p", "b": "verified-p", "c": None})
-    assert result["per_patient"]["patient:verified-p"]["dice"] == pytest.approx(2 / 3)
-    assert result["macro"]["dice"] == pytest.approx((2 / 3 + 1) / 2)
+    assert result["per_patient"]["patient:verified-p"]["dice"] == pytest.approx(0.5)
+    assert result["macro"]["dice"] == pytest.approx(0.75)
     with pytest.raises(ValueError, match="IDs"):
         evaluate_patients({"a": one}, {"b": one})

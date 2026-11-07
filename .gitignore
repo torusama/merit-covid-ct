@@ -3,7 +3,9 @@
 /archives/
 
 # Generated viewer exports and Python cache
-/outputs/
+/outputs/*
+!/outputs/covid19_20_slab.png
+!/outputs/covid19_20_slab_5mm.png
 __pycache__/
 **/__pycache__/
 *.py[cod]
@@ -18,6 +20,7 @@ __pycache__/
 venv/
 env/
 .env
+.pytest_cache/
 
 # Model artifacts and experiment outputs
 checkpoints/
@@ -29,7 +32,6 @@ wandb/
 
 # Package builds and test caches
 *.egg-info/
-.pytest_cache/
 build/
 dist/
 .coverage

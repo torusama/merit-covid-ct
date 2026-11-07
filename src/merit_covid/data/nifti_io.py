@@ -1,6 +1,6 @@
 """Strict paired NIfTI reading without changing source files."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import nibabel as nib
@@ -21,6 +21,7 @@ class Volume:
     original_header: nib.Nifti1Header
     spatial_unit: str
     mm_per_unit: float
+    metadata: dict = field(default_factory=dict)
 
     @property
     def spacing_mm(self):
@@ -74,31 +75,26 @@ def validate_image_header(case: Case, image, *, assumed_unit: str | None = None)
     return unit, scale
 
 
-def load_case(case: Case, *, require_mask: bool = True, lesion_labels=None, assumed_unit: str | None = None) -> Volume:
-    image = nib.load(str(case.image))
-    unit, scale = validate_image_header(case, image, assumed_unit=assumed_unit)
-    affine = image.affine
-    mask = None
+def load_case(case: Case, *, require_mask=True, lesion_labels=None, assumed_unit=None):
+    """Read through Duong LPS/native core; inference can omit all GT paths."""
+    from .pipeline.cases import Case as PipelineCase
+    from .pipeline.config import PreprocessConfig
+    from .pipeline.preprocessing import read_arrays
+    image=nib.load(str(case.image))
+    unit,scale=validate_image_header(case,image,assumed_unit=assumed_unit)
+    if unit=='unknown' and assumed_unit!='mm':
+        raise ValueError("Only the agreed assumed_unit='mm' override is supported")
     if case.infection_mask is not None:
-        mask_image = nib.load(str(case.infection_mask))
-        verify_alignment(image, mask_image)
-        mask = binary_mask(np.asanyarray(mask_image.dataobj), lesion_labels)
-    elif require_mask:
-        raise ValueError(f"{case.case_id}: infection mask required")
-    values = image.get_fdata(dtype=np.float32)
-    if not np.isfinite(values).all():
-        raise ValueError(f"{case.case_id}: CT contains non-finite values")
-    original_orientation = nib.orientations.io_orientation(affine)
-    transform = nib.orientations.ornt_transform(original_orientation, nib.orientations.axcodes2ornt(("R", "A", "S")))
-    canonical_affine = affine @ nib.orientations.inv_ornt_aff(transform, image.shape)
-    if tuple(nib.aff2axcodes(canonical_affine)) != ("R", "A", "S"):
-        raise ValueError("Cannot establish canonical RAS orientation")
-    return Volume(
-        nib.orientations.apply_orientation(values, transform).copy(),
-        nib.orientations.apply_orientation(mask, transform).copy() if mask is not None else None,
-        affine.copy(), canonical_affine, tuple(image.shape), tuple(nib.aff2axcodes(affine)),
-        transform, image.header.copy(), unit, scale,
-    )
+        verify_alignment(image,nib.load(str(case.infection_mask)))
+    if lesion_labels is not None:
+        raise ValueError('load_case requires binary masks; map combined labels before loading')
+    source=PipelineCase(case.case_id,case.image,case.infection_mask,case.patient_id or case.group_id or case.case_id)
+    values,labels,metadata=read_arrays(source,PreprocessConfig(assume_mm=assumed_unit=='mm'),require_mask=require_mask)
+    return Volume(values.transpose(2,1,0).copy(),labels.transpose(2,1,0).astype(np.uint8) if labels is not None else None,
+                  image.affine.copy(),np.asarray(metadata['canonical_affine_mm'])/np.array([[scale],[scale],[scale],[1]]),
+                  tuple(image.shape),tuple(nib.aff2axcodes(image.affine)),
+                  nib.orientations.ornt_transform(nib.orientations.io_orientation(image.affine),nib.orientations.axcodes2ornt(('L','P','S'))),
+                  image.header.copy(),unit,scale,metadata)
 
 
 def save_prediction(prediction: np.ndarray, volume: Volume, path: str | Path) -> None:

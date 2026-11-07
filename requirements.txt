@@ -6,3 +6,6 @@ matplotlib
 huggingface_hub
 requests
 -e .
+
+torch>=2.2
+pytest>=8

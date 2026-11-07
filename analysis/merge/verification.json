@@ -1,0 +1,43 @@
+{
+  "checked_at_bangkok": "2026-11-07T17:39:00+07:00",
+  "base_main": "4fa875348eff0e3484db2a3a5ec073dee7fddde0",
+  "source_duong": "5127e52c9de8149bd2f8f4a80bd4426312640698",
+  "full_primary_cases_matched": 199,
+  "strict_valid": 196,
+  "strict_unknown_units": [
+    "volume-covid19-A-0161",
+    "volume-covid19-A-0585",
+    "volume-covid19-A-0599"
+  ],
+  "metadata_equals_duong_audit": true,
+  "source_file_sizes_and_mtimes_unchanged": true,
+  "real_slab_references_matched": 6,
+  "split_sha256": "d9567a68c33c74b560de70cecda4a462f8c17dca3aea2e0933836bad65c01896",
+  "orientation": "LPS",
+  "resize_default": null,
+  "intensity_default": "native",
+  "training_performed": false,
+  "note": "Unit override is an assumption; patient-level independence remains unverified. No model results.",
+  "native_intensity_range_and_mask_counts_match": true,
+  "tests": {
+    "passed": 135,
+    "skipped": 0,
+    "command": "python -m pytest -q --tb=short"
+  },
+  "environment": {
+    "python": "3.13.16",
+    "numpy": "2.5.4",
+    "nibabel": "5.4.2",
+    "scipy": "1.18.1",
+    "torch": "2.15.0+cpu",
+    "pytest": "9.2.0",
+    "platform": "Windows"
+  },
+  "synthetic_smoke": "passed; no model or training",
+  "real_reference_cases": [
+    "volume-covid19-A-0025",
+    "volume-covid19-A-0161"
+  ],
+  "numpy_without_torch": "passed: imports blocked during read/sample/reconstruct/restore",
+  "real_windows_worker_batch": "passed: workers=1, batch=2, native image [2,1,11,512,512]"
+}

@@ -1,16 +1,17 @@
 # Paths are relative to this file. These are planned settings, not a trainer.
 dataset_root: ../data/covid19_20
 output_dir: ../outputs
+split_path: ../splits/covid19_20_5fold.json
 seed: 42
 num_folds: 5
 num_slices: 11
 master_index: 5
 # Native XY avoids silently removing small lesions. Set a size after internal QC.
 image_size: null
-orientation: RAS
+orientation: LPS
 # Intensity provenance must be established before using HU or windowed_255.
 normalization: none
-hu_window: [-1000, 400]
+hu_window: null
 boundary: edge
 batch_size: 1
 num_workers: 0

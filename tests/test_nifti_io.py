@@ -13,9 +13,9 @@ def test_geometry_order_and_original_roundtrip(nifti_case, tmp_path):
     case, image, mask = nifti_case()
     volume = load_case(case)
     assert volume.original_orientation == ("L", "A", "I")
-    assert nib.aff2axcodes(volume.affine) == ("R", "A", "S")
+    assert nib.aff2axcodes(volume.affine) == ("L", "P", "S")
     np.testing.assert_allclose(volume.spacing_mm, [0.7, 0.8, 5])
-    np.testing.assert_array_equal(volume.image, image[::-1, :, ::-1])
+    np.testing.assert_array_equal(volume.image, image[:, ::-1, ::-1])
     prepared = preprocess(volume, Config())
     restored = restore_prediction(prepared.mask, prepared)
     np.testing.assert_array_equal(restored, mask)
@@ -74,5 +74,5 @@ def test_stale_manifest_and_nonfinite(nifti_case):
     image[0, 0, 0] = np.nan
     original = nib.load(case.image)
     nib.save(nib.Nifti1Image(image, original.affine, original.header), case.image)
-    with pytest.raises(ValueError, match="non-finite"):
+    with pytest.raises(ValueError, match="NaN or Inf"):
         load_case(case)

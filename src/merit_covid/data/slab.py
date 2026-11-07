@@ -17,12 +17,12 @@ def sample_slab(image: np.ndarray, mask: np.ndarray | None, slice_index: int,
     affine = np.asarray(affine)
     if affine.shape != (4, 4) or not np.isfinite(affine).all() or not np.isfinite(mm_per_unit) or mm_per_unit <= 0:
         raise ValueError("Valid affine and physical unit scale required")
-    # RAS axis direction is established by the paired NIfTI loader.
+    # LPS axis direction is established by the paired NIfTI loader.
     step_mm = float(np.linalg.norm(affine[:3, 2]) * mm_per_unit)
     if step_mm <= 0:
         raise ValueError("Slice step must be positive")
-    if tuple(nib.aff2axcodes(affine)) != ("R", "A", "S"):
-        raise ValueError("Slab sampling requires canonical RAS geometry from load_case")
+    if tuple(nib.aff2axcodes(affine)) != ("L", "P", "S"):
+        raise ValueError("Slab sampling requires canonical LPS geometry from load_case")
     requested = np.arange(num_slices) + slice_index - master_index
     depth = image.shape[2]
     if boundary == "edge":
@@ -36,13 +36,11 @@ def sample_slab(image: np.ndarray, mask: np.ndarray | None, slice_index: int,
             indices = np.minimum(folded, period - folded)
     else:
         raise ValueError("boundary must be edge or reflect")
-    result = {
-        "image": np.moveaxis(image[:, :, indices], 2, 0)[None].astype(np.float32),
-        "master_index": master_index,
-        "slice_index": int(slice_index),
-        "z_offsets_mm": ((indices - slice_index) * step_mm).astype(np.float32),
-        "context_indices": indices.astype(np.int64),
-    }
+    from .pipeline.slab import sample_arrays
+    metadata={'canonical_shape_xyz':list(image.shape),'canonical_affine_mm':(affine*np.array([[mm_per_unit],[mm_per_unit],[mm_per_unit],[1]])).tolist()}
+    result=sample_arrays(image.transpose(2,1,0),mask.transpose(2,1,0) if mask is not None else None,slice_index,num_slices,metadata,indices=indices)
+    sample={'image':result['image_slab'],'master_index':master_index,'slice_index':result['master_slice_index'],
+            'context_indices':result['slice_indices'],'z_offsets_mm':result['z_offsets_mm']}
     if mask is not None:
-        result["mask"] = mask[:, :, slice_index][None].astype(np.float32)
-    return result
+        sample['mask']=result['master_mask']
+    return sample

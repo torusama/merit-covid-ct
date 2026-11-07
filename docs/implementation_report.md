@@ -1,3 +1,5 @@
+> Historical main snapshot before MERGE. Current integration and verification: [merge_report.md](merge_report.md).
+
 # Implementation report
 
 Date: 2026-11-07 (Asia/Bangkok). All new documentation, code comments and messages

@@ -49,7 +49,7 @@ def test_header_check_does_not_claim_voxel_validation(nifti_case, tmp_path):
     assert "voxel labels NOT checked" in headers.stdout
     full = run_script("check_dataset.py", manifest)
     assert full.returncode != 0
-    assert "Expected binary infection mask" in full.stderr
+    assert "mask labels must be exactly" in full.stderr
 
 
 def test_split_cli_with_only_synthetic_cases(nifti_case, tmp_path):
