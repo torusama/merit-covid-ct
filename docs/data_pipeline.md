@@ -84,11 +84,18 @@ Không sửa hoặc resample mask để che mismatch. mm/meter/micron được �
 
 `read_volume()` đọc một ca bằng NiBabel, áp dụng scaling NIfTI, kiểm tra toàn bộ
 NaN/Inf và nhãn đúng 0/1. Thống nhất hướng mảng LPS bằng hoán vị/đảo trục;
-không deoblique, không nội suy Z. CT được window mặc định [-1000, 400] rồi đưa về
-[0,1]. `auto_hu` đòi hỏi range có cả giá trị dưới và trên -300, trong giới hạn
-[-32768,65535]; đây là sanity check, không chứng minh HU từ DICOM. Ảnh encode khác
-bị từ chối; `hu` là khai báo HU chủ động, `normalized_0_1` kiểm tra [0,1] và bỏ HU
-windowing. Không âm thầm coi ảnh 0–255 là HU.
+không deoblique, không nội suy Z. Mặc định `intensity_encoding="native"`,
+`hu_window=None`: giữ giá trị CT sau scaling NIfTI, không clip/normalize hoặc
+suy đoán HU. Ảnh finite ở thang 0–255, có giá trị âm/dương hay hằng số đều được
+giữ nguyên; kiểm tra NaN/Inf và geometry vẫn thực hiện.
+
+Khi có yêu cầu rõ từ model/protocol, mới bật tùy chọn:
+`PreprocessConfig(intensity_encoding="hu", hu_window=(-1000,400))` hoặc CLI
+`--intensity-encoding hu --hu-window -1000 400`. `hu` là khai báo HU của caller.
+`auto_hu` vẫn có để tương thích nhưng chỉ là range sanity check, không xác minh
+HU; cả hai chế độ đều đòi window cụ thể. `normalized_0_1` chỉ kiểm tra dữ liệu
+đã [0,1], không tự normalize. Truyền window vào chế độ native gây lỗi rõ thay vì
+âm thầm thay đổi ảnh. PNG dùng thang xám theo min/max lát chỉ để hiển thị.
 
 Mặc định `size_hw=None`: giữ nguyên H,W từng volume, không nội suy CT/mask.
 Chỉ resize khi truyền `--size H W` hoặc `PreprocessConfig(size_hw=(H,W))`:

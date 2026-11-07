@@ -2,7 +2,7 @@
 
 Volume xuyên suốt: **`volume-covid19-A-0025`**, dòng `volume_order = 6` trong
 [case_statistics.csv](../analysis/covid19_20/case_statistics.csv).
-Ngày đối chiếu: **07/11/2026**, cấu hình LPS và giữ kích thước gốc.
+Ngày đối chiếu: **07/11/2026**, cấu hình LPS, giữ kích thước và cường độ gốc.
 
 Các giá trị dưới đây lấy từ CSV thật. Số thập phân được làm tròn để dễ đọc;
 CSV giữ số đầy đủ. Trong văn bản, dấu phẩy biểu thị phần thập phân, dấu chấm
@@ -23,7 +23,7 @@ CT gốc và mask gốc
 Thống nhất LPS: volume này đã LPS nên giữ nguyên thứ tự CT/mask
   Mỗi lát vẫn 512 × 512, vẫn 61 lát, affine không đổi
                        ↓
-Preprocessing đầu vào: chỉ window/normalize cường độ CT
+Đọc cường độ CT theo scaling NIfTI; không window/normalize
   Mỗi lát vẫn 512 × 512, vẫn 61 lát; không resize hoặc nội suy Z
                        ↓
 Lấy 11 lát quanh một master để tạo slab
@@ -123,9 +123,9 @@ Cường độ sau scaling = số lưu trong file × slope + intercept
                      = số lưu trong file × 1 + 0
 ```
 
-Ở ca này scaling không đổi các số. Sau đó mới có bước window/normalize đầu vào
-(xem trường 64). Vì thế CT đầu vào Dataset có thể nằm trong [0,1] trong khi CSV
-vẫn ghi ct_min = −2048 và ct_max = 1672: chúng mô tả hai giai đoạn khác nhau.
+Ở ca này scaling không đổi các số. Mặc định không có bước window/normalize;
+CT trong Dataset giữ khoảng −2048 đến 1672 ở toàn volume, giống min/max trong
+CSV. Một slab hoặc một batch chỉ chứa một phần volume nên có thể có range hẹp hơn.
 
 ## 5. Tổn thương xuất hiện ở những lát nào? — trường 28–36
 
@@ -269,23 +269,23 @@ vẫn mô tả ảnh gốc, không được dùng như spacing của ảnh đã 
 | STT | Trường | Giá trị | Ý nghĩa |
 | ---: | --- | --- | --- |
 | 59 | `audit_scaled_intensity_range` | `[-2048,1672]` | Min/max CT sau scaling NIfTI, trước window/normalize; tương ứng trường 20–21. |
-| 60 | `audit_intensity_encoding` | `auto_hu` | Dùng kiểm tra range để phát hiện ảnh không có encoding phù hợp trước khi xử lý như HU. Đây là sanity check, không chứng minh calibration từ DICOM. |
+| 60 | `audit_intensity_encoding` | `native` | Giữ cường độ sau scaling NIfTI, không clip/normalize hoặc suy đoán HU. |
 | 61 | `audit_label_values` | `[0,1]` | Các nhãn mask đã gặp ở audit trước. |
 | 62 | `audit_native_lesion_voxels` | 402.334 | Số voxel lesion native ghi ở audit; lần tổng hợp mới đọc lại mask và đối chiếu số này. |
 | 63 | `audit_nifti_scaling` | `{"slope":1,"intercept":0}` | Hai thông số scaling CT được lưu gộp thành dictionary. |
-| 64 | `audit_hu_window` | `[-1000,400]` | Cấu hình clip cường độ vào khoảng này, sau đó normalize về [0,1]. |
+| 64 | `audit_hu_window` | Trống (JSON: `null`) | Không áp dụng HU window. Đây là tắt window, không phải thiếu kết quả kiểm tra. |
 | 65 | `audit_padding` | `replicate_boundary` | Khi lấy slab sát biên, lặp lát biên để đủ 11 lát. Không ghi thêm lát vào CT gốc. |
 | 66 | `audit_z_resampled` | `False` | Cấu hình/báo cáo xác nhận không nội suy trục Z. |
 
-Window và normalize của ca này:
+Cường độ của ca này đi qua pipeline mặc định:
 
 ```text
-Sau clipping:      giới hạn cường độ trong [-1000,400]
-Sau normalize:    (giá trị đã clip + 1000) / 1400
+Scaling: slope = 1, intercept = 0
+Không clipping hoặc normalize
 
-Ví dụ: -2048 → -1000 → 0
-        -300 →  -300 → 0,5
-        1672 →   400 → 1
+Ví dụ: -2048 → -2048
+        -300 →  -300
+        1672 →  1672
 ```
 
 Min/max CT được tái sử dụng từ audit đầy đủ trước đây. Script báo cáo mới kiểm

@@ -51,8 +51,7 @@ def main() -> None:
     preprocess = PreprocessConfig(
         slab_size=args.slab_size,
         size_hw=tuple(args.size) if args.size is not None else None,
-        hu_window=(-1000.0, 400.0),
-        intensity_encoding="auto_hu",
+        intensity_encoding="native",
         assume_mm=args.assume_mm,
     )
 
@@ -90,7 +89,10 @@ def main() -> None:
             name: len(getattr(loaders, name).dataset)
             for name in ("train", "validation", "test")
         },
-        "inputs": {"shape": list(inputs.shape), "dtype": str(inputs.dtype)},
+        "inputs": {
+            "shape": list(inputs.shape), "dtype": str(inputs.dtype),
+            "value_range": [float(inputs.min()), float(inputs.max())],
+        },
         "targets": {
             "shape": list(targets.shape),
             "dtype": str(targets.dtype),

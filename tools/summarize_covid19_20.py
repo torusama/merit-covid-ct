@@ -80,7 +80,8 @@ def plot_trajectories(summary, example_ids, output):
 
 def plot_ct_examples(cases, audit, example_ids, assume_mm, output):
     source = audit["config"]
-    config = PreprocessConfig(size_hw=None, hu_window=tuple(source["hu_window"]),
+    window = source["hu_window"]
+    config = PreprocessConfig(size_hw=None, hu_window=tuple(window) if window is not None else None,
                               intensity_encoding=source["intensity_encoding"], assume_mm=assume_mm)
     by_id = {c.case_id: c for c in cases}
     fig, axes = plt.subplots(len(example_ids), 3, figsize=(12, 3.8 * len(example_ids)), squeeze=False, constrained_layout=True)
@@ -93,9 +94,9 @@ def plot_ct_examples(cases, audit, example_ids, assume_mm, output):
         for ax in axes[row_index]:
             ax.set_xticks([])
             ax.set_yticks([])
-        axes[row_index, 0].imshow(image, cmap="gray", vmin=0, vmax=1, origin="lower")
+        axes[row_index, 0].imshow(image, cmap="gray", origin="lower")
         axes[row_index, 1].imshow(mask, cmap="gray", vmin=0, vmax=1, origin="lower", interpolation="nearest")
-        axes[row_index, 2].imshow(image, cmap="gray", vmin=0, vmax=1, origin="lower")
+        axes[row_index, 2].imshow(image, cmap="gray", origin="lower")
         axes[row_index, 2].imshow(np.ma.masked_equal(mask, 0), cmap="autumn", vmin=0, vmax=1, alpha=0.45,
                                  origin="lower", interpolation="nearest")
         spacing = sample["metadata"]["native_spacing_mm"][2]
@@ -105,7 +106,7 @@ def plot_ct_examples(cases, audit, example_ids, assume_mm, output):
         axes[row_index, 2].set_title("CT + ground truth")
         del dataset
     fig.suptitle("COVID-19-20 | middle slice examples, LPS orientation (L right, P up on plot)\n"
-                 "Native H,W; intensity window only; no spatial interpolation or model inference")
+                 "Native H,W and tensor intensities; display auto-scaled per slice; no model inference")
     fig.savefig(output / "ct_mask_examples.png", dpi=130)
     plt.close(fig)
 
@@ -121,7 +122,9 @@ Ngày tạo: {summary['generated_at_bangkok']}. Báo cáo mô tả dữ liệu t
 
 - Hướng mảng thống nhất **LPS**: 193 volume LPS giữ nguyên thứ tự; 6 volume LPI đảo Z.
 - **Không resize mặc định**: CT/mask giữ H,W gốc; không nội suy không gian.
-- CT vẫn áp dụng scaling NIfTI, HU window và normalize; mask giữ nhãn 0/1.
+- CT giữ cường độ sau scaling NIfTI, **không HU clipping hoặc normalize**;
+  `intensity_encoding=native`, `hu_window=null`. Không tự suy đoán HU; mask giữ nhãn 0/1.
+- PNG dùng thang xám theo min/max của lát chỉ để hiển thị; tensor không bị đổi cường độ.
 - Các trường `canonical_*` nay chỉ grid LPS. Tọa độ world của NiBabel vẫn là RAS+.
 - Báo cáo, audit và ảnh minh họa đã được tạo lại theo cấu hình này; không dùng
   prediction RAS/256×256 của pipeline cũ với metadata mới.

@@ -31,7 +31,10 @@ def normalize_ct(
     config: PreprocessConfig,
     case_id: str,
 ) -> np.ndarray:
-    """Kiểm tra encoding → clip HU → normalize [0,1]. Không áp dụng lên mask."""
+    """Mặc định trả nguyên cường độ sau scaling; chỉ window khi được yêu cầu rõ."""
+    if config.intensity_encoding == "native":
+        return image_xyz
+
     minimum = float(image_xyz.min())
     maximum = float(image_xyz.max())
 
@@ -108,14 +111,14 @@ def read_volume(
     label_values = np.unique(mask_xyz).astype(int).tolist()
     native_lesion_voxels = int(np.count_nonzero(mask_xyz))
 
-    # 4. Chỉ CT được window/normalize. Mask vẫn là 0/1.
-    normalized_xyz = normalize_ct(image_xyz, config, case.case_id)
+    # 4. Mặc định giữ cường độ gốc sau scaling NIfTI; không suy đoán HU.
+    processed_xyz = normalize_ct(image_xyz, config, case.case_id)
     del image_xyz
 
     # 5. Đưa về thứ tự tensor. Mặc định giữ H,W; chỉ resize khi được yêu cầu.
-    image_zyx = to_slice_tensor(normalized_xyz)
+    image_zyx = to_slice_tensor(processed_xyz)
     mask_zyx = to_slice_tensor(mask_xyz)
-    del normalized_xyz, mask_xyz
+    del processed_xyz, mask_xyz
     native_size_hw = list(image_zyx.shape[1:])
     image_zyx, mask_zyx = resize_in_plane(image_zyx, mask_zyx, config.size_hw)
 
@@ -133,7 +136,7 @@ def read_volume(
                 "slope": float(original_ct.dataobj.slope),
                 "intercept": float(original_ct.dataobj.inter),
             },
-            "hu_window": list(config.hu_window),
+            "hu_window": list(config.hu_window) if config.hu_window is not None else None,
             "padding": "replicate_boundary",
         }
     )

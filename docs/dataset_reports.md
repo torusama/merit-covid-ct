@@ -47,6 +47,8 @@ gốc Zenodo. Cần giữ giới hạn này khi sử dụng các báo cáo cũ.
 ## 2. Báo cáo mới của COVID-19-20
 
 Từ 07/11/2026, báo cáo và pipeline thống nhất **LPS**, mặc định giữ nguyên H,W.
+Mặc định cũng giữ cường độ CT sau scaling NIfTI, không HU clipping/normalize.
+PNG tự chọn thang xám theo min/max của lát; batch vẫn giữ giá trị CT gốc.
 `canonical_*` chỉ grid LPS đã thống nhất; không còn mặc định RAS/256×256.
 README triển khai cũ trong thư mục báo cáo đã được thay bằng `REPORT.md` hiện hành.
 

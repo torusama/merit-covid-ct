@@ -11,11 +11,8 @@
   "config": {
     "slab_size": 11,
     "size_hw": null,
-    "hu_window": [
-      -1000,
-      400
-    ],
-    "intensity_encoding": "auto_hu",
+    "hu_window": null,
+    "intensity_encoding": "native",
     "assume_mm": true
   },
   "num_workers": 0,
@@ -226,7 +223,7 @@
       -2048.0,
       1672.0
     ],
-    "intensity_encoding": "auto_hu",
+    "intensity_encoding": "native",
     "label_values": [
       0,
       1
@@ -236,10 +233,7 @@
       "slope": 1.0,
       "intercept": 0.0
     },
-    "hu_window": [
-      -1000,
-      400
-    ],
+    "hu_window": null,
     "padding": "replicate_boundary"
   },
   "visualization": "outputs\\covid19_20_slab_5mm.png",

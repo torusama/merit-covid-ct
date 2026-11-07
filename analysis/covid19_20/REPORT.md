@@ -1,12 +1,14 @@
 # Tổng quan dữ liệu COVID-19-20
 
-Ngày tạo: 2026-11-07T10:28:45+07:00. Báo cáo mô tả dữ liệu thật; chưa có model prediction.
+Ngày tạo: 2026-11-07T16:27:47+07:00. Báo cáo mô tả dữ liệu thật; chưa có model prediction.
 
 ## Cấu hình hiện hành
 
 - Hướng mảng thống nhất **LPS**: 193 volume LPS giữ nguyên thứ tự; 6 volume LPI đảo Z.
 - **Không resize mặc định**: CT/mask giữ H,W gốc; không nội suy không gian.
-- CT vẫn áp dụng scaling NIfTI, HU window và normalize; mask giữ nhãn 0/1.
+- CT giữ cường độ sau scaling NIfTI, **không HU clipping hoặc normalize**;
+  `intensity_encoding=native`, `hu_window=null`. Không tự suy đoán HU; mask giữ nhãn 0/1.
+- PNG dùng thang xám theo min/max của lát chỉ để hiển thị; tensor không bị đổi cường độ.
 - Các trường `canonical_*` nay chỉ grid LPS. Tọa độ world của NiBabel vẫn là RAS+.
 - Báo cáo, audit và ảnh minh họa đã được tạo lại theo cấu hình này; không dùng
   prediction RAS/256×256 của pipeline cũ với metadata mới.

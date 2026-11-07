@@ -78,6 +78,8 @@ def test_inspect_example_works_outside_repo_and_reads_test_partition(grouped_spl
     assert report["volumes_in_partition"] == {"train": 6, "validation": 2, "test": 2}
     height, width = (12, 16) if resize else (6, 8)
     assert report["inputs"]["shape"] == [2, 1, 3, height, width]
+    assert report["inputs"]["value_range"][0] == -1000
+    assert report["inputs"]["value_range"][1] < 0
     assert report["targets"]["shape"] == [2, 1, height, width]
     assert report["first_sample_orientation"] == ["L", "P", "S"]
     assert report["master_indices"] == [0, 1]

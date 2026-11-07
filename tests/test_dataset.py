@@ -19,7 +19,7 @@ def test_master_and_mask_alignment(write_case, slab):
     sample = dataset[6]
     assert sample["image_slab"].shape == (1, slab, 6, 8)
     raw = nib.load(case.image).get_fdata()
-    expected = np.clip((raw[:, :, 6].T + 1000) / 1400, 0, 1)
+    expected = raw[:, :, 6].T
     np.testing.assert_allclose(sample["image_slab"][0, slab // 2], expected, atol=1e-6)
     np.testing.assert_array_equal(dataset[1]["master_mask"][0], nib.load(case.mask).get_fdata()[:, :, 1].T)
     np.testing.assert_allclose(sample["z_offsets_mm"], np.arange(-slab // 2 + 1, slab // 2 + 1) * 5)
@@ -41,7 +41,7 @@ def test_boundary_padding(write_case, master):
 
 def test_short_volume_padding(write_case):
     case = write_case(shape=(8, 6, 2))
-    sample = CTSlabDataset([case], PreprocessConfig(intensity_encoding="hu"))[0]
+    sample = CTSlabDataset([case])[0]
     assert sample["image_slab"].shape == (1, 11, 6, 8)
     assert sample["slice_indices"].tolist() == [0] * 6 + [1] * 5
 
@@ -86,7 +86,7 @@ def test_oblique_positions_and_unit_conversion(write_case):
     np.testing.assert_allclose(sample["slice_positions_mm"][5], expected, atol=1e-4)
 
 
-@pytest.mark.parametrize("kind", ["affine", "shape", "labels", "ct_nan", "mask_inf", "normalized"])
+@pytest.mark.parametrize("kind", ["affine", "shape", "labels", "ct_nan", "mask_inf"])
 def test_bad_data_rejected(write_case, kind):
     case = write_case()
     if kind == "affine":
@@ -117,12 +117,49 @@ def test_scaling_and_encoding(write_case):
     encoded.header.set_slope_inter(2, -2000)
     nib.save(encoded, case.image)
     image, _, metadata = read_volume(case, PreprocessConfig(size_hw=None))
-    expected = np.clip((original.transpose(2, 1, 0) + 1000) / 1400, 0, 1)
+    expected = original.transpose(2, 1, 0)
     np.testing.assert_allclose(image, expected, atol=1e-6)
     assert metadata["nifti_scaling"] == {"slope": 2.0, "intercept": -2000.0}
     normalized = write_case("normalized", ct=np.ones((8, 6, 13), dtype=np.float32) * 0.25)
     image, _, _ = read_volume(normalized, PreprocessConfig(intensity_encoding="normalized_0_1"))
     assert torch.all(image == 0.25)
+    with pytest.raises(ValueError, match="normalized_0_1"):
+        read_volume(case, PreprocessConfig(intensity_encoding="normalized_0_1"))
+
+
+@pytest.mark.parametrize("values", [
+    np.linspace(-40000, 70000, 8 * 6 * 13, dtype=np.float32),
+    np.linspace(0, 255, 8 * 6 * 13, dtype=np.float32),
+    np.zeros(8 * 6 * 13, dtype=np.float32),
+])
+def test_native_intensity_accepts_finite_values_without_hu_inference(write_case, values):
+    case = write_case(ct=values.reshape(8, 6, 13))
+    image, _, metadata = read_volume(case, PreprocessConfig())
+    np.testing.assert_array_equal(image, values.reshape(8, 6, 13).transpose(2, 1, 0))
+    assert metadata["intensity_encoding"] == "native"
+    assert metadata["hu_window"] is None
+    assert metadata["scaled_intensity_range"] == [float(values.min()), float(values.max())]
+
+
+@pytest.mark.parametrize("encoding", ["hu", "auto_hu"])
+def test_window_normalization_only_when_explicitly_requested(write_case, encoding):
+    case = write_case()
+    config = PreprocessConfig(intensity_encoding=encoding, hu_window=(-1000, 400))
+    image, _, metadata = read_volume(case, config)
+    raw = nib.load(case.image).get_fdata(dtype=np.float32)
+    expected = ((np.clip(raw, -1000, 400) + 1000) / 1400).transpose(2, 1, 0)
+    np.testing.assert_array_equal(image, expected)
+    assert metadata["hu_window"] == [-1000, 400]
+
+
+@pytest.mark.parametrize("settings", [
+    {"hu_window": (-1000, 400)},
+    {"intensity_encoding": "hu"},
+    {"intensity_encoding": "auto_hu"},
+])
+def test_window_settings_must_be_explicit_and_consistent(settings):
+    with pytest.raises(ValueError, match="hu_window"):
+        PreprocessConfig(**settings)
 
 
 def test_unknown_units_explicit_override(write_case):
@@ -161,7 +198,7 @@ def test_default_preserves_native_pixels_and_only_reverses_lpi_z(
             nib.affines.apply_affine(lps_affine, [2, 3, 0]),
             nib.affines.apply_affine(source.affine, [2, 3, 12]),
         )
-    np.testing.assert_array_equal(image, ((np.clip(raw, -1000, 400) + 1000) / 1400).transpose(2, 1, 0))
+    np.testing.assert_array_equal(image, raw.transpose(2, 1, 0))
     np.testing.assert_array_equal(labels, mask.transpose(2, 1, 0))
     np.testing.assert_array_equal(restore_volume(labels, metadata), nib.load(case.mask).get_fdata())
 

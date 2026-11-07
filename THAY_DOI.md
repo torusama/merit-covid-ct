@@ -9,9 +9,10 @@ ngày **03/11/2026**.
 và evaluator độc lập model. Chưa có model segmentation hoặc kết quả training.
 Patient identity và đơn vị không gian của ba ca vẫn còn giới hạn xác minh.
 
-**Cập nhật 07/11/2026:** pipeline hiện thống nhất **LPS**, mặc định **không resize**.
-Các mục 1–11 bên dưới ghi lịch sử triển khai; cấu hình cũ RAS/256×256 trong những
-mục đó đã được thay thế. Xem mục 12 và [README hiện hành](README.md).
+**Cập nhật 07/11/2026:** pipeline hiện thống nhất **LPS**, mặc định **không resize**
+và **giữ cường độ CT sau scaling NIfTI**, không HU clipping/normalize.
+Các mục 1–12 bên dưới ghi lịch sử triển khai; xem mục 13 và
+[README hiện hành](README.md) để biết cấu hình đang dùng.
 
 ## 1. Mục đích và các khái niệm cần biết
 
@@ -415,3 +416,39 @@ GT giữ nguyên. Kiểm tra cú pháp Python, liên kết tài liệu và `git 
 README bổ sung thứ tự tiếp cận cho người mới: vị trí dữ liệu → một volume minh
 họa → chạy batch → đọc hợp đồng input/target → lần theo source → evaluator khi
 có prediction. Có lệnh clone riêng nhánh `Duong` cho máy chưa có repository.
+
+## 13. Giữ cường độ CT gốc mặc định — 07/11/2026
+
+Theo yêu cầu mới, chỉ điều chỉnh chính sách cường độ CT; không merge với main,
+không đổi split, LPS, kích thước gốc, slab hoặc các quy ước metric.
+
+- `PreprocessConfig` mặc định `intensity_encoding="native"`, `hu_window=None`.
+  `read_volume()` giữ giá trị CT sau scaling NIfTI (slope/intercept), không HU
+  clipping, normalize về [0,1] hoặc suy đoán HU theo khoảng cường độ. Kiểm tra
+  NaN/Inf, geometry và nhãn mask 0/1 vẫn thực hiện.
+- CLI và `examples/read_training_batch.py` dùng cùng mặc định native. Ví dụ in
+  thêm min/max thực tế của batch để người dùng thấy CT không bị ép về [0,1].
+- Window/normalize chỉ còn là tùy chọn yêu cầu rõ cả encoding và window, ví dụ
+  `PreprocessConfig(intensity_encoding="hu", hu_window=(-1000,400))` hoặc
+  `--intensity-encoding hu --hu-window -1000 400`. Cấu hình mâu thuẫn bị báo lỗi;
+  không có window ngầm trong chế độ native.
+- PNG CT/GT được tạo lại. Matplotlib chọn thang xám theo min/max từng lát chỉ để
+  hiển thị; thao tác hiển thị không thay đổi tensor đưa vào model. Mask vẫn 0/1.
+- Audit, CSV/summary và REPORT được cập nhật theo cấu hình mới. Giữ nguyên 71
+  cột CSV; `audit_intensity_encoding=native`, `audit_hu_window` để trống vì giá
+  trị JSON là null (tắt window). README và hướng dẫn A0025 cũng được cập nhật.
+
+Kiểm chứng: **72 tests đạt**, gồm bảo toàn giá trị âm/dương, ảnh 0–255, ảnh hằng
+số, giá trị ngoài khoảng HU heuristic cũ, scaling NIfTI, LPS/LPI và tùy chọn window
+chủ động. Đối chiếu tensor thật với CT sau scaling của A0025 và A0161 khớp từng
+giá trị; range lần lượt [-2048,1672] và [-2048,2348], mask restore khớp gốc.
+
+Audit mới: 199/199 ca đạt khi bật giả định mm; audit nghiêm ngặt vẫn đạt 196/199,
+từ chối đúng ba ca thiếu đơn vị. Đối chiếu từng record với bản trước: ngoài
+encoding/window, geometry, range gốc, mask và các cờ đơn vị không đổi. CSV giữ
+199 dòng/71 cột, chỉ hai cột intensity/window thay giá trị; toàn bộ fold và thống
+kê GT giữ nguyên. Batch thật size 2 có range [-2048,1207], shape
+`[2,1,11,512,512]`; smoke tests workers 0/1 chạy được.
+
+File CT/mask gốc không bị ghi lại. Không tạo bộ dữ liệu đã xử lý riêng, không
+train model. Ba ca thiếu đơn vị và patient identity giữ nguyên giới hạn xác minh.

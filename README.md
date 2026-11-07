@@ -24,10 +24,10 @@ Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
 | Bạn muốn làm gì? | Mở file nào? |
 | --- | --- |
 | Chạy thử xem một batch gồm những gì | [examples/read_training_batch.py](examples/read_training_batch.py) |
-| Đổi số lát, kích thước ảnh, HU window | [ct_pipeline/config.py](ct_pipeline/config.py) |
+| Đổi số lát, kích thước ảnh, chính sách cường độ | [ct_pipeline/config.py](ct_pipeline/config.py) |
 | Hiểu thứ tự gọi các hàm trong source | [ct_pipeline/README.md](ct_pipeline/README.md) |
 | Xem code kiểm tra hình học và restore prediction | [ct_pipeline/geometry.py](ct_pipeline/geometry.py) |
-| Xem code LPS → normalize → giữ kích thước gốc | [ct_pipeline/preprocessing.py](ct_pipeline/preprocessing.py), hàm `read_volume()` |
+| Xem code LPS → giữ cường độ và kích thước gốc | [ct_pipeline/preprocessing.py](ct_pipeline/preprocessing.py), hàm `read_volume()` |
 | Xem cách cắt 11 lát và chọn mask master | [ct_pipeline/dataset.py](ct_pipeline/dataset.py), `CTSlabDataset.__getitem__()` |
 | Xem cách chọn fold và ghép batch | [ct_pipeline/dataloader.py](ct_pipeline/dataloader.py), `build_fold_loaders()` |
 | Xem báo cáo từng volume | [REPORT.md](analysis/covid19_20/REPORT.md), [case_statistics.csv](analysis/covid19_20/case_statistics.csv) |
@@ -65,7 +65,7 @@ Luồng source tương ứng:
 flowchart TD
     A["cases.json + CT/mask gốc"] --> B["Đọc split: chọn fold và partition"]
     B --> C["geometry.py: kiểm tra CT/mask"]
-    C --> D["preprocessing.py: LPS, HU, normalize, giữ H/W gốc"]
+    C --> D["preprocessing.py: LPS, giữ cường độ và H/W gốc"]
     D --> E["dataset.py: một master + slab D lát"]
     E --> F["dataloader.py: ghép B mẫu"]
     F --> G["inputs, targets, z_offsets_mm"]
@@ -119,8 +119,8 @@ def main():
     preprocess = PreprocessConfig(
         slab_size=11,
         size_hw=None,  # Giữ kích thước gốc từng lát, không resize.
-        hu_window=(-1000.0, 400.0),
-        intensity_encoding="auto_hu",
+        intensity_encoding="native",  # Không clip/normalize hoặc suy đoán HU.
+        hu_window=None,
         assume_mm=True,  # Chấp nhận giả định mm cho 3 ca thiếu đơn vị.
     )
 
@@ -181,10 +181,11 @@ samples. `len(dataset.cases)` đếm volumes; `len(dataset)` đếm master sampl
 | --- | --- | --- |
 | Thống nhất orientation LPS | Cùng quy ước hướng/trật tự lát giữa các volume | Giữ thứ tự 193 volume LPS; đảo Z của 6 volume LPI, cùng mask và affine; không nội suy |
 | Giữ H,W gốc (`size_hw=None`) | Giữ chi tiết không gian của đầu vào và nhãn | Không crop, thu nhỏ hay phóng to; không tạo voxel mới |
-| HU window/normalize | Cùng thang cường độ đầu vào | Clip [-1000,400], đưa về [0,1]; chỉ áp dụng cho CT |
+| Giữ cường độ (`native`) | Giữ thông tin cường độ của nguồn, chưa áp công thức dành cho model | Áp dụng đúng scaling NIfTI nếu có; không HU clipping, normalize hoặc suy đoán HU |
 
-Ca A-0025 đã LPS: giữ nguyên mảng 512×512×61, sau đó chỉ window/normalize CT.
-Mask giữ nguyên giá trị voxel. LPS là quy ước chọn theo dataset này, không phải
+Ca A-0025 đã LPS: giữ nguyên mảng 512×512×61 và cường độ CT sau scaling NIfTI.
+Input vẫn có giá trị âm/dương, không bị ép về [0,1]. Mask giữ nhãn 0/1.
+LPS là quy ước chọn theo dataset này, không phải
 yêu cầu bắt buộc của mọi mô hình. RAS trước đây cũng là hướng hợp lệ.
 
 `canonical_*` trong metadata/CSV nay chỉ grid **đã thống nhất LPS**. Tọa độ world
@@ -198,8 +199,12 @@ gom các mẫu cùng shape; không tự thu nhỏ ảnh để ghép batch.
 
 Tất cả volume vẫn giữ số lát/spacing dọc trục lát gốc. Slab 11 lát, Z=5 mm,
 master 30 lấy 25–35 và offsets −25…25 mm. Gần biên lặp lát biên để đủ D; không
-thêm lát vào NIfTI gốc. `auto_hu` chỉ kiểm tra range sau scaling, chưa chứng minh
-calibration HU từ DICOM.
+thêm lát vào NIfTI gốc. Nếu sau này chủ động cần HU window, phải chỉ rõ cả encoding
+và window: `PreprocessConfig(intensity_encoding="hu", hu_window=(-1000,400))`
+hoặc CLI `--intensity-encoding hu --hu-window -1000 400`. Đây là khai báo của
+caller, không tự xác minh HU. `auto_hu` là tùy chọn cũ chỉ kiểm tra range;
+mặc định `native` không chạy heuristic đó. PNG tự chọn thang xám theo min/max lát
+chỉ để hiển thị, không đổi cường độ của tensor.
 
 ## 6. Split đã có sẵn, không chia lại trong DataLoader
 

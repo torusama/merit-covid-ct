@@ -50,6 +50,10 @@ def test_audit_cli_keeps_unknown_units_strict_and_override_explicit(write_case, 
     assert report["cases_using_assumed_mm"] == [case.case_id]
     assert report["per_case"][0]["label_values"] == [0, 1]
     assert report["config"]["size_hw"] is None
+    assert report["config"]["intensity_encoding"] == "native"
+    assert report["config"]["hu_window"] is None
+    assert report["per_case"][0]["intensity_encoding"] == "native"
+    assert report["per_case"][0]["scaled_intensity_range"] == [-1000, 390]
     assert report["per_case"][0]["canonical_orientation"] == ["L", "P", "S"]
     assert report["per_case"][0]["processed_size_hw"] == [6, 8]
 

@@ -47,11 +47,12 @@ def visualize(sample: dict, destination) -> None:
     mask = sample["master_mask"][0].numpy()
     figure, axes = plt.subplots(1, 3, figsize=(12, 4), constrained_layout=True)
 
-    axes[0].imshow(master, cmap="gray", vmin=0, vmax=1, origin="lower")
+    # Matplotlib tự chọn thang xám để hiển thị; không đổi tensor đầu vào.
+    axes[0].imshow(master, cmap="gray", origin="lower")
     axes[1].imshow(
         mask, cmap="gray", vmin=0, vmax=1, origin="lower", interpolation="nearest"
     )
-    axes[2].imshow(master, cmap="gray", vmin=0, vmax=1, origin="lower")
+    axes[2].imshow(master, cmap="gray", origin="lower")
     axes[2].imshow(
         np.ma.masked_equal(mask, 0),
         cmap="autumn",
@@ -74,7 +75,8 @@ def visualize(sample: dict, destination) -> None:
     figure.suptitle(
         f"{sample['case_id']} | master {sample['master_slice_index']} (0-based LPS)\n"
         f"native spacing XYZ = {spacing[0]:.3f}, {spacing[1]:.3f}, "
-        f"{spacing[2]:.3f} mm; no Z resampling"
+        f"{spacing[2]:.3f} mm; no Z resampling\n"
+        "CT display uses slice min/max; tensor intensities are unchanged"
     )
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -102,11 +104,15 @@ def build_parser() -> argparse.ArgumentParser:
                 help="Optional resize; omit to preserve each image's native H,W",
             )
             command.add_argument("--slab-size", type=int, choices=(1, 3, 5, 11), default=11)
-            command.add_argument("--hu-window", type=float, nargs=2, default=(-1000, 400))
+            command.add_argument(
+                "--hu-window", type=float, nargs=2, default=None,
+                help="Explicit clipping window; requires --intensity-encoding hu or auto_hu",
+            )
             command.add_argument(
                 "--intensity-encoding",
-                choices=("auto_hu", "hu", "normalized_0_1"),
-                default="auto_hu",
+                choices=("native", "auto_hu", "hu", "normalized_0_1"),
+                default="native",
+                help="native preserves NIfTI-scaled intensities without HU inference",
             )
             command.add_argument(
                 "--assume-mm",
@@ -167,7 +173,7 @@ def preprocessing_from_args(args) -> PreprocessConfig:
     return PreprocessConfig(
         slab_size=args.slab_size,
         size_hw=tuple(args.size) if args.size is not None else None,
-        hu_window=tuple(args.hu_window),
+        hu_window=tuple(args.hu_window) if args.hu_window is not None else None,
         intensity_encoding=args.intensity_encoding,
         assume_mm=args.assume_mm,
     )
@@ -232,7 +238,8 @@ def run_audit(args, cases: list, identity: dict, config: PreprocessConfig) -> No
             if item["spatial_unit_in_header"] == "unknown"
         ],
         "intensity_note": (
-            "auto_hu is a range sanity check after NIfTI scaling, "
+            "native preserves NIfTI-scaled intensities without clipping/normalization "
+            "or HU inference; explicit auto_hu is only a range sanity check, "
             "not proof of DICOM HU provenance"
         ),
     }

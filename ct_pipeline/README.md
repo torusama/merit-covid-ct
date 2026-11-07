@@ -15,11 +15,11 @@ trong Dataset hoặc trong tools audit.
 
 | Thứ tự | File / hàm nên đọc | Câu hỏi được trả lời |
 | --- | --- | --- |
-| 1 | [config.py](config.py): `PreprocessConfig` | Dùng bao nhiêu lát? H,W bao nhiêu? HU window và giả định đơn vị thế nào? |
+| 1 | [config.py](config.py): `PreprocessConfig` | Dùng bao nhiêu lát? H,W bao nhiêu? Giữ cường độ gốc và giả định đơn vị thế nào? |
 | 2 | [cases.py](cases.py): `Case`, `load_cases()` | CT nào đi cùng mask nào? Có patient/group ID hay chỉ volume ID? |
 | 3 | [splits.py](splits.py): `validate_splits()` | Danh sách train/validation/test đã lưu có khớp manifest, có trùng nhóm không? |
 | 4 | [geometry.py](geometry.py): `inspect_pair()`, `canonical_shape()` | CT/mask có cùng geometry không? Có bao nhiêu lát canonical nếu chỉ đọc header? |
-| 5 | [preprocessing.py](preprocessing.py): `read_volume()` | Một volume đi qua kiểm tra, LPS, normalize và giữ H,W gốc ra sao? |
+| 5 | [preprocessing.py](preprocessing.py): `read_volume()` | Một volume đi qua kiểm tra, LPS, giữ cường độ và H,W gốc ra sao? |
 | 6 | [dataset.py](dataset.py): `CTSlabDataset.__getitem__()` | Một mẫu lấy master nào? Context và mask tương ứng ra sao? |
 | 7 | [dataloader.py](dataloader.py): `collate_slabs()`, `build_fold_loaders()` | Ghép B mẫu và lấy đúng partition của một fold thế nào? |
 | 8 | [metrics.py](metrics.py): `VolumeEvaluator` | Sau khi có prediction thực, ghép volume và đánh giá ra sao? |
@@ -80,7 +80,7 @@ vào GT khi tạo input.
 | 1 | `geometry.inspect_pair()` | Paths → hai ảnh NiBabel; shape/affine/spacing/orientation khớp |
 | 2 | `geometry.reorient_to_lps()` cho cả hai ảnh | Giữ ảnh LPS; ảnh LPI đảo Z, cập nhật affine; không nội suy |
 | 3 | `get_fdata()` + `validate_voxels()` | Scaling NIfTI → mảng float32 X,Y,Z, finite và mask 0/1 |
-| 4 | `normalize_ct()` | Encoding check → clip window → CT [0,1], mask giữ nguyên |
+| 4 | `normalize_ct()` | Mặc định `native`: trả nguyên cường độ sau NIfTI scaling, không window/normalize |
 | 5 | `to_slice_tensor()` + `resize_in_plane()` | X,Y,Z → Z,Y,X; `size_hw=None` bỏ qua nội suy, giữ H,W |
 | 6 | `geometry_metadata()` và thông tin intensity | Metadata đủ để truy vết và restore về ảnh gốc |
 
@@ -88,6 +88,13 @@ Ví dụ A-0025: original LPS, 512×512×61 → standardized LPS, giữ nguyên 
 `to_slice_tensor()` đưa mảng thành [61,512,512]; đây chỉ là quy ước thứ tự tensor.
 Không resize: tensor giữ [61,512,512]. Dataset chọn 11 lát, thêm channel, thành
 [1,11,512,512]. Master mask có shape [1,512,512].
+
+`intensity_encoding="native"`, `hu_window=None` giữ cường độ CT sau scaling
+NIfTI. Tên helper `normalize_ct()` giữ để tương thích code, nhưng nhánh native
+trả nguyên mảng, không chuẩn hóa hay suy đoán HU. CT không bắt buộc ở [0,1].
+Chỉ khi caller chọn `hu`/`auto_hu` và truyền window cụ thể mới clip/normalize;
+window không được âm thầm áp dụng vào chế độ native. PNG dùng thang xám tự động
+chỉ để hiển thị; không làm thay đổi batch.
 
 Hai thao tác khác nhau cần nhớ:
 

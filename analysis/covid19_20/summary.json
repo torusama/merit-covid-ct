@@ -90,11 +90,8 @@
   "source_audit_config": {
     "slab_size": 11,
     "size_hw": null,
-    "hu_window": [
-      -1000,
-      400
-    ],
-    "intensity_encoding": "auto_hu",
+    "hu_window": null,
+    "intensity_encoding": "native",
     "assume_mm": true
   },
   "slice_order": "native-resolution standardized LPS, zero-based axial index; orientation only, no resize or Z resampling",
@@ -15405,8 +15402,8 @@
       "spatial_units_assumed_mm": false
     }
   ],
-  "generated_at_bangkok": "2026-11-07T10:28:45+07:00",
-  "audit_sha256": "4f761aa9b6e8557b9e00107dd7d232424337b4322d9b38a2660a1a51e9f2c306",
+  "generated_at_bangkok": "2026-11-07T16:27:47+07:00",
+  "audit_sha256": "2de287696c9f93dabffe4b714acb40281b3fba70e5fc34e07d120cdc1ce3a8e7",
   "manifest_sha256": "4302c2762be7074be0f8f4afe7885859eaa6445d1a5a57b6fc9640c18928ff67",
   "split_sha256": "d9567a68c33c74b560de70cecda4a462f8c17dca3aea2e0933836bad65c01896",
   "example_case_ids": [
