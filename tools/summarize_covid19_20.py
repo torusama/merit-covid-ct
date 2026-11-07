@@ -80,7 +80,7 @@ def plot_trajectories(summary, example_ids, output):
 
 def plot_ct_examples(cases, audit, example_ids, assume_mm, output):
     source = audit["config"]
-    config = PreprocessConfig(size_hw=tuple(source["size_hw"]), hu_window=tuple(source["hu_window"]),
+    config = PreprocessConfig(size_hw=None, hu_window=tuple(source["hu_window"]),
                               intensity_encoding=source["intensity_encoding"], assume_mm=assume_mm)
     by_id = {c.case_id: c for c in cases}
     fig, axes = plt.subplots(len(example_ids), 3, figsize=(12, 3.8 * len(example_ids)), squeeze=False, constrained_layout=True)
@@ -104,8 +104,8 @@ def plot_ct_examples(cases, audit, example_ids, assume_mm, output):
         axes[row_index, 1].set_title("Ground-truth lesion")
         axes[row_index, 2].set_title("CT + ground truth")
         del dataset
-    fig.suptitle("COVID-19-20 | middle slice examples, RAS orientation (R right, A up)\n"
-                 "In-plane preprocessing only; no Z resampling or model inference")
+    fig.suptitle("COVID-19-20 | middle slice examples, LPS orientation (L right, P up on plot)\n"
+                 "Native H,W; intensity window only; no spatial interpolation or model inference")
     fig.savefig(output / "ct_mask_examples.png", dpi=130)
     plt.close(fig)
 
@@ -116,6 +116,15 @@ def write_report(summary, output):
     report = f"""# Tổng quan dữ liệu COVID-19-20
 
 Ngày tạo: {summary['generated_at_bangkok']}. Báo cáo mô tả dữ liệu thật; chưa có model prediction.
+
+## Cấu hình hiện hành
+
+- Hướng mảng thống nhất **LPS**: 193 volume LPS giữ nguyên thứ tự; 6 volume LPI đảo Z.
+- **Không resize mặc định**: CT/mask giữ H,W gốc; không nội suy không gian.
+- CT vẫn áp dụng scaling NIfTI, HU window và normalize; mask giữ nhãn 0/1.
+- Các trường `canonical_*` nay chỉ grid LPS. Tọa độ world của NiBabel vẫn là RAS+.
+- Báo cáo, audit và ảnh minh họa đã được tạo lại theo cấu hình này; không dùng
+  prediction RAS/256×256 của pipeline cũ với metadata mới.
 
 ## Nên mở file nào?
 
@@ -153,7 +162,7 @@ Ngày tạo: {summary['generated_at_bangkok']}. Báo cáo mô tả dữ liệu t
 | `group_id`, `patient_id`, `patient_ids_available` | Nhóm dùng chia dữ liệu; patient ID để trống khi chưa biết. Group hiện là volume ID. |
 | `image`, `mask` | Đường dẫn file CT và mask theo thư mục chứa manifest. |
 | `original_shape_x/y/z` | Kích thước NIfTI gốc; trục thứ ba gốc có thể bị đảo/hoán vị khi reorient. |
-| `slices` | Số lát axial sau reorient RAS, trước mọi resize/padding. |
+| `slices` | Số lát axial sau thống nhất LPS, trước padding; giữ nguyên độ phân giải. |
 | `spacing_x/y/z_mm`, `original_orientation` | Khoảng cách voxel và hướng của ảnh gốc. |
 | `spatial_unit_in_header`, `spatial_units_assumed_mm` | Header có ghi đơn vị không, và ca đó có phải giả định mm không. |
 | `ct_min`, `ct_max`, `ct_dtype`, `ct_scaling_slope/intercept` | Thông tin intensity CT. Min/max lấy lại từ audit đầy đủ trước đây; dtype/scaling đọc header hiện tại. |

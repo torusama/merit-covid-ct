@@ -10,10 +10,7 @@
   },
   "config": {
     "slab_size": 11,
-    "size_hw": [
-      256,
-      256
-    ],
+    "size_hw": null,
     "hu_window": [
       -1000,
       400
@@ -25,13 +22,13 @@
   "image_slab_shape": [
     1,
     11,
-    256,
-    256
+    512,
+    512
   ],
   "master_mask_shape": [
     1,
-    256,
-    256
+    512,
+    512
   ],
   "master_slice_index": 30,
   "z_offsets_mm": [
@@ -70,14 +67,14 @@
         1,
         1,
         11,
-        256,
-        256
+        512,
+        512
       ],
       "master_mask": [
         1,
         1,
-        256,
-        256
+        512,
+        512
       ]
     },
     "2": {
@@ -85,14 +82,14 @@
         2,
         1,
         11,
-        256,
-        256
+        512,
+        512
       ],
       "master_mask": [
         2,
         1,
-        256,
-        256
+        512,
+        512
       ]
     }
   },
@@ -161,16 +158,16 @@
     ],
     "canonical_affine_mm": [
       [
-        0.8460000157356262,
+        -0.8460000157356262,
         0.0,
         0.0,
-        -215.9330069422722
+        216.3730010986328
       ],
       [
         0.0,
-        0.8460000157356262,
+        -0.8460000157356262,
         0.0,
-        -215.93261021375656
+        216.37339782714844
       ],
       [
         0.0,
@@ -188,11 +185,11 @@
     "canonical_to_original_orientation": [
       [
         0.0,
-        -1.0
+        1.0
       ],
       [
         1.0,
-        -1.0
+        1.0
       ],
       [
         2.0,
@@ -205,8 +202,8 @@
       "S"
     ],
     "canonical_orientation": [
-      "R",
-      "A",
+      "L",
+      "P",
       "S"
     ],
     "native_spacing_mm": [
@@ -214,16 +211,17 @@
       0.8460000157356262,
       5.0
     ],
+    "spatial_unit_in_header": "mm",
+    "assume_mm": true,
+    "z_resampled": false,
     "processed_size_hw": [
-      256,
-      256
+      512,
+      512
     ],
     "native_size_hw": [
       512,
       512
     ],
-    "spatial_unit_in_header": "mm",
-    "assume_mm": true,
     "scaled_intensity_range": [
       -2048.0,
       1672.0
@@ -242,8 +240,7 @@
       -1000,
       400
     ],
-    "padding": "replicate_boundary",
-    "z_resampled": false
+    "padding": "replicate_boundary"
   },
   "visualization": "outputs\\covid19_20_slab_5mm.png",
   "note": "Real CT/ground truth data smoke test only; no model predictions or model metrics."

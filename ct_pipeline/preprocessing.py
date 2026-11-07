@@ -6,14 +6,13 @@ Các thao tác chỉ tạo mảng/tensor trong RAM; không ghi đè NIfTI gốc.
 
 from __future__ import annotations
 
-import nibabel as nib
 import numpy as np
 import torch
 from torch.nn import functional as F
 
 from .cases import Case
 from .config import PreprocessConfig
-from .geometry import geometry_metadata, inspect_pair
+from .geometry import geometry_metadata, inspect_pair, reorient_to_lps
 
 
 def validate_voxels(image_xyz: np.ndarray, mask_xyz: np.ndarray, case_id: str) -> None:
@@ -97,9 +96,9 @@ def read_volume(
     # 1. Kiểm tra headers CT/mask trước khi biến đổi bất kỳ voxel nào.
     original_ct, original_mask = inspect_pair(case, config)
 
-    # 2. Đảo/hoán vị trục về gần RAS, giữ CT và mask tương ứng nhau.
-    canonical_ct = nib.as_closest_canonical(original_ct)
-    canonical_mask = nib.as_closest_canonical(original_mask)
+    # 2. Thống nhất LPS: giữ ảnh LPS, đảo Z của ảnh LPI. Không nội suy.
+    canonical_ct = reorient_to_lps(original_ct)
+    canonical_mask = reorient_to_lps(original_mask)
 
     # 3. NiBabel áp dụng slope/intercept; kiểm tra số và nhãn ở độ phân giải gốc.
     image_xyz = canonical_ct.get_fdata(dtype=np.float32, caching="unchanged")
@@ -113,7 +112,7 @@ def read_volume(
     normalized_xyz = normalize_ct(image_xyz, config, case.case_id)
     del image_xyz
 
-    # 5. Đưa về thứ tự tensor và resize XY. Giữ nguyên số lát Z.
+    # 5. Đưa về thứ tự tensor. Mặc định giữ H,W; chỉ resize khi được yêu cầu.
     image_zyx = to_slice_tensor(normalized_xyz)
     mask_zyx = to_slice_tensor(mask_xyz)
     del normalized_xyz, mask_xyz

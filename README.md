@@ -6,13 +6,28 @@ input sau này là [examples/read_training_batch.py](examples/read_training_batc
 
 ## 1. Mới vào dự án: đọc gì trước?
 
+Nếu mới tiếp cận, đi theo thứ tự này:
+
+1. Đọc **mục 2 của README này** để biết CT/mask, manifest và split nằm ở đâu.
+2. Đọc [ví dụ A-0025](docs/giai_thich_csv_A0025.md), mở CSV và ảnh trong
+   [báo cáo dữ liệu](analysis/covid19_20/REPORT.md) để nối thuật ngữ với một volume thật.
+3. Chạy **mục 3**, rồi đọc **mục 4**: xác định input, mask của lát trung tâm,
+   offsets và shape batch. Ví dụ chỉ đọc dữ liệu, chưa huấn luyện.
+4. Đọc [bản đồ source](ct_pipeline/README.md), sau đó đi lần lượt
+   `config → cases → splits → geometry → preprocessing → dataset → dataloader`.
+5. Khi đã hiểu batch và cần nối model, dùng `build_fold_loaders()` ở mục 4.
+   Sau khi có prediction mới đọc phần evaluator trong [hướng dẫn chi tiết](docs/data_pipeline.md).
+
+Không cần đọc hết audit JSON hoặc lịch sử thay đổi trước khi chạy batch đầu tiên.
+Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
+
 | Bạn muốn làm gì? | Mở file nào? |
 | --- | --- |
 | Chạy thử xem một batch gồm những gì | [examples/read_training_batch.py](examples/read_training_batch.py) |
 | Đổi số lát, kích thước ảnh, HU window | [ct_pipeline/config.py](ct_pipeline/config.py) |
 | Hiểu thứ tự gọi các hàm trong source | [ct_pipeline/README.md](ct_pipeline/README.md) |
 | Xem code kiểm tra hình học và restore prediction | [ct_pipeline/geometry.py](ct_pipeline/geometry.py) |
-| Xem code orientation → normalize → resize | [ct_pipeline/preprocessing.py](ct_pipeline/preprocessing.py), hàm `read_volume()` |
+| Xem code LPS → normalize → giữ kích thước gốc | [ct_pipeline/preprocessing.py](ct_pipeline/preprocessing.py), hàm `read_volume()` |
 | Xem cách cắt 11 lát và chọn mask master | [ct_pipeline/dataset.py](ct_pipeline/dataset.py), `CTSlabDataset.__getitem__()` |
 | Xem cách chọn fold và ghép batch | [ct_pipeline/dataloader.py](ct_pipeline/dataloader.py), `build_fold_loaders()` |
 | Xem báo cáo từng volume | [REPORT.md](analysis/covid19_20/REPORT.md), [case_statistics.csv](analysis/covid19_20/case_statistics.csv) |
@@ -50,13 +65,20 @@ Luồng source tương ứng:
 flowchart TD
     A["cases.json + CT/mask gốc"] --> B["Đọc split: chọn fold và partition"]
     B --> C["geometry.py: kiểm tra CT/mask"]
-    C --> D["preprocessing.py: RAS, HU, normalize, resize XY"]
+    C --> D["preprocessing.py: LPS, HU, normalize, giữ H/W gốc"]
     D --> E["dataset.py: một master + slab D lát"]
     E --> F["dataloader.py: ghép B mẫu"]
     F --> G["inputs, targets, z_offsets_mm"]
 ```
 
 ## 3. Chạy nhanh trên Windows PowerShell
+
+Nếu máy chưa có repository, lấy đúng nhánh `Duong` trước:
+
+```powershell
+git clone --branch Duong --single-branch https://github.com/torusama/merit-covid-ct.git
+Set-Location merit-covid-ct
+```
 
 Chạy các lệnh dưới từ thư mục chứa README này. Máy đã có `.venv` và dataset thì
 bỏ qua bước tạo môi trường/tải dữ liệu. Phiên kiểm tra dùng Python 3.13, CPU.
@@ -96,7 +118,7 @@ def main():
     # Cùng cấu hình cho cả train, validation và test.
     preprocess = PreprocessConfig(
         slab_size=11,
-        size_hw=(256, 256),
+        size_hw=None,  # Giữ kích thước gốc từng lát, không resize.
         hu_window=(-1000.0, 400.0),
         intensity_encoding="auto_hu",
         assume_mm=True,  # Chấp nhận giả định mm cho 3 ca thiếu đơn vị.
@@ -126,10 +148,10 @@ if __name__ == "__main__":
     main()
 ```
 
-| Biến/trường | Shape với B=2, D=11, H=W=256 | Dùng để làm gì? |
+| Biến/trường | Shape với B=2, D=11, lát gốc 512×512 | Dùng để làm gì? |
 | --- | --- | --- |
-| `inputs` / `image_slab` | `[2,1,11,256,256]`, float32 | Hai mẫu CT, mỗi mẫu một kênh và 11 lát |
-| `targets` / `master_mask` | `[2,1,256,256]`, float32, 0/1 | GT của riêng lát master ở mỗi mẫu |
+| `inputs` / `image_slab` | `[2,1,11,512,512]`, float32 | Hai mẫu CT, mỗi mẫu một kênh và 11 lát |
+| `targets` / `master_mask` | `[2,1,512,512]`, float32, 0/1 | GT của riêng lát master ở mỗi mẫu |
 | `offsets_mm` / `z_offsets_mm` | `[2,11]`, float32 | Khoảng cách có dấu từng lát tới master |
 | `case_id`, `group_id` | List dài B | Giữ identity và truy vết mẫu |
 | `master_slice_index` | `[B]`, chỉ số canonical 0-based | Xác định lát đang dự đoán |
@@ -151,21 +173,28 @@ lần vì cache chỉ giữ một volume/worker; không preload 199 ca để tr�
 samples. `len(dataset.cases)` đếm volumes; `len(dataset)` đếm master samples;
 `len(loader)` đếm batches.
 
-## 5. Vì sao đổi orientation và resize?
+## 5. Quy ước hiện tại: LPS và độ phân giải gốc
 
-Đây là hai bước khác nhau, nằm trong cùng `read_volume()`:
+`read_volume()` thống nhất hướng mảng theo LPS và **không resize mặc định**:
 
 | Bước | Vì sao dùng trong pipeline này? | Thao tác thực tế |
 | --- | --- | --- |
-| Thống nhất orientation gần RAS | Cùng quy ước hướng/trật tự lát giữa các volume | Đảo/hoán vị trục CT và mask cùng nhau, cập nhật affine; không deoblique hoặc nội suy Z |
-| Resize XY về 256×256 | Cùng H,W để ghép batch và giảm số pixel phải xử lý | CT bilinear, mask nearest-exact; giữ toàn bộ mặt phẳng và giữ số lát |
+| Thống nhất orientation LPS | Cùng quy ước hướng/trật tự lát giữa các volume | Giữ thứ tự 193 volume LPS; đảo Z của 6 volume LPI, cùng mask và affine; không nội suy |
+| Giữ H,W gốc (`size_hw=None`) | Giữ chi tiết không gian của đầu vào và nhãn | Không crop, thu nhỏ hay phóng to; không tạo voxel mới |
 | HU window/normalize | Cùng thang cường độ đầu vào | Clip [-1000,400], đưa về [0,1]; chỉ áp dụng cho CT |
 
-Ca A-0025: LPS 512×512×61 → RAS vẫn 512×512×61 → resize mỗi lát còn 256×256.
-Cả 199 ca hiện tại không đổi shape khi reorient; bước 512→256 là resize riêng.
-512×512 xuống 256×256 giảm bốn lần số pixel mỗi lát, đồng thời có thể mất chi
-tiết nhỏ. `size_hw=(512,512)` hoặc `None` cho phép giữ độ phân giải gốc; nếu H,W
-giữa các ca khác nhau thì cần cấu hình kích thước chung trước khi ghép batch.
+Ca A-0025 đã LPS: giữ nguyên mảng 512×512×61, sau đó chỉ window/normalize CT.
+Mask giữ nguyên giá trị voxel. LPS là quy ước chọn theo dataset này, không phải
+yêu cầu bắt buộc của mọi mô hình. RAS trước đây cũng là hướng hợp lệ.
+
+`canonical_*` trong metadata/CSV nay chỉ grid **đã thống nhất LPS**. Tọa độ world
+của affine NiBabel vẫn là RAS+; hướng mảng LPS không thay đổi quy ước world này.
+Prediction/metadata RAS của phiên bản cũ không dùng chung với pipeline LPS.
+
+Resize chỉ còn là tùy chọn chủ động: `size_hw=(H,W)` trong Python hoặc `--size H W`
+ở CLI. CT dùng bilinear, mask nearest-exact. Không có căn cứ thực nghiệm để mặc
+định giảm xuống 256×256. Nếu H,W giữa các ca khác nhau, dùng batch size 1 hoặc
+gom các mẫu cùng shape; không tự thu nhỏ ảnh để ghép batch.
 
 Tất cả volume vẫn giữ số lát/spacing dọc trục lát gốc. Slab 11 lát, Z=5 mm,
 master 30 lấy 25–35 và offsets −25…25 mm. Gần biên lặp lát biên để đủ D; không

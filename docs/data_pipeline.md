@@ -83,15 +83,16 @@ Không sửa hoặc resample mask để che mismatch. mm/meter/micron được �
 đơn vị unknown bị từ chối trừ khi chủ động bật `assume_mm` và ghi vào metadata.
 
 `read_volume()` đọc một ca bằng NiBabel, áp dụng scaling NIfTI, kiểm tra toàn bộ
-NaN/Inf và nhãn đúng 0/1. Chuẩn hóa thành orientation gần RAS bằng hoán vị/đảo trục;
+NaN/Inf và nhãn đúng 0/1. Thống nhất hướng mảng LPS bằng hoán vị/đảo trục;
 không deoblique, không nội suy Z. CT được window mặc định [-1000, 400] rồi đưa về
 [0,1]. `auto_hu` đòi hỏi range có cả giá trị dưới và trên -300, trong giới hạn
 [-32768,65535]; đây là sanity check, không chứng minh HU từ DICOM. Ảnh encode khác
 bị từ chối; `hu` là khai báo HU chủ động, `normalized_0_1` kiểm tra [0,1] và bỏ HU
 windowing. Không âm thầm coi ảnh 0–255 là HU.
 
-Resize mặc định H=W=256: CT bilinear (`align_corners=False`), mask nearest neighbor
-(`nearest-exact`, cùng quy ước tâm pixel). Không crop bằng ground truth. Số lát và
+Mặc định `size_hw=None`: giữ nguyên H,W từng volume, không nội suy CT/mask.
+Chỉ resize khi truyền `--size H W` hoặc `PreprocessConfig(size_hw=(H,W))`:
+CT bilinear (`align_corners=False`), mask `nearest-exact`. Không crop bằng GT. Số lát và
 spacing dọc trục lát được giữ nguyên. Các kích thước trong metadata NIfTI là X,Y,Z;
 tensor volume nội bộ là Z,Y,X, nên tensor H=Y, W=X.
 
@@ -101,7 +102,7 @@ tensor volume nội bộ là Z,Y,X, nên tensor H=Y, W=X.
 | --- | --- |
 | `image_slab` | float32 `[1, D, H, W]`, D thuộc 1/3/5/11 |
 | `master_mask` | float32 binary `[1, H, W]` |
-| `master_slice_index` | Chỉ số canonical RAS, bắt đầu từ 0 |
+| `master_slice_index` | Chỉ số standardized LPS, bắt đầu từ 0 |
 | `case_id`, `group_id` | Identity từ manifest/split |
 | `z_offsets_mm` | `[D]`, khoảng cách có dấu tới master |
 | `slice_indices` | `[D]`, chỉ số thực sau padding |
@@ -119,7 +120,8 @@ cũ trước ca tiếp theo. Random slice shuffle có thể làm tăng số lầ
 không preload cả cohort để tránh điều đó. Windows default `num_workers=0`;
 `num_workers=1` cũng đã được kiểm thử. Chạy code DataLoader dưới `if __name__ ==
 "__main__":` khi dùng workers. Metadata trong batch là danh sách vì geometry gốc
-khác nhau giữa các ca. Đặt `size_hw=None` chỉ khi các ảnh trong batch có cùng H,W.
+khác nhau giữa các ca. Khi H,W khác nhau, dùng batch size 1 hoặc gom mẫu cùng shape;
+không tự resize để ghép batch. Tọa độ world của NiBabel vẫn là RAS+ dù mảng đã LPS.
 
 ```python
 from ct_pipeline import CTSlabDataset, PreprocessConfig, make_dataloader
@@ -130,11 +132,12 @@ if __name__ == "__main__":
         fold=0, partition="train", config=PreprocessConfig(assume_mm=True),
     )
     loader = make_dataloader(dataset, batch_size=2, shuffle=True, seed=42)
-    batch = next(iter(loader))  # [2, 1, 11, 256, 256], CPU
+    batch = next(iter(loader))  # [2, 1, 11, 512, 512] với lát gốc 512×512, CPU
 ```
 
-`restore_volume()` đưa tensor prediction Z,Y,X về H,W native bằng nội suy 2D,
-sau đó đảo orientation để trả về mảng X,Y,Z gốc. Binary dùng nearest; probability
+`restore_volume()` đưa tensor prediction Z,Y,X về mảng X,Y,Z gốc. Mặc định không
+nội suy vì H,W giữ nguyên; chỉ nội suy 2D về native khi caller chủ động resize
+đầu vào. Sau đó đảo orientation về gốc. Binary dùng nearest; probability
 dùng bilinear. Evaluator khôi phục probability trước rồi mới threshold ở native
 grid. Chỉ số canonical không nhất thiết là chỉ số lát gốc khi affine đảo/hoán vị
 trục. Affine/shape gốc được giữ để lưu prediction NIfTI về đúng geometry.
@@ -191,7 +194,7 @@ Lệnh tạo `case_statistics.csv`, `summary.json`, `dataset_overview.png`,
 `analysis/covid19_20/`. CSV dùng UTF-8 BOM và mỗi dòng tương ứng một volume.
 Patient ID chưa biết được để trống; không coi volume ID là patient ID.
 
-Thống kê mask dùng native-resolution canonical RAS, trước resize; không nội suy Z.
+Thống kê mask dùng native-resolution standardized LPS; không nội suy Z.
 Script kiểm tra lại headers CT/mask và toàn bộ mask từng ca, đối chiếu geometry và
 voxel count với audit cũ. Min/max CT tái sử dụng kết quả audit cũ, không đọc lại
 toàn bộ intensity CT của 199 ca. Chỉ các ca minh họa mới được đọc CT để xuất PNG.

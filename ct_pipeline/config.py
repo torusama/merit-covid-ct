@@ -11,13 +11,14 @@ import numpy as np
 class PreprocessConfig:
     """Các lựa chọn của pipeline, dùng chung cho train/validation/test.
 
-    size_hw là (height, width) của MỖI LÁT, không gồm chiều Z.
+    size_hw=None mặc định giữ nguyên kích thước MỖI LÁT, không nội suy.
+    Chỉ truyền (height, width) khi chủ động yêu cầu resize; không gồm chiều Z.
     assume_mm chỉ cho phép xử lý header thiếu đơn vị bằng giả định mm;
     nó không xác minh đơn vị hoặc sửa file gốc.
     """
 
     slab_size: int = 11
-    size_hw: tuple[int, int] | None = (256, 256)
+    size_hw: tuple[int, int] | None = None
     hu_window: tuple[float, float] = (-1000.0, 400.0)
     intensity_encoding: str = "auto_hu"
     assume_mm: bool = False

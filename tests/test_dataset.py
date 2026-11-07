@@ -1,4 +1,3 @@
-from dataclasses import replace
 import json
 
 import nibabel as nib
@@ -10,6 +9,7 @@ from ct_pipeline.dataset import (CTSlabDataset, PreprocessConfig, make_dataloade
                                  read_volume, restore_volume)
 from ct_pipeline.cases import load_cases
 from ct_pipeline.splits import create_splits
+from ct_pipeline.geometry import reorient_to_lps
 
 
 @pytest.mark.parametrize("slab", [1, 3, 5, 11])
@@ -42,13 +42,13 @@ def test_boundary_padding(write_case, master):
 def test_short_volume_padding(write_case):
     case = write_case(shape=(8, 6, 2))
     sample = CTSlabDataset([case], PreprocessConfig(intensity_encoding="hu"))[0]
-    assert sample["image_slab"].shape == (1, 11, 256, 256)
+    assert sample["image_slab"].shape == (1, 11, 6, 8)
     assert sample["slice_indices"].tolist() == [0] * 6 + [1] * 5
 
 
 def test_resize_nearest_mask_and_batches(write_case):
     case = write_case()
-    dataset = CTSlabDataset([case])
+    dataset = CTSlabDataset([case], PreprocessConfig(size_hw=(256, 256)))
     sample = dataset[1]
     assert sample["master_mask"].shape == (1, 256, 256)
     assert set(torch.unique(sample["master_mask"]).tolist()) == {0, 1}
@@ -70,7 +70,7 @@ def test_resize_nearest_mask_and_batches(write_case):
 def test_orientation_restored_to_original(write_case, affine):
     case = write_case(affine=affine)
     _, labels, metadata = read_volume(case, PreprocessConfig(size_hw=None))
-    assert metadata["canonical_orientation"] == ["R", "A", "S"]
+    assert metadata["canonical_orientation"] == ["L", "P", "S"]
     np.testing.assert_array_equal(restore_volume(labels, metadata), nib.load(case.mask).get_fdata())
     dataset = CTSlabDataset([case], PreprocessConfig(size_hw=None))
     assert len(dataset) == labels.shape[0]
@@ -131,6 +131,39 @@ def test_unknown_units_explicit_override(write_case):
         read_volume(case, PreprocessConfig())
     _, _, metadata = read_volume(case, PreprocessConfig(assume_mm=True))
     assert metadata["assume_mm"]
+
+
+@pytest.mark.parametrize("source_orientation", ["LPS", "LPI"])
+def test_default_preserves_native_pixels_and_only_reverses_lpi_z(
+    write_case, monkeypatch, source_orientation,
+):
+    affine = np.diag([-1.0, -2.0, 5.0 if source_orientation == "LPS" else -5.0, 1.0])
+    case = write_case(affine=affine)
+    source = nib.load(case.image)
+    raw = source.get_fdata(dtype=np.float32)
+    mask = nib.load(case.mask).get_fdata(dtype=np.float32)
+
+    def forbid_interpolation(*args, **kwargs):
+        raise AssertionError("Default preprocessing/restore must not interpolate")
+
+    monkeypatch.setattr(torch.nn.functional, "interpolate", forbid_interpolation)
+    image, labels, metadata = read_volume(case, PreprocessConfig())
+    assert PreprocessConfig().size_hw is None
+    assert metadata["canonical_orientation"] == ["L", "P", "S"]
+    assert metadata["processed_size_hw"] == metadata["native_size_hw"] == [6, 8]
+    if source_orientation == "LPS":
+        assert reorient_to_lps(source) is source
+        np.testing.assert_array_equal(metadata["canonical_affine_mm"], source.affine)
+    else:
+        raw, mask = raw[:, :, ::-1], mask[:, :, ::-1]
+        lps_affine = np.asarray(metadata["canonical_affine_mm"])
+        np.testing.assert_allclose(
+            nib.affines.apply_affine(lps_affine, [2, 3, 0]),
+            nib.affines.apply_affine(source.affine, [2, 3, 12]),
+        )
+    np.testing.assert_array_equal(image, ((np.clip(raw, -1000, 400) + 1000) / 1400).transpose(2, 1, 0))
+    np.testing.assert_array_equal(labels, mask.transpose(2, 1, 0))
+    np.testing.assert_array_equal(restore_volume(labels, metadata), nib.load(case.mask).get_fdata())
 
 
 def test_init_headers_only_and_single_volume_cache(write_case, monkeypatch):

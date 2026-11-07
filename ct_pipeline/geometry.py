@@ -81,12 +81,25 @@ def inspect_pair(case: Case, config: PreprocessConfig):
     return ct, mask
 
 
-def canonical_shape(image) -> tuple[int, int, int]:
-    """Tính shape sau reorient RAS chỉ từ header, không đọc voxel."""
-    transform = nib.orientations.ornt_transform(
+def _lps_transform(image) -> np.ndarray:
+    """Đổi hướng các trục mảng về LPS; tọa độ world của NiBabel vẫn là RAS+."""
+    return nib.orientations.ornt_transform(
         nib.orientations.io_orientation(image.affine),
-        nib.orientations.axcodes2ornt(("R", "A", "S")),
+        nib.orientations.axcodes2ornt(("L", "P", "S")),
     )
+
+
+def reorient_to_lps(image):
+    """Chỉ đảo/hoán vị voxel và cập nhật affine; không nội suy hay sửa file.
+
+    Ảnh đã LPS được trả nguyên trạng. Không làm thẳng ảnh oblique.
+    """
+    return image.as_reoriented(_lps_transform(image))
+
+
+def canonical_shape(image) -> tuple[int, int, int]:
+    """Tính shape sau thống nhất LPS chỉ từ header, không đọc voxel."""
+    transform = _lps_transform(image)
     reordered_shape = np.asarray(image.shape)[np.argsort(transform[:, 0])]
     return tuple(int(size) for size in reordered_shape)
 
@@ -115,8 +128,9 @@ def geometry_metadata(original_ct, canonical_ct, assume_mm: bool) -> dict:
 
 
 def restore_volume(prediction_zyx, metadata: dict, probabilities: bool = False):
-    """Prediction Z,Y,X → resize XY native → orientation X,Y,Z gốc.
+    """Prediction Z,Y,X → orientation X,Y,Z gốc; mặc định không nội suy.
 
+    Chỉ resize XY native nếu trước đó caller chủ động yêu cầu resize đầu vào.
     Binary mask dùng nearest neighbor. Probability dùng bilinear, sau đó
     evaluator mới threshold trên native grid. Không nội suy theo chiều Z.
     """

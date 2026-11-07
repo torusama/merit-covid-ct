@@ -8,7 +8,17 @@ import nibabel as nib
 import numpy as np
 
 from .config import PreprocessConfig
-from .geometry import affine_mm, inspect_pair
+from .geometry import affine_mm, inspect_pair, reorient_to_lps
+
+
+# Giữ thứ tự cột CSV ổn định dù thứ tự key trong JSON audit thay đổi.
+AUDIT_CSV_FIELDS = (
+    "original_shape_xyz", "canonical_shape_xyz", "original_affine", "original_affine_mm",
+    "canonical_affine_mm", "canonical_to_original_orientation", "original_orientation",
+    "canonical_orientation", "native_spacing_mm", "processed_size_hw", "native_size_hw",
+    "spatial_unit_in_header", "assume_mm", "scaled_intensity_range", "intensity_encoding",
+    "label_values", "native_lesion_voxels", "nifti_scaling", "hu_window", "padding", "z_resampled",
+)
 
 
 def positive_runs(flags):
@@ -78,11 +88,14 @@ def describe_case(case, audit_record, assume_mm=False):
     unit = ct.header.get_xyzt_units()[0]
     if unit != audit_record["spatial_unit_in_header"]:
         raise ValueError(f"{case.case_id}: current spatial units differ from saved audit")
-    canonical = nib.as_closest_canonical(mask)
+    canonical = reorient_to_lps(mask)
     canonical_mm = affine_mm(canonical, assume_mm)
     if list(canonical.shape) != audit_record["canonical_shape_xyz"] or not np.allclose(
             canonical_mm, audit_record["canonical_affine_mm"], atol=1e-4, rtol=0):
-        raise ValueError(f"{case.case_id}: current canonical geometry differs from saved audit")
+        raise ValueError(
+            f"{case.case_id}: current LPS geometry differs from saved audit; "
+            "rerun tools/data_pipeline.py audit with the current preprocessing"
+        )
     labels = np.asarray(canonical.dataobj)
     stats = mask_statistics(labels, canonical_mm)
     if stats["lesion_voxels"] != audit_record["native_lesion_voxels"] or np.unique(labels).astype(int).tolist() != audit_record["label_values"]:
@@ -95,7 +108,8 @@ def describe_case(case, audit_record, assume_mm=False):
     row = {
         "case_id": case.case_id, "group_id": case.group_id,
         "original_shape_x": int(ct.shape[0]), "original_shape_y": int(ct.shape[1]), "original_shape_z": int(ct.shape[2]),
-        "original_orientation": "".join(nib.aff2axcodes(ct.affine)), "canonical_orientation": "RAS",
+        "original_orientation": "".join(nib.aff2axcodes(ct.affine)),
+        "canonical_orientation": "".join(nib.aff2axcodes(canonical.affine)),
         "spacing_x_mm": float(spacing[0]), "spacing_y_mm": float(spacing[1]), "spacing_z_mm": float(spacing[2]),
         "spatial_unit_in_header": unit, "spatial_units_assumed_mm": unit == "unknown",
         "ct_dtype": str(ct.get_data_dtype()), "mask_dtype": str(mask.get_data_dtype()),
@@ -107,8 +121,12 @@ def describe_case(case, audit_record, assume_mm=False):
     }
     # Retain every original audit field, including affine matrices, in CSV cells.
     # Nested objects use JSON within a correctly quoted CSV field.
-    row.update({f"audit_{key}": json.dumps(value, separators=(",", ":")) if isinstance(value, (list, dict)) else value
-                for key, value in audit_record.items() if key not in ("case_id", "group_id")})
+    audit_keys = [*AUDIT_CSV_FIELDS, *(
+        key for key in audit_record if key not in (*AUDIT_CSV_FIELDS, "case_id", "group_id")
+    )]
+    for key in audit_keys:
+        value = audit_record[key]
+        row[f"audit_{key}"] = json.dumps(value, separators=(",", ":")) if isinstance(value, (list, dict)) else value
     trajectory = {"case_id": case.case_id, "areas_by_slice_voxels": stats["areas_by_slice_voxels"],
                   "pixel_area_mm2": stats["pixel_area_mm2"], "slice_center_step_mm": stats["slice_center_step_mm"],
                   "spatial_units_assumed_mm": unit == "unknown"}
@@ -143,7 +161,7 @@ def summarize(rows, trajectories, identity, audit_config):
         "all_geometry_match": all(r["geometry_match"] for r in rows),
         "all_masks_finite_binary": all(r["mask_finite_binary"] for r in rows),
         "identity": identity, "source_audit_config": audit_config,
-        "slice_order": "native-resolution canonical RAS, zero-based axial index; orientation only, no resize or Z resampling",
+        "slice_order": "native-resolution standardized LPS, zero-based axial index; orientation only, no resize or Z resampling",
         "physical_units_note": "Physical measurements for cases with unknown header units depend on the explicit assume-mm option.",
         "ct_intensity_source": "Complete CT intensity/finite checks reused from saved audit; current CT headers and masks rechecked. CT bytes are not checksummed.",
         "lesion_denominator": "all voxels in the complete CT volume, including air outside the body; not lung volume",

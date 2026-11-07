@@ -2,7 +2,7 @@
 
 Volume xuyên suốt: **`volume-covid19-A-0025`**, dòng `volume_order = 6` trong
 [case_statistics.csv](../analysis/covid19_20/case_statistics.csv).
-Ngày đối chiếu: **05/11/2026**.
+Ngày đối chiếu: **07/11/2026**, cấu hình LPS và giữ kích thước gốc.
 
 Các giá trị dưới đây lấy từ CSV thật. Số thập phân được làm tròn để dễ đọc;
 CSV giữ số đầy đủ. Trong văn bản, dấu phẩy biểu thị phần thập phân, dấu chấm
@@ -20,19 +20,19 @@ Luồng xử lý của ví dụ:
 CT gốc và mask gốc
   Mỗi lát 512 × 512, tổng 61 lát, orientation LPS
                        ↓
-Sắp thứ tự trục về RAS, CT và mask thay đổi cùng nhau
-  Mỗi lát vẫn 512 × 512, vẫn 61 lát
+Thống nhất LPS: volume này đã LPS nên giữ nguyên thứ tự CT/mask
+  Mỗi lát vẫn 512 × 512, vẫn 61 lát, affine không đổi
                        ↓
-Preprocessing đầu vào: window/normalize CT và resize trong mặt phẳng
-  Mỗi lát 256 × 256, vẫn 61 lát; không nội suy Z
+Preprocessing đầu vào: chỉ window/normalize cường độ CT
+  Mỗi lát vẫn 512 × 512, vẫn 61 lát; không resize hoặc nội suy Z
                        ↓
 Lấy 11 lát quanh một master để tạo slab
   Ví dụ master 30 → lấy các lát có chỉ số 25–35
 ```
 
 **Thống kê số lát và voxel tổn thương trong CSV được tính từ mask ở độ phân giải
-gốc, trước resize.** Các trường `audit_*` còn lưu cấu hình preprocessing, nên trong
-cùng một dòng có cả thông tin gốc 512×512 và thông tin đầu vào 256×256.
+gốc.** Các trường `audit_*` còn lưu cấu hình preprocessing; kích thước gốc và
+kích thước đầu vào của ca này đều là 512×512 vì resize mặc định đã tắt.
 Trong mọi ví dụ chỉ số lát bắt đầu từ **0**.
 
 ## 2. Nhận diện: đang xem volume nào? — trường 1–7
@@ -70,14 +70,14 @@ Kết hợp ba trường: **512 × 512 × 61**, không có đơn vị mm. Chúng
 | STT | Trường | Giá trị | Ý nghĩa |
 | ---: | --- | --- | --- |
 | 11 | `original_orientation` | `LPS` | Khi tăng chỉ số của ba trục gốc, hướng gần nhất lần lượt về trái (L), sau (P), phía đầu (S) của người bệnh. |
-| 12 | `canonical_orientation` | `RAS` | Sau khi thống nhất thứ tự trục: hướng gần nhất lần lượt về phải (R), trước (A), phía đầu (S). |
+| 12 | `canonical_orientation` | `LPS` | Hướng đã thống nhất: trái (L), sau (P), phía đầu (S); ca này giữ nguyên hướng gốc. |
 
 L/R là trái/phải của **người bệnh**, A/P là trước/sau, S/I là phía đầu/phía chân.
 Đây không phải chỉ dẫn trái/phải của người đang nhìn màn hình.
 
-Với volume này, từ LPS sang RAS chỉ cần đảo chiều trục thứ nhất và thứ hai, giữ
-trục thứ ba. Mảng và affine được đổi tương ứng; CT và mask được đổi cùng nhau.
-Không tạo voxel mới hoặc thay đổi vị trí giải phẫu thật. Shape vẫn **512×512×61**.
+Với volume này, hướng gốc đã là LPS nên không đảo trục; mảng CT/mask và affine
+được giữ nguyên ở bước thống nhất hướng. Trong cohort có 193 volume LPS và 6
+volume LPI; chỉ nhóm LPI cần đảo Z để về LPS. Shape ca này vẫn **512×512×61**.
 Nếu một volume khác cần hoán vị trục thì các số shape có thể đổi vị trí, nhưng
 đó vẫn là sắp lại các voxel, không phải resize. Bước này cũng không tự deoblique
 một ảnh đang nghiêng so với các trục cơ thể.
@@ -131,7 +131,7 @@ vẫn ghi ct_min = −2048 và ct_max = 1672: chúng mô tả hai giai đoạn k
 
 | STT | Trường | Giá trị | Ý nghĩa |
 | ---: | --- | --- | --- |
-| 28 | `slices` | 61 | Số lát axial sau sắp orientation về RAS, trước resize/padding. Ở ca này bằng original_shape_z. |
+| 28 | `slices` | 61 | Số lát axial sau thống nhất LPS, trước padding. Ở ca này bằng original_shape_z. |
 | 29 | `positive_slices` | 40 | Có 40 lát chứa ít nhất một voxel GT bằng 1. |
 | 30 | `empty_slices` | 21 | Có 21 lát mà toàn bộ GT trên lát bằng 0. Không có nghĩa ảnh CT bị rỗng/hỏng. |
 | 31 | `positive_slice_fraction` | ≈0,655738 | 40/61 ≈65,57% **số lát** có tổn thương. |
@@ -207,10 +207,10 @@ dạng list/matrix/dictionary trong một ô CSV.
 | 47 | `audit_canonical_shape_xyz` | `[512,512,61]` | Shape sau sắp orientation, trước resize; ca này không đổi kích thước. |
 | 48 | `audit_original_affine` | Ma trận A bên dưới | Chuyển chỉ số voxel gốc thành tọa độ vật lý; đơn vị theo header. |
 | 49 | `audit_original_affine_mm` | Cũng là A | Affine gốc sau quy đổi đơn vị về mm. Header đã là mm nên bằng trường 48. |
-| 50 | `audit_canonical_affine_mm` | Ma trận B bên dưới | Chuyển chỉ số voxel canonical thành tọa độ mm. Thay đổi để đi cùng việc đảo trục. |
-| 51 | `audit_canonical_to_original_orientation` | `[[0,-1],[1,-1],[2,1]]` | Đưa mảng canonical về thứ tự gốc: đảo trục 0, đảo trục 1, giữ trục 2. |
+| 50 | `audit_canonical_affine_mm` | Ma trận B bên dưới, bằng A | Chuyển chỉ số voxel LPS thành tọa độ world RAS+ theo mm; ca này không đổi affine. |
+| 51 | `audit_canonical_to_original_orientation` | `[[0,1],[1,1],[2,1]]` | Phép đồng nhất: giữ cả ba trục vì ảnh gốc đã LPS. |
 | 52 | `audit_original_orientation` | `["L","P","S"]` | Orientation gốc lưu dưới dạng danh sách. |
-| 53 | `audit_canonical_orientation` | `["R","A","S"]` | Orientation canonical lưu dưới dạng danh sách. |
+| 53 | `audit_canonical_orientation` | `["L","P","S"]` | Orientation đã thống nhất LPS lưu dưới dạng danh sách. |
 | 54 | `audit_native_spacing_mm` | `[0.846…,0.846…,5]` | Spacing native canonical, trước resize XY, đã đổi/giả định đơn vị mm theo cấu hình audit. |
 
 Các affine sau được làm tròn để minh họa; số chính xác nằm trong CSV:
@@ -223,8 +223,8 @@ A — original affine, đồng thời là original affine mm:
  [ 0,      0,      0,     1       ]]
 
 B — canonical affine mm:
-[[ 0.846,  0,      0,  -215.933007],
- [ 0,      0.846,  0,  -215.932610],
+[[ -0.846, 0,      0,   216.373001],
+ [ 0,     -0.846,  0,   216.373398],
  [ 0,      0,      5,  -252.5     ],
  [ 0,      0,      0,     1       ]]
 ```
@@ -239,18 +239,18 @@ Ví dụ cùng một voxel:
 
 ```text
 Trong mảng gốc:      (0, 0, 0)
-Trong mảng canonical: (511, 511, 0)
+Trong mảng standardized LPS: (0, 0, 0)
 ```
 
-Chỉ số thay đổi vì đảo hai trục, nhưng hai affine đưa chúng về cùng vị trí vật lý.
-Do đó thay đổi dấu/giá trị trong affine không có nghĩa tổn thương bị chuyển sang
-vị trí khác trong cơ thể.
+Ca này không cần đổi chỉ số hoặc affine. Với 6 ca LPI phải đảo Z, chỉ số lát thay
+đổi nhưng affine được cập nhật để voxel vẫn ở cùng vị trí vật lý. Hướng mảng LPS
+khác với hệ tọa độ world RAS+ mà affine của NiBabel sử dụng.
 
 ### 8.2. Kích thước xử lý và đơn vị
 
 | STT | Trường | Giá trị | Ý nghĩa |
 | ---: | --- | --- | --- |
-| 55 | `audit_processed_size_hw` | `[256,256]` | Kích thước H,W của lát sau resize để làm đầu vào. |
+| 55 | `audit_processed_size_hw` | `[512,512]` | Kích thước H,W đầu vào; bằng kích thước gốc vì không resize. |
 | 56 | `audit_native_size_hw` | `[512,512]` | Kích thước H,W native canonical, trước resize. |
 | 57 | `audit_spatial_unit_in_header` | `mm` | Bản sao đơn vị thật trong header của ca này. |
 | 58 | `audit_assume_mm` | `True` | Khi audit cả cohort, tùy chọn cho phép coi các ca thiếu đơn vị là mm đã được bật. |
@@ -260,9 +260,9 @@ audit nói tùy chọn được bật cho chương trình; cột spatial_units_a
 **ca cụ thể này có cần sử dụng giả định không**. A-0025 có đơn vị mm sẵn nên không
 cần. Chỉ ba ca thiếu đơn vị mới thực sự sử dụng giả định.
 
-Resize 512×512 thành 256×256 là thay đổi lấy mẫu trong mặt phẳng, không phải bước
-đổi LPS sang RAS. Các cột spacing native trong CSV vẫn mô tả dữ liệu trước resize,
-không nên dùng chúng như spacing của ảnh đã resize.
+Mặc định `size_hw=None` nên không thay đổi lưới lấy mẫu. Chỉ khi caller chủ động
+truyền kích thước H,W mới, pipeline mới resize; khi đó spacing native trong CSV
+vẫn mô tả ảnh gốc, không được dùng như spacing của ảnh đã resize.
 
 ### 8.3. Intensity, mask và cách tạo slab
 
@@ -348,8 +348,8 @@ lần train. Chưa xác minh patient-level independence khi group vẫn là volu
   không phải số lát của volume.
 - 65,57% là tỷ lệ **lát có lesion**; 2,516% là tỷ lệ **voxel lesion trên toàn CT**.
   Cả hai đều không phải phần trăm phổi tổn thương hoặc độ chính xác model.
-- Shape không đổi sau reorient, còn 512→256 là resize XY riêng; thống kê GT trong
-  CSV vẫn là ở độ phân giải native.
+- Shape và độ phân giải giữ nguyên qua pipeline mặc định: 512×512×61;
+  thống kê GT và mask đầu vào đều ở độ phân giải native.
 - Đơn vị của ca này là mm từ header; chỉ tùy chọn assume-mm của audit cả cohort
   được bật, không có nghĩa ca này thiếu đơn vị.
 - Group hiện bằng volume ID và patient ID trống. Không suy diễn mã 0025 thành

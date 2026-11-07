@@ -165,7 +165,7 @@ def aggregate_results(rows, identity=None):
 class VolumeEvaluator:
     """Evaluate one case at a time and retain scalar results only.
 
-    Slice indices are canonical RAS indices emitted by CTSlabDataset. Predictions
+    Slice indices are standardized LPS indices emitted by CTSlabDataset. Predictions
     are restored as probabilities to the original grid BEFORE thresholding.
     """
     def __init__(self, config=None, threshold=0.5, include_hd95=False, identity=None):

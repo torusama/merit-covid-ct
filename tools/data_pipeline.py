@@ -65,14 +65,14 @@ def visualize(sample: dict, destination) -> None:
         axes, ("Master CT", "Ground truth lesion", "CT + ground truth")
     ):
         axis.set_title(title)
-        axis.set_xlabel("R ->")
-        axis.set_ylabel("A ->")
+        axis.set_xlabel("L ->")
+        axis.set_ylabel("P ->")
         axis.set_xticks([])
         axis.set_yticks([])
 
     spacing = sample["metadata"]["native_spacing_mm"]
     figure.suptitle(
-        f"{sample['case_id']} | master {sample['master_slice_index']} (0-based RAS)\n"
+        f"{sample['case_id']} | master {sample['master_slice_index']} (0-based LPS)\n"
         f"native spacing XYZ = {spacing[0]:.3f}, {spacing[1]:.3f}, "
         f"{spacing[2]:.3f} mm; no Z resampling"
     )
@@ -98,7 +98,8 @@ def build_parser() -> argparse.ArgumentParser:
 
         if name != "split":
             command.add_argument(
-                "--size", type=int, nargs=2, default=(256, 256), metavar=("H", "W")
+                "--size", type=int, nargs=2, default=None, metavar=("H", "W"),
+                help="Optional resize; omit to preserve each image's native H,W",
             )
             command.add_argument("--slab-size", type=int, choices=(1, 3, 5, 11), default=11)
             command.add_argument("--hu-window", type=float, nargs=2, default=(-1000, 400))
@@ -165,7 +166,7 @@ def build_parser() -> argparse.ArgumentParser:
 def preprocessing_from_args(args) -> PreprocessConfig:
     return PreprocessConfig(
         slab_size=args.slab_size,
-        size_hw=tuple(args.size),
+        size_hw=tuple(args.size) if args.size is not None else None,
         hu_window=tuple(args.hu_window),
         intensity_encoding=args.intensity_encoding,
         assume_mm=args.assume_mm,

@@ -11,7 +11,7 @@ from ct_pipeline.cases import Case
 @pytest.fixture
 def write_case(tmp_path):
     def write(case_id="fixture", shape=(8, 6, 13), affine=None, ct=None, mask=None, unit="mm"):
-        affine = np.diag([1.0, 2.0, 5.0, 1.0]) if affine is None else affine
+        affine = np.diag([-1.0, -2.0, 5.0, 1.0]) if affine is None else affine
         if ct is None:
             x, y, z = np.indices(shape)
             ct = (-1000 + 100 * z + 20 * x + 10 * y).astype(np.float32)

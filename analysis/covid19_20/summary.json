@@ -89,10 +89,7 @@
   },
   "source_audit_config": {
     "slab_size": 11,
-    "size_hw": [
-      256,
-      256
-    ],
+    "size_hw": null,
     "hu_window": [
       -1000,
       400
@@ -100,7 +97,7 @@
     "intensity_encoding": "auto_hu",
     "assume_mm": true
   },
-  "slice_order": "native-resolution canonical RAS, zero-based axial index; orientation only, no resize or Z resampling",
+  "slice_order": "native-resolution standardized LPS, zero-based axial index; orientation only, no resize or Z resampling",
   "physical_units_note": "Physical measurements for cases with unknown header units depend on the explicit assume-mm option.",
   "ct_intensity_source": "Complete CT intensity/finite checks reused from saved audit; current CT headers and masks rechecked. CT bytes are not checksummed.",
   "lesion_denominator": "all voxels in the complete CT volume, including air outside the body; not lung volume",
@@ -15408,8 +15405,8 @@
       "spatial_units_assumed_mm": false
     }
   ],
-  "generated_at_bangkok": "2026-11-04T11:35:31+07:00",
-  "audit_sha256": "289bcf4eb6d09c1da70dc6c5936da0f16a1239de23a94d7abdf99264dac98571",
+  "generated_at_bangkok": "2026-11-07T10:28:45+07:00",
+  "audit_sha256": "4f761aa9b6e8557b9e00107dd7d232424337b4322d9b38a2660a1a51e9f2c306",
   "manifest_sha256": "4302c2762be7074be0f8f4afe7885859eaa6445d1a5a57b6fc9640c18928ff67",
   "split_sha256": "d9567a68c33c74b560de70cecda4a462f8c17dca3aea2e0933836bad65c01896",
   "example_case_ids": [

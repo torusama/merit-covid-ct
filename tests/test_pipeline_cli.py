@@ -9,6 +9,7 @@ import nibabel as nib
 import numpy as np
 
 from ct_pipeline.cases import load_cases
+from ct_pipeline.geometry import reorient_to_lps
 
 
 CLI = Path(__file__).resolve().parents[1] / "tools/data_pipeline.py"
@@ -33,7 +34,7 @@ def test_audit_cli_keeps_unknown_units_strict_and_override_explicit(write_case, 
     output = tmp_path / "audit.json"
     arguments = [
         "audit", "--manifest", manifest, "--expected-cases", 1,
-        "--output", output, "--size", 6, 8,
+        "--output", output,
     ]
     strict = run_cli(*arguments)
     assert strict.returncode == 1
@@ -48,6 +49,9 @@ def test_audit_cli_keeps_unknown_units_strict_and_override_explicit(write_case, 
     assert report["valid_pairs"] == 1 and report["invalid_pairs"] == 0
     assert report["cases_using_assumed_mm"] == [case.case_id]
     assert report["per_case"][0]["label_values"] == [0, 1]
+    assert report["config"]["size_hw"] is None
+    assert report["per_case"][0]["canonical_orientation"] == ["L", "P", "S"]
+    assert report["per_case"][0]["processed_size_hw"] == [6, 8]
 
 
 def test_evaluate_cli_reads_only_selected_partition_with_unordered_slices(grouped_split, tmp_path):
@@ -63,7 +67,7 @@ def test_evaluate_cli_reads_only_selected_partition_with_unordered_slices(groupe
     for case in cases:
         path = predictions / f"{case.case_id}.npz"
         if case.case_id in test_ids:
-            canonical = nib.as_closest_canonical(nib.load(case.mask))
+            canonical = reorient_to_lps(nib.load(case.mask))
             labels = np.asarray(canonical.dataobj).transpose(2, 1, 0)
             np.savez(
                 path,
@@ -77,7 +81,7 @@ def test_evaluate_cli_reads_only_selected_partition_with_unordered_slices(groupe
     result = run_cli(
         "evaluate", "--manifest", manifest, "--expected-cases", 10,
         "--split", split_path, "--fold", 0, "--partition", "test",
-        "--size", 6, 8, "--predictions", predictions, "--output", output, "--hd95",
+        "--predictions", predictions, "--output", output, "--hd95",
     )
     assert result.returncode == 0, result.stderr
     report = json.loads(output.read_text(encoding="utf-8"))

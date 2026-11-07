@@ -50,6 +50,11 @@ def test_report_reuses_audit_but_rechecks_geometry_and_mask(write_case):
     assert trajectory["areas_by_slice_voxels"][11] == 4
     assert not row["spatial_units_assumed_mm"]
     assert row["audit_original_shape_xyz"] == "[8,6,13]"
+    assert row["canonical_orientation"] == "LPS"
+    assert row["audit_processed_size_hw"] == "[6,8]"
+    reordered = dict(reversed(list(record.items())))
+    reordered_row, _ = describe_case(case, reordered)
+    assert list(row) == list(reordered_row)
     stale = copy.deepcopy(record)
     stale["original_affine"][0][3] += 10
     with pytest.raises(ValueError, match="geometry differs"):
@@ -68,6 +73,18 @@ def test_missing_units_stay_explicit(write_case):
         describe_case(case, record)
     row, _ = describe_case(case, record, assume_mm=True)
     assert row["spatial_unit_in_header"] == "unknown" and row["spatial_units_assumed_mm"]
+
+
+def test_report_rejects_old_ras_audit(write_case):
+    from ct_pipeline.geometry import geometry_metadata
+
+    case = write_case()
+    _, _, metadata = read_volume(case, PreprocessConfig())
+    original = nib.load(case.image)
+    metadata.update(geometry_metadata(original, nib.as_closest_canonical(original), False))
+    old_record = {"case_id": case.case_id, "group_id": case.group_id, **metadata}
+    with pytest.raises(ValueError, match="rerun.*audit"):
+        describe_case(case, old_record)
 
 
 def test_summary_distinguishes_pooled_and_macro(write_case):

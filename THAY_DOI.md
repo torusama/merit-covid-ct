@@ -9,6 +9,10 @@ ngày **03/11/2026**.
 và evaluator độc lập model. Chưa có model segmentation hoặc kết quả training.
 Patient identity và đơn vị không gian của ba ca vẫn còn giới hạn xác minh.
 
+**Cập nhật 07/11/2026:** pipeline hiện thống nhất **LPS**, mặc định **không resize**.
+Các mục 1–11 bên dưới ghi lịch sử triển khai; cấu hình cũ RAS/256×256 trong những
+mục đó đã được thay thế. Xem mục 12 và [README hiện hành](README.md).
+
 ## 1. Mục đích và các khái niệm cần biết
 
 Bài toán là phân đoạn vùng tổn thương COVID-19 trên CT phổi. Dữ liệu primary là
@@ -81,7 +85,7 @@ thế bộ 199 ca và không phải kết quả thí nghiệm của model.
 | --- | --- |
 | [splits/covid19_20_5fold.json](splits/covid19_20_5fold.json) | Split thực của 199 ca, seed 42; chứa case IDs và group IDs cho từng partition, fingerprint và provenance identity. |
 | [docs/data_pipeline.md](docs/data_pipeline.md) | Hướng dẫn PowerShell và quy ước chi tiết về dữ liệu, tensor, geometry, preprocessing và metrics. |
-| [analysis/covid19_20/README.md](analysis/covid19_20/README.md) | Báo cáo triển khai và kiểm tra dữ liệu thực. |
+| [analysis/covid19_20/REPORT.md](analysis/covid19_20/REPORT.md) | Báo cáo dữ liệu hiện hành; thay README triển khai cũ đã xóa ở mục 12. |
 | [analysis/covid19_20/audit_strict.json](analysis/covid19_20/audit_strict.json) | Audit nghiêm ngặt: 196 ca đạt, 3 ca bị từ chối do thiếu đơn vị không gian. |
 | [analysis/covid19_20/audit.json](analysis/covid19_20/audit.json) | Audit có bật giả định mm: 199 ca đạt kiểm tra geometry, finite và binary labels; lưu các trường metadata từng ca. |
 | [analysis/covid19_20/smoke.json](analysis/covid19_20/smoke.json) | Smoke test CT thật có spacing Z=1 mm, Windows worker=1. |
@@ -353,3 +357,61 @@ offsets_mm = batch["z_offsets_mm"] # [B,D]
 Không có model/loss/optimizer/training mới. Patient identity và đơn vị của ba ca
 thiếu header vẫn chưa xác minh; `assume_mm=True` là lựa chọn chủ động, không phải
 thông tin đơn vị được khôi phục từ nguồn.
+
+## 12. Thống nhất LPS và giữ độ phân giải gốc — 07/11/2026
+
+Hai thay đổi đã thống nhất với người dùng:
+
+1. Chọn hướng mảng **LPS** theo phần lớn dataset: 193 volume LPS giữ nguyên thứ
+   tự voxel; 6 volume LPI đảo chiều Z cho CT và mask, cập nhật affine tương ứng.
+   Không nội suy, không làm thẳng ảnh oblique. LPS là quy ước của pipeline này,
+   không phải yêu cầu bắt buộc của mọi mô hình CT.
+2. **Bỏ resize mặc định**: `PreprocessConfig.size_hw=None`, CLI và ví dụ đọc batch
+   cũng giữ H,W gốc khi không truyền `--size`. Cả 199 ca có lát 512×512; mẫu D=11
+   trở thành `[1,11,512,512]`, master mask `[1,512,512]`. Không thay đổi số lát Z.
+
+| File / nhóm file | Thay đổi và lý do |
+| --- | --- |
+| [geometry.py](ct_pipeline/geometry.py) | Thêm `reorient_to_lps()`, dùng cùng transform LPS cho tính shape chỉ từ header và đọc voxel; giữ inverse để đưa dự đoán về gốc. |
+| [preprocessing.py](ct_pipeline/preprocessing.py), [config.py](ct_pipeline/config.py) | Dùng LPS thay cho RAS, mặc định bỏ qua nội suy XY; HU window/normalize giữ nguyên. |
+| [data_pipeline.py](tools/data_pipeline.py), [read_training_batch.py](examples/read_training_batch.py) | Bỏ mặc định CLI 256×256; ví dụ in thêm hướng và H,W thực. Nhãn trục PNG đổi theo LPS. |
+| [reporting.py](ct_pipeline/reporting.py), [summarize_covid19_20.py](tools/summarize_covid19_20.py) | Thống kê mask theo LPS, từ chối audit RAS cũ, giữ thứ tự 71 cột CSV; ảnh CT/GT dùng độ phân giải gốc. |
+| [metrics.py](ct_pipeline/metrics.py) | Chỉ số prediction theo grid LPS; tiếp tục khôi phục geometry gốc rồi đánh giá với GT gốc. Không nội suy prediction khi H,W đã bằng native. |
+| README và hướng dẫn CSV | Cập nhật LPS, native H,W, shape batch, affine A0025 và lệnh chạy; phân biệt hướng mảng LPS với tọa độ world RAS+ của NiBabel. |
+| Audit, CSV, summary, REPORT và PNG primary | Tạo lại theo code mới để không còn báo cáo RAS/256×256 lẫn với cấu hình hiện hành. |
+| Tests | Kiểm tra không gọi nội suy ở mặc định, LPS không bị đảo, LPI chỉ đảo Z, vị trí world giữ nguyên, mask khôi phục chính xác; CLI mặc định native và tùy chọn resize chủ động. |
+
+**Dọn file:** xóa `analysis/covid19_20/README.md` vì đó là báo cáo triển khai cũ,
+trùng chức năng và chứa quy ước đã thay thế; dùng [REPORT.md](analysis/covid19_20/REPORT.md)
+và tài liệu source hiện hành. Lịch sử triển khai còn trong các mục trên và Git.
+Xóa các output/cache tạm của lần refactor trước (`refactor_a0025.*`,
+`preprocessing_reference.json`, `refactor_split.json`). Các module source còn lại
+đều đang được dùng nên được giữ lại.
+
+Resize vẫn có thể được yêu cầu rõ bằng `size_hw=(H,W)` hoặc `--size H W`; đây
+không còn là hành vi mặc định. Nếu H,W giữa các ca khác nhau, dùng batch size 1
+hoặc gom mẫu cùng shape. Không ép ảnh về 512 nếu kích thước gốc của nó khác 512.
+
+Các key `canonical_*` giữ tên để tránh đổi schema; từ bản này chúng chỉ grid LPS.
+Không dùng prediction/metadata RAS cũ với pipeline LPS. CT/mask gốc và danh sách
+5-fold không bị sửa; không train model. Patient identity và ba ca thiếu đơn vị
+giữ nguyên giới hạn xác minh đã nêu.
+
+Lệnh kiểm tra input hiện hành:
+
+```powershell
+.\.venv\Scripts\python.exe examples/read_training_batch.py --assume-mm --batch-size 2
+```
+
+Kiểm chứng sau thay đổi: **65 tests đạt**. Audit toàn bộ CT/mask: 199/199 ca đạt
+khi bật giả định mm; audit nghiêm ngặt đạt 196/199, từ chối đúng ba ca thiếu đơn
+vị. Cả 199 ca có metadata LPS, processed H,W bằng native 512×512, số voxel lesion,
+range CT và geometry gốc khớp audit trước. Đối chiếu trực tiếp CT và mask thật
+của A0025 (LPS) và A0161 (LPI) khớp chính xác phép đổi hướng, mask restore khớp
+gốc. Smoke test thật workers 0/1 và ví dụ batch size 2 chạy được ở native 512×512.
+CSV giữ đúng 199 dòng/71 cột, khớp thứ tự trường trong hướng dẫn; fold và thống kê
+GT giữ nguyên. Kiểm tra cú pháp Python, liên kết tài liệu và `git diff --check` đạt.
+
+README bổ sung thứ tự tiếp cận cho người mới: vị trí dữ liệu → một volume minh
+họa → chạy batch → đọc hợp đồng input/target → lần theo source → evaluator khi
+có prediction. Có lệnh clone riêng nhánh `Duong` cho máy chưa có repository.

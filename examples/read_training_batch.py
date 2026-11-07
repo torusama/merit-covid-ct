@@ -37,7 +37,10 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--workers", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--size", type=int, nargs=2, default=(256, 256))
+    parser.add_argument(
+        "--size", type=int, nargs=2, default=None,
+        help="Optional resize; omit to preserve each image's native H,W",
+    )
     parser.add_argument("--slab-size", type=int, choices=(1, 3, 5, 11), default=11)
     parser.add_argument("--assume-mm", action="store_true")
     parser.add_argument("--patient-map", type=Path)
@@ -47,7 +50,7 @@ def main() -> None:
     # 1. Chọn cấu hình preprocessing. Muốn đổi input, bắt đầu từ đây.
     preprocess = PreprocessConfig(
         slab_size=args.slab_size,
-        size_hw=tuple(args.size),
+        size_hw=tuple(args.size) if args.size is not None else None,
         hu_window=(-1000.0, 400.0),
         intensity_encoding="auto_hu",
         assume_mm=args.assume_mm,
@@ -98,6 +101,8 @@ def main() -> None:
         "master_indices": batch["master_slice_index"].tolist(),
         "first_sample_offsets_mm": offsets_mm[0].tolist(),
         "first_sample_original_shape_xyz": batch["metadata"][0]["original_shape_xyz"],
+        "first_sample_orientation": batch["metadata"][0]["canonical_orientation"],
+        "first_sample_processed_size_hw": batch["metadata"][0]["processed_size_hw"],
         "note": "Patient-level independence remains unverified without patient IDs.",
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))

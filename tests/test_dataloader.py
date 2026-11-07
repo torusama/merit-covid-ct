@@ -51,7 +51,8 @@ def test_fold_loaders_reject_tampered_partition(grouped_split):
         build_fold_loaders(manifest, path, fold=0)
 
 
-def test_inspect_example_works_outside_repo_and_reads_test_partition(grouped_split, tmp_path):
+@pytest.mark.parametrize("resize", [False, True])
+def test_inspect_example_works_outside_repo_and_reads_test_partition(grouped_split, tmp_path, resize):
     script = Path(__file__).resolve().parents[1] / "examples/read_training_batch.py"
     manifest, split = grouped_split
     result = subprocess.run(
@@ -61,7 +62,7 @@ def test_inspect_example_works_outside_repo_and_reads_test_partition(grouped_spl
             "--manifest", str(manifest),
             "--split", str(split),
             "--partition", "test",
-            "--size", "12", "16",
+            *(["--size", "12", "16"] if resize else []),
             "--slab-size", "3",
         ],
         cwd=tmp_path,
@@ -75,6 +76,8 @@ def test_inspect_example_works_outside_repo_and_reads_test_partition(grouped_spl
     assert report["device"] == "cpu"
     assert report["selected_partition"] == "test"
     assert report["volumes_in_partition"] == {"train": 6, "validation": 2, "test": 2}
-    assert report["inputs"]["shape"] == [2, 1, 3, 12, 16]
-    assert report["targets"]["shape"] == [2, 1, 12, 16]
+    height, width = (12, 16) if resize else (6, 8)
+    assert report["inputs"]["shape"] == [2, 1, 3, height, width]
+    assert report["targets"]["shape"] == [2, 1, height, width]
+    assert report["first_sample_orientation"] == ["L", "P", "S"]
     assert report["master_indices"] == [0, 1]
