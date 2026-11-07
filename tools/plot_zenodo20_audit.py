@@ -1,4 +1,4 @@
-"""Plot the reproducible dataset summary created by analyze_dataset.py."""
+"""Plot the reproducible dataset summary created by audit_zenodo20.py."""
 
 from __future__ import annotations
 

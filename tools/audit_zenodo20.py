@@ -10,6 +10,7 @@ from pathlib import Path
 import cv2
 import nibabel as nib
 import numpy as np
+from merit_covid.data.manifest import legacy_mask_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,8 +59,8 @@ def main():
         print(identifier, flush=True)
         image = nib.load(str(DATA / case["image"]))
         combined = nib.load(str(DATA / case["combined_mask"]))
-        infection = nib.load(str(DATA / "masks" / "infection" / f"{identifier}.nii.gz"))
-        lung = nib.load(str(DATA / "masks" / "lung" / f"{identifier}.nii.gz"))
+        infection = nib.load(str(legacy_mask_path(case, DATA, "mask")))
+        lung = nib.load(str(legacy_mask_path(case, DATA, "lung_mask")))
         volumes = (image, combined, infection, lung)
         same_geometry = all(
             x.shape == image.shape

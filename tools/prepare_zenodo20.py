@@ -6,13 +6,13 @@ Run ``python tools/download_zenodo20.py`` first. This script is safe to rerun.
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import zipfile
 from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+from merit_covid.data.manifest import normalized_zenodo_id
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,17 +22,7 @@ DATA = ROOT / "data" / "zenodo20"
 
 def case_id(filename: str) -> str | None:
     """Map the source filename to the stable identifier used in cases.json."""
-    if filename.startswith("coronacases_"):
-        match = re.search(r"(\d{3})\.nii(?:\.gz)?$", filename)
-        return f"coronacases_{match.group(1)}" if match else None
-    if filename in {"case009.nii", "case009.nii.gz"}:
-        return "coronacases_009"
-    if filename.startswith("radiopaedia_org_"):
-        match = re.search(r"-(\d+_\d+_\d+)-dcm\.nii(?:\.gz)?$", filename)
-        return f"radiopaedia_{match.group(1)}" if match else None
-    if filename.startswith("radiopaedia_"):
-        return filename.removesuffix(".gz").removesuffix(".nii")
-    return None
+    return normalized_zenodo_id(filename)
 
 
 def extract_nifti_files(archive_path: Path, destination: Path) -> None:
@@ -104,6 +94,7 @@ def main() -> None:
             "source": "Coronacases" if identifier.startswith("coronacases") else "Radiopaedia",
             "image": str(images[identifier].relative_to(DATA)).replace("\\", "/"),
             "mask": str(infection[identifier].relative_to(DATA)).replace("\\", "/"),
+            "lung_mask": str(lung[identifier].relative_to(DATA)).replace("\\", "/"),
             "combined_mask": str(combined[identifier].relative_to(DATA)).replace("\\", "/"),
             "shape": list(image.shape),
             "spacing_mm": [float(value) for value in image.header.get_zooms()[:3]],

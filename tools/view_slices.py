@@ -20,6 +20,8 @@ from tkinter import filedialog, messagebox, ttk
 import nibabel as nib
 import numpy as np
 from PIL import Image, ImageDraw, ImageTk
+from merit_covid.data.manifest import legacy_mask_path
+from merit_covid.data.nifti_io import verify_alignment
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,7 +47,7 @@ DATASETS = {
         "zenodo20", "Zenodo / Ma et al. (20 cases)", ROOT / "data" / "zenodo20", True
     ),
     "covid19_20": DatasetSpec(
-        "covid19_20", "COVID-19-20 Challenge (199 ca)", ROOT / "data" / "covid19_20", False
+        "covid19_20", "COVID-19-20 Challenge (199 cases)", ROOT / "data" / "covid19_20", False
     ),
 }
 
@@ -57,6 +59,7 @@ def load_cases(spec: DatasetSpec) -> list[dict]:
 
 
 def window_ct(slice_ct: np.ndarray) -> np.ndarray:
+    """Display-only heuristic; never use this function for model preprocessing."""
     if np.nanmin(slice_ct) < -300:
         low, high = -1000.0, 400.0
     else:
@@ -96,6 +99,20 @@ def render_panels(spec: DatasetSpec, loaded: dict, index: int) -> list[tuple[str
             ("Combined mask", Image.fromarray(combined_rgb)),
         ]
     return panels
+
+
+def load_case_images(spec: DatasetSpec, case: dict) -> dict:
+    loaded = {
+        "image": nib.load(str(spec.root / case["image"])),
+        "mask": nib.load(str(legacy_mask_path(case, spec.root, "mask"))),
+    }
+    if spec.has_lung_masks:
+        loaded["lung"] = nib.load(str(legacy_mask_path(case, spec.root, "lung_mask")))
+        loaded["combined"] = nib.load(str(legacy_mask_path(case, spec.root, "combined_mask")))
+    for key, value in loaded.items():
+        if key != "image":
+            verify_alignment(loaded["image"], value)
+    return loaded
 
 
 def make_montage(panels: list[tuple[str, Image.Image]], case: dict, index: int) -> Image.Image:
@@ -189,15 +206,7 @@ class SliceViewer:
         if index < 0:
             return
         self.case = self.cases[index]
-        root = self.spec.root
-        self.loaded = {
-            "image": nib.load(str(root / self.case["image"])),
-            "mask": nib.load(str(root / self.case["mask"])),
-        }
-        if self.spec.has_lung_masks:
-            identifier = self.case["id"]
-            self.loaded["lung"] = nib.load(str(root / "masks" / "lung" / f"{identifier}.nii.gz"))
-            self.loaded["combined"] = nib.load(str(root / self.case["combined_mask"]))
+        self.loaded = load_case_images(self.spec, self.case)
         self.slider.configure(to=self.case["shape"][2] - 1)
         self.slider.set(self.case["shape"][2] // 2)
         self.draw()
@@ -245,13 +254,7 @@ def main() -> None:
     spec = DATASETS[args.dataset]
     if args.preview:
         case = load_cases(spec)[0]
-        loaded = {
-            "image": nib.load(str(spec.root / case["image"])),
-            "mask": nib.load(str(spec.root / case["mask"])),
-        }
-        if spec.has_lung_masks:
-            loaded["lung"] = nib.load(str(spec.root / "masks" / "lung" / f"{case['id']}.nii.gz"))
-            loaded["combined"] = nib.load(str(spec.root / case["combined_mask"]))
+        loaded = load_case_images(spec, case)
         index = case["shape"][2] // 2
         OUTPUTS.mkdir(exist_ok=True)
         output = OUTPUTS / f"preview_{spec.key}.png"

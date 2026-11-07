@@ -1,0 +1,19 @@
+# Paths are relative to this file. These are planned settings, not a trainer.
+dataset_root: ../data/covid19_20
+output_dir: ../outputs
+seed: 42
+num_folds: 5
+num_slices: 11
+master_index: 5
+# Native XY avoids silently removing small lesions. Set a size after internal QC.
+image_size: null
+orientation: RAS
+# Intensity provenance must be established before using HU or windowed_255.
+normalization: none
+hu_window: [-1000, 400]
+boundary: edge
+batch_size: 1
+num_workers: 0
+epochs: 100
+learning_rate: 0.0001
+device: cpu

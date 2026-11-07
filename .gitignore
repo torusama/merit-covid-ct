@@ -26,3 +26,11 @@ wandb/
 *.pt
 *.pth
 *.ckpt
+
+# Package builds and test caches
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.coverage
+htmlcov/
