@@ -19,7 +19,7 @@ Nếu mới tiếp cận, đi theo thứ tự này:
    [báo cáo dữ liệu](analysis/covid19_20/REPORT.md) để nối thuật ngữ với một volume thật.
 3. Chạy **mục 3**, rồi đọc **mục 4**: xác định input, mask của lát trung tâm,
    offsets và shape batch. Ví dụ chỉ đọc dữ liệu, chưa huấn luyện.
-4. Đọc [bản đồ source](ct_pipeline/README.md), sau đó đi lần lượt
+4. Đọc [bản đồ source](docs/architecture.md), sau đó đi lần lượt
    `config → cases → splits → geometry → preprocessing → dataset → dataloader`.
 5. Khi đã hiểu batch và cần nối model, dùng `build_fold_loaders()` ở mục 4.
    Sau khi có prediction mới đọc phần evaluator trong [hướng dẫn chi tiết](docs/data_pipeline.md).
@@ -30,12 +30,14 @@ Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
 | Bạn muốn làm gì? | Mở file nào? |
 | --- | --- |
 | Chạy thử xem một batch gồm những gì | [examples/read_training_batch.py](examples/read_training_batch.py) |
-| Đổi số lát, kích thước ảnh, chính sách cường độ | [ct_pipeline/config.py](src/merit_covid/data/pipeline/config.py) |
-| Hiểu thứ tự gọi các hàm trong source | [ct_pipeline/README.md](ct_pipeline/README.md) |
-| Xem code kiểm tra hình học và restore prediction | [ct_pipeline/geometry.py](src/merit_covid/data/pipeline/geometry.py) |
-| Xem code LPS → giữ cường độ và kích thước gốc | [ct_pipeline/preprocessing.py](src/merit_covid/data/pipeline/preprocessing.py), hàm `read_volume()` |
-| Xem cách cắt 11 lát và chọn mask master | [ct_pipeline/dataset.py](src/merit_covid/data/pipeline/dataset.py), `CTSlabDataset.__getitem__()` |
-| Xem cách chọn fold và ghép batch | [ct_pipeline/dataloader.py](src/merit_covid/data/pipeline/dataloader.py), `build_fold_loaders()` |
+| Hiểu nhánh MERGE giữ/thay những gì | [Báo cáo tích hợp](docs/merge_report.md) |
+| Đổi số lát, kích thước ảnh, chính sách cường độ | [config.py](src/merit_covid/data/pipeline/config.py) |
+| Hiểu thứ tự gọi các hàm trong source | [Bản đồ source](docs/architecture.md) |
+| Xem code kiểm tra hình học và restore prediction | [geometry.py](src/merit_covid/data/pipeline/geometry.py) |
+| Xem code LPS → giữ cường độ và kích thước gốc | [preprocessing.py](src/merit_covid/data/pipeline/preprocessing.py), hàm `read_volume()` |
+| Xem cách cắt 11 lát và chọn mask master | [dataset.py](src/merit_covid/data/pipeline/dataset.py), `CTSlabDataset.__getitem__()` |
+| Xem cách chọn fold và ghép batch | [dataloader.py](src/merit_covid/data/pipeline/dataloader.py), `build_fold_loaders()` |
+| Tra tên trường batch, shape và quy ước đánh giá | [Hợp đồng dữ liệu](docs/data_contract.md) |
 | Xem báo cáo từng volume | [REPORT.md](analysis/covid19_20/REPORT.md), [case_statistics.csv](analysis/covid19_20/case_statistics.csv) |
 | Hiểu các cột CSV bằng một ca thật | [Ví dụ A-0025, đủ 71 trường](docs/giai_thich_csv_A0025.md) |
 
@@ -79,7 +81,7 @@ flowchart TD
 
 ## 3. Chạy nhanh trên Windows PowerShell
 
-Nếu máy chưa có repository, sau khi nhánh `MERGE` được đưa lên GitHub, lấy nhánh này:
+Nếu máy chưa có repository, lấy đúng nhánh `MERGE`:
 
 ```powershell
 git clone --branch MERGE --single-branch https://github.com/torusama/merit-covid-ct.git
@@ -257,7 +259,7 @@ Mặc định từ chối ba ca thiếu đơn vị; thêm `--assume-mm` khi ch�
 giả định. Xem [hướng dẫn CLI và evaluator](docs/data_pipeline.md) để chạy audit
 hoặc đánh giá các prediction thực khi có model.
 
-Evaluator ở [ct_pipeline/metrics.py](src/merit_covid/data/pipeline/metrics.py) ghép đủ prediction
+Evaluator ở [metrics.py](src/merit_covid/data/pipeline/metrics.py) ghép đủ prediction
 master slices, restore về native geometry qua `geometry.restore_volume()` rồi
 tính foreground Dice/IoU trên toàn volume. Không lấy mean Dice từng lát làm Dice
 volume. Threshold chọn bằng validation trước; không chọn bằng test.
@@ -276,7 +278,7 @@ tests/         Kiểm thử phần mềm; không phải dữ liệu/model result
 docs/          Hướng dẫn chi tiết và định hướng nghiên cứu
 ```
 
-- [Source: đọc từ file nào đến file nào?](ct_pipeline/README.md)
+- [Source: đọc từ file nào đến file nào?](docs/architecture.md)
 - [Giải thích CSV bằng A-0025](docs/giai_thich_csv_A0025.md)
 - [Báo cáo primary dataset](analysis/covid19_20/REPORT.md)
 - [Cách đọc báo cáo COVID-19-20 và Zenodo20](docs/dataset_reports.md)

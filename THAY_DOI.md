@@ -477,3 +477,7 @@ offsets và metadata. Báo cáo đối chiếu toàn bộ primary ở
 Không tạo model/trainer, không ghi lại dataset gốc và không chạy external data.
 
 Final MERGE verification: 135 tests passed, no skips; six pre-merge real slab references match both APIs; 199 primary metadata/range/count records match Duong. Synthetic round-trip, real Windows worker batch and NumPy core with torch imports blocked passed. Dependencies and source syntax checks passed. No training/GPU/external runtime claim.
+
+README bổ sung đường đọc cho người mới trên MERGE: báo cáo tích hợp, ví dụ một
+volume, chạy batch và bản đồ source thật trong `src/merit_covid/data/pipeline/`.
+Các liên kết đọc code trỏ trực tiếp vào implementation thay cho module alias cũ.
