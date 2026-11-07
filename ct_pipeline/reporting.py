@@ -7,7 +7,8 @@ import json
 import nibabel as nib
 import numpy as np
 
-from .dataset import PreprocessConfig, affine_mm, inspect_pair
+from .config import PreprocessConfig
+from .geometry import affine_mm, inspect_pair
 
 
 def positive_runs(flags):

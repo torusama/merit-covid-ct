@@ -20,7 +20,7 @@ import numpy as np
 import torch
 
 from ct_pipeline.cases import load_cases
-from ct_pipeline.dataset import CTSlabDataset, PreprocessConfig
+from ct_pipeline import CTSlabDataset, PreprocessConfig
 from ct_pipeline.reporting import describe_case, summarize
 from ct_pipeline.splits import validate_splits
 

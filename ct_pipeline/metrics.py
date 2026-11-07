@@ -8,7 +8,9 @@ import numpy as np
 from scipy.ndimage import binary_erosion, generate_binary_structure
 from scipy.spatial import cKDTree
 
-from .dataset import PreprocessConfig, read_volume, restore_volume
+from .config import PreprocessConfig
+from .geometry import restore_volume
+from .preprocessing import read_volume
 
 
 def as_array(value):

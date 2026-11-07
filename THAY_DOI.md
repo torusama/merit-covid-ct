@@ -292,3 +292,64 @@ Min/max intensity được tái sử dụng từ audit đầy đủ trước đ�
 components/resize-loss trong bản báo cáo này. Patient identity và đơn vị mm giả
 định của ba ca giữ nguyên trạng thái chưa xác minh. Không xử lý thêm Zenodo20,
 không thay đổi split, không training.
+
+## 11. Sắp xếp source và đường lấy input ngày 07/11/2026
+
+Thêm [hướng dẫn đọc CSV qua volume A0025](docs/giai_thich_csv_A0025.md): giải thích
+đầy đủ 71 trường bằng giá trị của cùng một volume, từ thông tin file, geometry,
+mask đến group và năm fold. [Hướng dẫn báo cáo](docs/dataset_reports.md) và README
+có liên kết để người đọc tìm được ví dụ này.
+
+Trước đây `dataset.py` gộp cấu hình, kiểm tra geometry, đọc/normalize/resize,
+cắt slab và DataLoader. Đã tách theo trách nhiệm để đọc theo luồng dữ liệu:
+
+| File | Vai trò sau sắp xếp |
+| --- | --- |
+| [ct_pipeline/config.py](ct_pipeline/config.py) | `PreprocessConfig`: slab size, H/W, HU window, encoding và giả định đơn vị. |
+| [ct_pipeline/geometry.py](ct_pipeline/geometry.py) | Kiểm tra headers CT/mask, đơn vị mm, shape canonical, metadata affine/orientation và restore prediction. |
+| [ct_pipeline/preprocessing.py](ct_pipeline/preprocessing.py) | `read_volume()` điều phối sáu bước; tách helper kiểm tra voxel, normalize CT, đổi thứ tự tensor và resize XY. |
+| [ct_pipeline/dataset.py](ct_pipeline/dataset.py) | Lập chỉ số master, cache một volume, cắt slab và trả mask/master metadata. Giữ alias cho các import cũ. |
+| [ct_pipeline/dataloader.py](ct_pipeline/dataloader.py) | Collate/seed/loader; API mới `build_fold_loaders()` trả ba loader của split đã lưu. |
+| [ct_pipeline/__init__.py](ct_pipeline/__init__.py) | Export API lấy input dùng chung, để code gọi không cần import nhiều module bên trong. |
+| [examples/read_training_batch.py](examples/read_training_batch.py) | Ví dụ chạy CPU: cấu hình → chọn fold → in một batch input/target/offsets. Chỉ đọc batch, không training. |
+| [tools/data_pipeline.py](tools/data_pipeline.py) | Tách CLI thành `build_parser()`, `run_split()`, `run_audit()`, `run_smoke()`, `run_evaluate()`. Giữ các lệnh/tùy chọn hiện có. |
+| [tests/test_dataloader.py](tests/test_dataloader.py) | Kiểm tra loader mới giữ nhóm bệnh nhân giả lập tách biệt, seed tái lập, từ chối split lỗi và ví dụ chạy được ngoài thư mục repo. |
+| [tests/test_pipeline_cli.py](tests/test_pipeline_cli.py) | Kiểm tra CLI audit nghiêm ngặt/assume-mm và evaluate đúng partition với thứ tự slice đảo. Prediction chỉ là fixtures cho unit tests. |
+
+`metrics.py`, `reporting.py` và script tổng hợp cập nhật import sang module chuyên
+trách. `tests/conftest.py` có fixture nhóm dùng chung. Preprocessing, chính sách
+split, padding, tensor shape và đơn vị vật lý giữ nguyên.
+
+[README chính](README.md) được viết lại bằng tiếng Việt theo nhu cầu sử dụng:
+input gốc ở đâu, file nào đọc trước, luồng code, biến input/target khi nối model,
+shape batch, cấu hình và lệnh kiểm tra. Có thêm [README của package](ct_pipeline/README.md)
+để đi theo source từng bước. Phần định hướng nghiên cứu từ README trước được
+giữ riêng ở [docs/research_plan.md](docs/research_plan.md), phân biệt rõ kế hoạch
+với phần pipeline đã chạy được.
+
+Kiểm chứng: **61 tests đạt**, gồm 56 tests trước đó và 5 tests tích hợp mới.
+Đối chiếu sáu slab CT thật (LPS/LPI, master đầu/giữa/cuối) trước/sau refactor:
+tensor CT/mask khớp SHA256, chỉ số lát, tọa độ mm, offsets và metadata khớp hoàn
+toàn. Split, audit và các báo cáo dữ liệu đã lưu không bị tạo lại trong refactor.
+
+Điểm lấy input cho code train sau này:
+
+```python
+from ct_pipeline import PreprocessConfig, build_fold_loaders
+
+loaders = build_fold_loaders(
+    "data/covid19_20/cases.json",
+    "splits/covid19_20_5fold.json",
+    fold=0,
+    preprocess=PreprocessConfig(assume_mm=True),
+    batch_size=2,
+)
+batch = next(iter(loaders.train))
+inputs = batch["image_slab"]       # [B,1,D,H,W]
+targets = batch["master_mask"]     # [B,1,H,W]
+offsets_mm = batch["z_offsets_mm"] # [B,D]
+```
+
+Không có model/loss/optimizer/training mới. Patient identity và đơn vị của ba ca
+thiếu header vẫn chưa xác minh; `assume_mm=True` là lựa chọn chủ động, không phải
+thông tin đơn vị được khôi phục từ nguồn.

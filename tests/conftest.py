@@ -1,4 +1,6 @@
 """Small synthetic fixtures for software tests only; never dataset/experiment results."""
+import json
+
 import nibabel as nib
 import numpy as np
 import pytest
@@ -23,3 +25,29 @@ def write_case(tmp_path):
             nib.save(image, path)
         return Case(case_id, *paths, case_id)
     return write
+
+
+@pytest.fixture
+def grouped_split(write_case, tmp_path):
+    """10 series nhỏ thuộc 5 bệnh nhân giả lập, chỉ phục vụ unit tests."""
+    from ct_pipeline.cases import load_cases
+    from ct_pipeline.splits import create_splits
+
+    cases = [write_case(f"series_{index}") for index in range(10)]
+    records = [
+        {
+            "id": case.case_id,
+            "patient_id": f"patient_{index // 2}",
+            "image": case.image.name,
+            "mask": case.mask.name,
+        }
+        for index, case in enumerate(cases)
+    ]
+    manifest = tmp_path / "cases.json"
+    split_path = tmp_path / "split.json"
+    manifest.write_text(json.dumps(records), encoding="utf-8")
+    grouped_cases, identity = load_cases(manifest)
+    split_path.write_text(
+        json.dumps(create_splits(grouped_cases, identity)), encoding="utf-8"
+    )
+    return manifest, split_path

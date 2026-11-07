@@ -4,6 +4,10 @@ Các báo cáo này giúp hiểu dữ liệu trước khi huấn luyện: volume
 spacing là bao nhiêu, có bao nhiêu lát tổn thương và nhãn có khớp CT hay không.
 Chúng chưa phải kết quả phân đoạn của mô hình AI.
 
+Nếu mới làm quen CSV, đọc [bài giải thích đủ 71 trường bằng một volume thật A-0025](giai_thich_csv_A0025.md).
+Bài đi từ ảnh gốc, orientation/spacing, intensity, thống kê GT đến vai trò của ca
+trong từng fold; mỗi trường có giá trị thực và ví dụ diễn giải.
+
 ## 1. Báo cáo Zenodo20 đang có những gì?
 
 Đây là các báo cáo có sẵn từ repository gốc, nằm ở `analysis/zenodo20/`. Lần bổ sung

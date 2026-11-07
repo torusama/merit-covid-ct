@@ -1,7 +1,14 @@
 # Pipeline dữ liệu: chỉ giai đoạn 1–3
 
-Code nằm trong `ct_pipeline/`; CLI duy nhất là `tools/data_pipeline.py`.
+Code nằm trong `ct_pipeline/`; CLI split/audit/smoke/evaluate là `tools/data_pipeline.py`.
 Không có model, optimizer, training loop hoặc checkpoint. Không sử dụng Zenodo20.
+
+Sau lần sắp xếp source ngày 07/11/2026, bắt đầu với [README chính](../README.md),
+[bản đồ source](../ct_pipeline/README.md) và
+[ví dụ đọc batch thật](../examples/read_training_batch.py).
+`PreprocessConfig` ở `config.py`, kiểm tra/restore geometry ở `geometry.py`,
+`read_volume()` ở `preprocessing.py`, cắt slab ở `dataset.py`, ghép batch/chọn fold
+ở `dataloader.py`. Các import cũ từ `ct_pipeline.dataset` vẫn được giữ tương thích.
 
 ## Chạy lại trên Windows PowerShell
 
@@ -115,7 +122,7 @@ không preload cả cohort để tránh điều đó. Windows default `num_worke
 khác nhau giữa các ca. Đặt `size_hw=None` chỉ khi các ảnh trong batch có cùng H,W.
 
 ```python
-from ct_pipeline.dataset import CTSlabDataset, PreprocessConfig, make_dataloader
+from ct_pipeline import CTSlabDataset, PreprocessConfig, make_dataloader
 
 if __name__ == "__main__":
     dataset = CTSlabDataset.from_split(
