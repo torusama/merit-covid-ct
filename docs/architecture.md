@@ -1,57 +1,118 @@
-# Main structure with the Duong processing core
+# Architecture
 
-Current decisions and evidence: [merge report](merge_report.md).
+There is one authoritative processing implementation:
+`src/merit_covid/data/pipeline/`. Tensor loaders, older NumPy interfaces and the
+baseline patch reader reuse it. Compatibility files are intentional, not duplicate
+algorithms.
+
+## Source layout
 
 ```text
 src/merit_covid/
-  config.py, cli.py, utils.py        Main configuration, scripts and seed utilities
+  config.py, cli.py, utils.py       Legacy/main config, package CLI, utilities
   data/
-    manifest.py                     Main legacy/versioned manifest and tool helpers
-    nifti_io.py                      Main Volume/export API using the shared reader
-    preprocessing.py                Main PreparedVolume API using shared transforms
-    slab.py, dataset.py              Main NumPy Dataset API using shared sampling
-    splitting.py                     Compatibility view of the one canonical split
-    pipeline/                       Authoritative Duong data/evaluation implementation
-      config.py, cases.py, geometry.py, preprocessing.py
-      slab.py, dataset.py, dataloader.py, splits.py, reporting.py, metrics.py
-    unetrpp_input/                   Native 3D crops/padding; reuses pipeline.read_arrays
-      config.py, tiling.py, dataset.py, __init__.py
-  engine/                           Main evaluation/reconstruction API on shared logic
-    prediction.py                   Unified full-volume probability contract and slice bridge
-    patch_reconstruction.py         Coordinate-based uniform probability averaging
-    patch_inference.py              Forward-only patch/case inference, no metrics
-  models/base.py                    Preserved torch-independent model adapter contract
-  models/unetrpp/                   Synapse UNETR++ 3D architecture + master-output adapter; no trainer
-  models/merit_unetrpp/             Existing research placeholder, unchanged
-configs/                            Main YAML, defaults LPS / native size / native intensity
-scripts/                            Main check/split/synthetic-smoke entry points
-tools/                              Preserved downloads, audits, viewer and primary report CLI
-ct_pipeline/                        Import aliases only
-splits/covid19_20_5fold.json          The canonical Duong split
-analysis/                           Preserved dataset reports and integration verification
-tests/                              Main suite, tests/duong suite, cross-API integration tests
+    manifest.py                    Legacy/versioned manifests and tool helpers
+    nifti_io.py, preprocessing.py   Volume/PreparedVolume compatibility APIs
+    slab.py, dataset.py            NumPy slab API over the shared core
+    splitting.py                   Compatibility view of the canonical split
+    pipeline/
+      cases.py, config.py          Identity, paths, preprocessing options
+      geometry.py                  Header validation, LPS transforms, restoration
+      preprocessing.py             Scaling, explicit intensity/XY policies, QC
+      slab.py                      Index/mm sampling and true targets/validity
+      dataset.py, dataloader.py    Header index, one-volume cache, collate/loaders
+      splits.py                    Immutable grouped split and fingerprint checks
+      reporting.py, metrics.py    Descriptive audits and native-volume metrics
+      preflight.py                Bounded-memory TRAIN-only intensity/resize QC
+    unetrpp_input/
+      config.py, tiling.py         Native patch windows, padding and coordinates
+      dataset.py                   Shared-reader patch Dataset and loader
+  models/
+    base.py                        Torch-independent master-logit contract
+    unetrpp/                       Standalone Synapse-derived baseline
+    merit_unetrpp/
+      modules.py                   TEP, MER, PCG, index/physical position handling
+      model.py                     Z-preserving backbone and insertion points
+      loss.py, adapter.py          Full-slab loss / binary master-logit adapter
+  engine/
+    training.py                    Frozen config, trainer, checkpoint, evaluation
+    preflight.py                   Full-step resource profile and bounded CT pilot
+    synthetic.py                   Temporary synthetic NIfTI smoke fixtures
+    slab_inference.py              MERIT masters -> complete native volume
+    patch_inference.py             Standalone baseline patch inference
+    patch_reconstruction.py        Coordinate-based probability averaging
+    prediction.py                  Shared VolumePrediction contract
+    reconstruction.py, metrics.py Compatibility helpers over shared logic
+ct_pipeline/                       Legacy import aliases only
+configs/                           Explicit experiment/model configurations
+scripts/                           Experiment, split, dataset and smoke CLIs
+tools/                             Downloads, audit/report, viewer, source checks
+examples/                          Batch, baseline and MERIT usage
+splits/                            Canonical saved five-fold partitions
+analysis/                          Stored descriptive evidence; not training input
+tests/                             Shared core, adapters and integrated regression
 ```
 
-## Read in this order
+## Execution paths
 
-1. [README](../README.md): setup, native data and the first batch.
-2. [Shared config](../src/merit_covid/data/pipeline/config.py).
-3. [Cases](../src/merit_covid/data/pipeline/cases.py) and
-   [splits](../src/merit_covid/data/pipeline/splits.py).
-4. [Geometry](../src/merit_covid/data/pipeline/geometry.py),
-   [preprocessing](../src/merit_covid/data/pipeline/preprocessing.py) and
-   [sampler](../src/merit_covid/data/pipeline/slab.py).
-5. [Tensor Dataset](../src/merit_covid/data/pipeline/dataset.py) and
-   [fold loaders](../src/merit_covid/data/pipeline/dataloader.py).
-6. [Main NumPy API](../src/merit_covid/data/dataset.py), if using the existing model adapter contract.
-7. [Data contract](data_contract.md) and [verification](../analysis/merge/verification.json).
-8. [UNETR++ baseline](unetrpp_baseline.md), then
-   [model.py](../src/merit_covid/models/unetrpp/model.py), encoder, transformer/EPA,
-   decoder and adapter. The native 11-slice batch is not a supported model input.
-9. [Real CT patch input](unetrpp_input.md): crop/tiling, padding, valid mask and
-   common output. This separate input adapter leaves the slab loader/model intact.
+```text
+NIfTI CT (+ mask only for labeled operations)
+  -> validate headers/units -> LPS array orientation
+  -> NIfTI scaling -> explicit intensity and optional XY processing
+  -> shared native volume
+       MERIT: slab sampling -> TEP/MER/PCG
+         train: full-slab GT + validity -> loss -> optimizer -> native validation
+         infer: master fg-bg -> sigmoid -> native XY restoration
+       Baseline: native 3D crop/padding -> UNETR++ -> sigmoid
+         infer: discard padding -> mean overlapping probabilities
+  -> complete native-LPS VolumePrediction
+  -> original XYZ/orientation -> threshold -> shared full-volume metrics
+```
 
-Arrays in NIfTI/PreparedVolume are XYZ. Samples use [1,D,H,W], with H=Y and W=X.
-Both public APIs share native intensities, LPS orientation and physical offsets.
-Default NumPy reading/sampling does not require torch; Tensor/DataLoader and
-explicit in-plane resize do. Inference omits masks and never reads GT.
+NIfTI and `PreparedVolume` use XYZ. Network tensors use `[B,C,Z,H,W]`,
+where H=Y and W=X. LPS describes array orientation; NiBabel's affine still maps
+to RAS+ world coordinates. No implicit Z interpolation, deobliquing or GT-based
+input selection is performed.
+
+## Interfaces and dependency direction
+
+- `data.pipeline` owns preprocessing, geometry and metric conventions.
+- `CTSlabDataset` provides Torch tensors and true slab GT; the main `SlabDataset`
+  preserves its older NumPy/master-target interface.
+- `ct_pipeline` forwards historical imports. Existing tests/notebooks use it;
+  deleting it would break compatibility without simplifying the core.
+- Core NumPy reading/sampling remains usable without Torch. Tensor loaders,
+  explicit XY resize and neural models require their corresponding dependencies.
+- Model adapters return logits, not metrics. Training calls the MERIT model
+  directly so auxiliary outputs are retained.
+- Inference builds `VolumePrediction` on the complete native LPS grid.
+  Evaluation restores original geometry and uses original GT.
+- The baseline patch API deliberately rejects MERIT's four-tuple/two-class
+  interface. Use `predict_slab_case` for MERIT.
+
+No Python package was moved during documentation cleanup. This preserves import
+paths, command-line entry points, saved configs and checkpoint loading.
+
+## Config ownership
+
+| Config | Consumer | Scope |
+| --- | --- | --- |
+| `experiment_baseline.yaml` | `merit_covid.config.load_config` | Legacy/main data API |
+| `unetrpp_baseline.yaml` | Baseline examples | Model-only standalone UNETR++ |
+| `merit_unetrpp.yaml` | MERIT model smoke example | Model/loss only; not a training experiment |
+| `merit_index.yaml` | `scripts/merit_pipeline.py` | Full E1 index experiment |
+| `merit_physical.yaml` | `scripts/merit_pipeline.py` | E2 physical-sampling template; spacing required |
+
+These configs are not interchangeable. Model-only YAML files are retained because
+examples and tests use them.
+
+## Documentation ownership
+
+Each topic has one maintained guide: data contracts in [data_pipeline.md](data_pipeline.md),
+stored statistics in [dataset_reports.md](dataset_reports.md), model equations in
+[merit_unetrpp.md](merit_unetrpp.md), execution in [merit_pipeline.md](merit_pipeline.md),
+baseline architecture/input in [unetrpp_baseline.md](unetrpp_baseline.md) and
+[unetrpp_input.md](unetrpp_input.md), and evidence/limitations in
+[validation.md](validation.md). Historical implementation/merge/repair notes are
+consolidated into validation and the root changelog rather than kept as competing
+descriptions of the current system.

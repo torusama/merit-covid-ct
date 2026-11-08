@@ -112,100 +112,89 @@ def plot_ct_examples(cases, audit, example_ids, assume_mm, output):
 
 
 def write_report(summary, output):
+    """Write the English primary report from saved numeric audit statistics."""
     assumed = ", ".join(f"`{c}`" for c in summary["cases_using_assumed_mm"])
-    spacing_rows = "\n".join(f"| {float(k):.6g} | {v} |" for k, v in sorted(summary["spacing_z_mm_counts"].items(), key=lambda p: float(p[0])))
-    report = f"""# Tổng quan dữ liệu COVID-19-20
+    spacing_rows = "\n".join(
+        f"| {float(k):.6g} | {v} |"
+        for k, v in sorted(summary["spacing_z_mm_counts"].items(), key=lambda p: float(p[0]))
+    )
+    policy = summary.get("source_audit_config", {})
+    report = f"""# COVID-19-20 dataset report
 
-Ngày tạo: {summary['generated_at_bangkok']}. Báo cáo mô tả dữ liệu thật; chưa có model prediction.
+Generated: {summary['generated_at_bangkok']}. Descriptive CT/ground-truth evidence,
+not model predictions.
 
-## Cấu hình hiện hành
+## Processing and provenance
 
-- Hướng mảng thống nhất **LPS**: 193 volume LPS giữ nguyên thứ tự; 6 volume LPI đảo Z.
-- **Không resize mặc định**: CT/mask giữ H,W gốc; không nội suy không gian.
-- CT giữ cường độ sau scaling NIfTI, **không HU clipping hoặc normalize**;
-  `intensity_encoding=native`, `hu_window=null`. Không tự suy đoán HU; mask giữ nhãn 0/1.
-- PNG dùng thang xám theo min/max của lát chỉ để hiển thị; tensor không bị đổi cường độ.
-- Các trường `canonical_*` nay chỉ grid LPS. Tọa độ world của NiBabel vẫn là RAS+.
-- Báo cáo, audit và ảnh minh họa đã được tạo lại theo cấu hình này; không dùng
-  prediction RAS/256×256 của pipeline cũ với metadata mới.
+- Arrays are standardized to **LPS** by axis permutation/flips, not spatial interpolation.
+- GT statistics use native resolution; no Z resampling is performed.
+- Saved audit intensity policy: `{policy.get('intensity_encoding', 'unspecified')}`;
+  HU window: `{json.dumps(policy.get('hu_window'))}`.
+  Native mode preserves NIfTI-scaled values without clipping, normalization or HU inference.
+- PNG grayscale is display-only; it does not change network input intensities.
+- Canonical metadata refers to the LPS array grid. NiBabel world coordinates remain RAS+.
+- Headers and full masks were rechecked against the saved audit. Full CT intensity/finite
+  checks were reused from that audit; this report does not certify source byte identity.
 
-## Nên mở file nào?
+## Artifacts
 
-| File | Cách đọc |
+| File | Meaning |
 | --- | --- |
-| [case_statistics.csv](case_statistics.csv) | Mở bằng Excel: **mỗi dòng là một CT volume**, tổng {summary['cases']} dòng dữ liệu. |
-| [summary.json](summary.json) | Các con số tổng hợp và số voxel tổn thương trên từng lát của từng volume. |
-| [dataset_overview.png](dataset_overview.png) | Bốn biểu đồ: spacing Z, số lát mỗi volume, tỷ lệ tổn thương và số lát có/không có tổn thương. |
-| [lesion_trajectories.png](lesion_trajectories.png) | Diện tích GT tổn thương thay đổi qua các lát của các volume ví dụ. |
-| [ct_mask_examples.png](ct_mask_examples.png) | CT, GT mask và ảnh chồng mask lên CT; lấy lát giữa volume, không chọn lát theo GT. |
+| [case_statistics.csv](case_statistics.csv) | One row per CT volume; {summary['cases']} data rows |
+| [summary.json](summary.json) | Cohort aggregates and per-case GT area trajectories |
+| [dataset_overview.png](dataset_overview.png) | Slice spacing, volume length, lesion fraction and positive/empty slices |
+| [lesion_trajectories.png](lesion_trajectories.png) | Native GT lesion area across physical stack distance |
+| [ct_mask_examples.png](ct_mask_examples.png) | Middle-slice CT, GT and overlay, not AI predictions |
 
-## Các con số chính
+The complete 71-field schema and worked A-0025 example are in
+[the dataset-report guide](../../docs/dataset_reports.md).
 
-- {summary['cases']} CT volumes; chưa xác minh tương ứng với bao nhiêu bệnh nhân khác nhau.
-- {summary['slices']:,} lát canonical: {summary['positive_slices']:,} lát có ít nhất một voxel tổn thương,
-  {summary['empty_slices']:,} lát có mask rỗng.
-- Mỗi volume có từ {summary['slice_count_min']} đến {summary['slice_count_max']} lát;
-  median là {summary['slice_count_median']:g} lát.
-- {summary['lesion_voxels']:,} voxel tổn thương trên tổng {summary['total_voxels']:,} voxel CT.
-- Tỷ lệ gộp lesion/toàn bộ CT: {100 * summary['lesion_fraction_volume_pooled']:.4f}%.
-  Trung bình tỷ lệ riêng từng volume: {100 * summary['lesion_fraction_volume_macro']:.4f}%.
-  Hai cách tổng hợp có trọng số khác nhau, nên có thể cho kết quả khác nhau.
-- Tất cả headers CT/mask được kiểm tra lại geometry; toàn bộ mask được đọc lại,
-  kiểm tra finite và nhãn 0/1. Tổng voxel tổn thương từng ca khớp audit cũ.
+## Measured cohort statistics
 
-| Spacing Z gốc (mm, có giả định cho các ca thiếu đơn vị) | Số volume |
+- {summary['cases']} CT volumes; the number of distinct clinical patients is unverified.
+- {summary['slices']:,} canonical slices: {summary['positive_slices']:,} with GT lesion,
+  {summary['empty_slices']:,} with empty GT.
+- Volume length: {summary['slice_count_min']} to {summary['slice_count_max']} slices;
+  median {summary['slice_count_median']:g}.
+- {summary['lesion_voxels']:,} lesion voxels / {summary['total_voxels']:,} total CT voxels.
+- Pooled lesion / whole-CT fraction: {100 * summary['lesion_fraction_volume_pooled']:.4f}%.
+- Mean per-volume lesion fraction: {100 * summary['lesion_fraction_volume_macro']:.4f}%.
+  Pooled and macro summaries have different weighting and need not agree.
+- Per-case native lesion counts agree with the saved audit.
+
+| Original Z spacing (mm; assumptions apply where units are missing) | Volumes |
 | --- | ---: |
 {spacing_rows}
 
-## Các cột CSV thường dùng
+## Interpretation and limitations
 
-| Cột | Giải thích |
-| --- | --- |
-| `volume_order`, `case_id` | Số thứ tự tương ứng biểu đồ và mã volume. |
-| `group_id`, `patient_id`, `patient_ids_available` | Nhóm dùng chia dữ liệu; patient ID để trống khi chưa biết. Group hiện là volume ID. |
-| `image`, `mask` | Đường dẫn file CT và mask theo thư mục chứa manifest. |
-| `original_shape_x/y/z` | Kích thước NIfTI gốc; trục thứ ba gốc có thể bị đảo/hoán vị khi reorient. |
-| `slices` | Số lát axial sau thống nhất LPS, trước padding; giữ nguyên độ phân giải. |
-| `spacing_x/y/z_mm`, `original_orientation` | Khoảng cách voxel và hướng của ảnh gốc. |
-| `spatial_unit_in_header`, `spatial_units_assumed_mm` | Header có ghi đơn vị không, và ca đó có phải giả định mm không. |
-| `ct_min`, `ct_max`, `ct_dtype`, `ct_scaling_slope/intercept` | Thông tin intensity CT. Min/max lấy lại từ audit đầy đủ trước đây; dtype/scaling đọc header hiện tại. |
-| `positive_slices`, `empty_slices` | Số lát có và không có tổn thương GT. |
-| `lesion_voxels`, `total_voxels` | Số voxel tổn thương và số voxel của toàn volume. |
-| `lesion_fraction_volume` | Tỷ lệ 0–1 của lesion trên toàn bộ CT, **không phải tỷ lệ trên phổi**. |
-| `lesion_volume_ml` | Thể tích GT tổn thương, đơn vị mL, dựa trên determinant của affine. |
-| `first/last_positive_slice` | Chỉ số canonical 0-based đầu/cuối có tổn thương; trống nếu không có. |
-| `positive_run_count/lengths`, `max_positive_run_length` | Số đoạn lát liên tiếp có tổn thương và độ dài các đoạn. |
-| `adjacent_positive_pairs`, `adjacent_gt_dice_median` | Số cặp GT liên tiếp cùng có tổn thương và median Dice giữa các GT đó; **không phải Dice model**. |
-| `fold_0` đến `fold_4` | Ca đó thuộc train, validation hay test trong từng fold của split đã lưu. |
-| `geometry_match`, `mask_finite_binary`, `z_resampled` | Kết quả kiểm tra geometry/mask và việc có nội suy Z hay không. |
-| Các cột `audit_*` | Giữ toàn bộ trường của audit gốc; list/matrix được lưu dạng JSON trong một ô CSV. |
+- Current groups fall back to volume IDs. No verified patient-level independence.
+  The report neither changes splits nor selects training cases.
+- Unknown-unit cases explicitly assumed to be mm: {assumed or 'none'}.
+  Their spacing, area and volume measurements depend on that assumption.
+- No primary lung mask is available. Lesion fraction divides by the entire CT grid,
+  including air outside the body; it is not percentage of infected lung.
+- Adjacent GT Dice describes neighboring-label continuity, not model accuracy.
+- This historical native-mask cohort report does not measure component loss under
+  resizing. The newer runtime lesion-retention checker is documented separately.
+- Saved scaled intensity range: {summary['ct_scaled_intensity_range']}.
+  This is not proof of HU calibration.
+- Examples use the first sorted case ID per spacing category and its middle slice,
+  independently of GT; an example mask may be empty.
+- Clinical linkage, intensity provenance and source byte identity still require verification.
 
-## Giới hạn cần đọc cùng số liệu
+## Regeneration
 
-- **Patient-level independence chưa xác minh**: chưa biết hai volume khác nhau có cùng người hay không.
-  Không suy diễn patient ID từ tên file. Báo cáo không thay đổi split hoặc chọn dữ liệu training.
-- Các ca sau thiếu đơn vị trong header, đang chủ động giả định mm: {assumed or 'không có'}.
-  Spacing, diện tích và thể tích của chúng phụ thuộc giả định này.
-- Không có lung mask nên không tính phần trăm phổi bị tổn thương hoặc tổn thương ngoài phổi.
-  `lesion_fraction_volume` lấy mẫu số là toàn bộ khối CT, gồm cả vùng không khí bên ngoài cơ thể.
-- Không tính connected components hoặc mất thành phần do resize trong bản báo cáo này;
-  các chỉ số đó có ở báo cáo Zenodo20. Báo cáo hiện dùng độ phân giải mask gốc.
-- Không đọc lại toàn bộ intensity CT của 199 ca: dùng min/max và kết quả kiểm tra intensity từ
-  audit cũ; headers và mask được kiểm tra lại. Không có checksum để xác minh byte identity CT.
-- Intensity gộp trong audit: {summary['ct_scaled_intensity_range']}. Đây không phải chứng nhận calibration HU.
-- Ví dụ CT được chọn theo case ID đầu tiên trong từng nhóm spacing, rồi lấy lát giữa;
-  mask ở lát minh họa có thể rỗng. Không dùng GT để chọn ROI đầu vào.
+From the repository root, with the dataset and full audit already available:
 
-## Chạy lại bằng PowerShell
+~~~powershell
+py tools/summarize_covid19_20.py --assume-mm
+~~~
 
-Chạy từ thư mục gốc repository khi đã có dataset và audit:
-
-```powershell
-.\\.venv\\Scripts\\python.exe tools/summarize_covid19_20.py --assume-mm
-```
-
-CSV dùng UTF-8 BOM để hỗ trợ Excel. Tổng hợp từng mask một; không nạp cả cohort vào RAM.
-Script không train model, không sửa voxel gốc, không tải hoặc xử lý thêm Zenodo20.
+The flag deliberately accepts an unverified unit assumption. The command rechecks
+headers/masks, reuses saved CT intensity checks and writes primary report artifacts.
+CSV uses UTF-8 BOM for spreadsheet compatibility. Cases are processed one at a time.
+No training, original voxel edits, external download or Zenodo20 analysis is performed.
 """
     (output / "REPORT.md").write_text(report, encoding="utf-8")
 

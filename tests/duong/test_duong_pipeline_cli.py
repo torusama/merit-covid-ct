@@ -1,4 +1,4 @@
-"""Kiểm tra CLI sau tách run_*; prediction tổng hợp chỉ dùng cho tests."""
+"""Check CLI run_* handlers using synthetic predictions only."""
 
 import json
 from pathlib import Path
@@ -66,8 +66,8 @@ def test_evaluate_cli_reads_only_selected_partition_with_unordered_slices(groupe
     predictions = tmp_path / "predictions"
     predictions.mkdir()
 
-    # Hai test series nhận GT giả lập hoàn hảo, thứ tự slice đảo ngược.
-    # Các ca khác cố ý có archive hỏng: CLI không được đọc chúng.
+    # Two test series receive perfect synthetic predictions in reversed order.
+    # Other cases have deliberately invalid archives and must not be read.
     for case in cases:
         path = predictions / f"{case.case_id}.npz"
         if case.case_id in test_ids:

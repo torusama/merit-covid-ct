@@ -1,0 +1,29 @@
+# Model from PDF Sec. 3/Fig. 1. Does not change dataset/split/preprocessing defaults.
+model:
+  in_channels: 1
+  out_channels: 2
+  img_size: [11, 128, 128]
+  feature_size: 16
+  depths: [3, 3, 3, 3]
+  num_heads: 4
+  norm_name: instance
+  use_tep: true
+  use_mer: true
+  use_pcg: true
+  salience_hidden: 64
+  position_dim: 64
+  position_hidden: 16
+  mer_attention_dim: 64
+  gate_hidden: 16
+  presence_hidden: 8
+  query_chunk_size: 128
+  pcg_ramp: 1.0
+loss:
+  presence_weight: 0.2
+  alignment_weight: 0.05
+  salience_weight: 0.03
+  # Below are explicit implementation choices; PDF does not specify these values.
+  gaussian_sigma: 2.0
+  presence_positive_weight: 1.0
+  smooth: 0.00001
+# Caller must invoke model.set_epoch(epoch, warmup_epochs=30) during training.

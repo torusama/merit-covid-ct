@@ -1,4 +1,4 @@
-"""Kiểm tra điểm lấy input mới: ba partition của cùng một fold, không training."""
+"""Check all three loader partitions of one saved fold, without training."""
 
 import json
 from pathlib import Path
@@ -53,7 +53,7 @@ def test_fold_loaders_reject_tampered_partition(grouped_split):
 
 @pytest.mark.parametrize("resize", [False, True])
 def test_inspect_example_works_outside_repo_and_reads_test_partition(grouped_split, tmp_path, resize):
-    script = Path(__file__).resolve().parents[2] / "examples/read_training_batch.py"
+    script = Path(__file__).resolve().parents[2] / "scripts/read_training_batch.py"
     manifest, split = grouped_split
     result = subprocess.run(
         [

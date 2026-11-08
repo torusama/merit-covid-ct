@@ -16,7 +16,8 @@ def normalize(image, policy, *, intensity, hu_window=None):
         raise ValueError('Unknown normalization policy')
     if policy == 'hu_window' and intensity != 'HU':
         raise ValueError("HU windowing requires verified intensity='HU'")
-    config = PreprocessConfig(intensity_encoding=modes[policy], hu_window=hu_window)
+    config = PreprocessConfig(intensity_encoding=modes[policy], hu_window=hu_window,
+                              intensity_provenance="caller asserted intensity=HU" if intensity == "HU" else None)
     return normalize_ct(np.asarray(image, dtype=np.float32), config, 'configured CT')
 
 def resize_xy(array, size, *, order):

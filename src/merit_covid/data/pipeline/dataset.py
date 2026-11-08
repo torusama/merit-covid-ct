@@ -1,12 +1,13 @@
-"""Một mẫu Dataset = một master slice và các lát CT lân cận.
+"""One sample contains a master slice and its neighboring CT context.
 
-preprocessing.py xử lý cả volume; Dataset chỉ lập chỉ số master, cache một ca
-và cắt slab. dataloader.py mới ghép các mẫu này thành batch.
+Preprocessing handles the whole volume. This Dataset indexes masters, caches
+one case and samples slabs; dataloader.py collates those samples into batches.
 """
 
 from __future__ import annotations
 
 from bisect import bisect_right
+from dataclasses import replace
 import json
 from pathlib import Path
 
@@ -21,8 +22,8 @@ from .geometry import affine_mm, canonical_shape, inspect_pair, restore_volume
 from .preprocessing import read_volume
 from .splits import validate_splits
 
-# Các tên từng nằm ở dataset.py vẫn import được, để CLI/notebook cũ tiếp tục chạy.
-# Code mới dùng import từ ct_pipeline hoặc từ module chuyên trách tương ứng.
+# Preserve historical dataset.py exports for existing CLIs and notebooks.
+# New code imports from merit_covid or the corresponding specialized module.
 __all__ = [
     "CTSlabDataset",
     "PreprocessConfig",
@@ -40,29 +41,33 @@ from .slab import slab_indices as _slab_indices, slice_positions as _slice_posit
 
 
 class CTSlabDataset(Dataset):
-    """Trả một mẫu cho mọi master slice, gồm cả lát có GT mask rỗng.
+    """Expose every master slice, including slices with empty GT masks.
 
-    Khởi tạo chỉ đọc headers. Trong mỗi worker, cache tối đa một volume đã
-    preprocessing; giải phóng cache cũ trước khi đọc volume khác.
-    len(dataset) là số MASTER SLICES, không phải số CT volumes.
+    Initialization reads headers only. Each worker caches at most one processed
+    volume, releasing it before loading the next. Dataset length counts master
+    slices, not CT volumes.
     """
 
     def __init__(
         self,
         cases: list[Case],
         config: PreprocessConfig | None = None,
+        *, require_mask: bool = True,
     ):
-        self.cases = list(cases)
+        if type(require_mask) is not bool:
+            raise ValueError("require_mask must be boolean")
+        self.require_mask = require_mask
+        self.cases = list(cases) if require_mask else [replace(c, mask=None) for c in cases]
         self.config = config or PreprocessConfig()
         self.partition: str | None = None
 
         if not self.cases or len({case.case_id for case in self.cases}) != len(self.cases):
             raise ValueError("Dataset needs nonempty, unique cases")
 
-        # ends chứa mốc cộng dồn số lát để đổi global index → case và master.
+        # Cumulative slice counts map a global sample index to case and master.
         self.ends = [0]
         for case in self.cases:
-            ct, _ = inspect_pair(case, self.config)
+            ct, _ = inspect_pair(case, self.config, require_mask=require_mask)
             self.ends.append(self.ends[-1] + canonical_shape(ct)[2])
 
         self._cached_index = None
@@ -77,9 +82,10 @@ class CTSlabDataset(Dataset):
         partition: str,
         config: PreprocessConfig | None = None,
         patient_map: str | Path | None = None,
+        *, require_mask: bool = True,
     ) -> CTSlabDataset:
-        """Chọn một partition của split đã lưu, sau khi kiểm tra leakage."""
-        cases, _ = load_cases(manifest, patient_map=patient_map)
+        """Select one saved partition after validating split identity/leakage."""
+        cases, identity = load_cases(manifest, patient_map=patient_map, check_masks=require_mask)
         with open(split_path, encoding="utf-8") as handle:
             split = json.load(handle)
         validate_splits(split, cases)
@@ -90,15 +96,17 @@ class CTSlabDataset(Dataset):
         selected_fold = next(item for item in split["folds"] if item["fold"] == fold)
         selected_ids = set(selected_fold[partition]["case_ids"])
         selected_cases = [case for case in cases if case.case_id in selected_ids]
-        dataset = cls(selected_cases, config)
+        dataset = cls(selected_cases, config, require_mask=require_mask)
         dataset.partition = partition
+        dataset.identity = identity
+        dataset.split_fingerprint = split["manifest_fingerprint"]
         return dataset
 
     def __len__(self) -> int:
         return self.ends[-1]
 
     def __getstate__(self) -> dict:
-        """Windows worker nhận cấu hình/index, không nhận bản copy cache CT."""
+        """Send configuration/index to Windows workers, not cached CT arrays."""
         return {
             **self.__dict__,
             "_cached_index": None,
@@ -109,7 +117,8 @@ class CTSlabDataset(Dataset):
         if self._cached_index != case_index:
             self._cached = None
             self._cached_index = None
-            self._cached = read_volume(self.cases[case_index], self.config)
+            self._cached = (read_volume(self.cases[case_index], self.config) if self.require_mask else
+                            read_volume(self.cases[case_index], self.config, require_mask=False))
             self._cached_index = case_index
         return self._cached
 
@@ -117,15 +126,22 @@ class CTSlabDataset(Dataset):
         if not isinstance(index, (int, np.integer)) or not 0 <= index < len(self):
             raise IndexError(index)
 
-        # 1. Đổi chỉ số mẫu toàn Dataset thành một case và một master trong case.
+        # 1. Map the global sample index to a case and its local volume master.
         case_index = bisect_right(self.ends, index) - 1
         master = index - self.ends[case_index]
         case = self.cases[case_index]
 
-        # 2. Xử lý cả volume một lần; các master tiếp theo tái sử dụng cache này.
+        # 2. Process a volume once; subsequent masters reuse its cached arrays.
         image_zyx, mask_zyx, metadata = self._load_case(case_index)
 
-        # 3. Lấy context quanh master, lặp lát biên nếu cần.
-        sample=sample_arrays(image_zyx.numpy(),mask_zyx.numpy(),master,self.config.slab_size,metadata)
+        # 3. Sample master context with the configured boundary/duplicate policy.
+        sample = sample_arrays(image_zyx.numpy(), mask_zyx.numpy() if mask_zyx is not None else None,
+            master, self.config.slab_size, metadata, sampling_mode=self.config.sampling_mode,
+            target_spacing_mm=self.config.target_spacing_mm, boundary_policy=self.config.boundary_policy,
+            duplicate_slice_policy=self.config.duplicate_slice_policy)
+        metadata = {**metadata, "case_id": case.case_id, "group_id": case.group_id,
+                    "sampling": {"mode": self.config.sampling_mode, "target_spacing_mm": self.config.target_spacing_mm,
+                                 "boundary_policy": self.config.boundary_policy,
+                                 "duplicate_slice_policy": self.config.duplicate_slice_policy}}
         return {**{key:torch.from_numpy(value) if isinstance(value,np.ndarray) else value for key,value in sample.items()},
                 'case_id':case.case_id,'group_id':case.group_id,'metadata':metadata}

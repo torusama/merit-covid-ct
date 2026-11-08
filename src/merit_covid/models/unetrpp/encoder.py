@@ -19,24 +19,29 @@ class UnetrPPEncoder(nn.Module):
     def __init__(self, input_size=(32768, 4096, 512, 64),
                  dims=(32, 64, 128, 256), proj_size=(64, 64, 64, 32),
                  depths=(3, 3, 3, 3), num_heads=4, spatial_dims=3,
-                 in_channels=1, dropout=0.0, transformer_dropout_rate=0.15):
+                 in_channels=1, dropout=0.0, transformer_dropout_rate=0.15,
+                 preserve_z=False):
         super().__init__()
         if spatial_dims != 3:
             raise ValueError("UNETR++ encoder requires spatial_dims=3")
+        if type(preserve_z) is not bool:
+            raise ValueError("preserve_z must be a boolean")
+        patch_stride = (1, 4, 4) if preserve_z else (2, 4, 4)
+        stage_stride = (1, 2, 2) if preserve_z else 2
         if not all(len(v) == 4 for v in (input_size, dims, proj_size, depths)):
             raise ValueError("Encoder needs four input sizes/dims/projection sizes/depths")
         if any(type(d) is not int or d < 1 for d in depths):
             raise ValueError("Each encoder depth must be a positive integer")
         self.downsample_layers = nn.ModuleList()
         self.downsample_layers.append(nn.Sequential(
-            get_conv_layer(3, in_channels, dims[0], kernel_size=(2, 4, 4),
-                           stride=(2, 4, 4), dropout=dropout, conv_only=True),
+            get_conv_layer(3, in_channels, dims[0], kernel_size=patch_stride,
+                           stride=patch_stride, dropout=dropout, conv_only=True),
             get_norm_layer(name=("group", {"num_groups": in_channels}), channels=dims[0]),
         ))
         for i in range(3):
             self.downsample_layers.append(nn.Sequential(
-                get_conv_layer(3, dims[i], dims[i + 1], kernel_size=2,
-                               stride=2, dropout=dropout, conv_only=True),
+                get_conv_layer(3, dims[i], dims[i + 1], kernel_size=stage_stride,
+                               stride=stage_stride, dropout=dropout, conv_only=True),
                 get_norm_layer(name=("group", {"num_groups": dims[i]}), channels=dims[i + 1]),
             ))
         self.stages = nn.ModuleList()

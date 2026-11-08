@@ -32,6 +32,9 @@ Changes by this project (2026-11-08):
 - Validate shapes, channel/head/group compatibility and invalid inputs.
 - Add a separate binary master-slice output adapter with no input transform.
 - Add model-only YAML, synthetic tests, provenance and Vietnamese docs.
+- Add opt-in preserve_z to model.py and encoder.py for the separate paper-derived
+  MERIT model: (1,4,4) stem and (1,2,2) down/up strides. Default False retains
+  the original Synapse topology and state-dict shapes.
 
 No EPA equations, shared E/F projection, additive decoder skips, residual
 paths or segmentation-head activations were changed. Upstream Synapse has

@@ -36,7 +36,7 @@ class UNETRPP(nn.Module):
     def __init__(self, in_channels=1, out_channels=1, *, img_size=(64, 128, 128),
                  feature_size=16, hidden_size=None, num_heads=4,
                  norm_name="instance", depths=(3, 3, 3, 3), dims=None,
-                 do_ds=True):
+                 do_ds=True, preserve_z=False):
         super().__init__()
         self.img_size = _positive_tuple("img_size", img_size, 3)
         self.depths = _positive_tuple("depths", depths, 4)
@@ -46,10 +46,13 @@ class UNETRPP(nn.Module):
                 raise ValueError(f"{name} must be a positive integer")
         if type(do_ds) is not bool:
             raise ValueError("do_ds must be a boolean")
-        self.patch_size = (2, 4, 4)
-        divisors = (16, 32, 32)  # patch stem followed by three halvings.
+        if type(preserve_z) is not bool:
+            raise ValueError("preserve_z must be a boolean")
+        self.preserve_z = preserve_z
+        self.patch_size = (1, 4, 4) if preserve_z else (2, 4, 4)
+        divisors = (1, 32, 32) if preserve_z else (16, 32, 32)
         if any(s % d for s, d in zip(self.img_size, divisors)):
-            raise ValueError("img_size (D,H,W) must be divisible by (16,32,32); no automatic resizing/padding")
+            raise ValueError(f"img_size (D,H,W) must be divisible by {divisors}; no automatic resizing/padding")
         self.feat_size = tuple(s // d for s, d in zip(self.img_size, divisors))
         if prod(self.feat_size) < 2:
             raise ValueError("Deepest grid needs at least two voxels for upstream normalization")
@@ -69,17 +72,21 @@ class UNETRPP(nn.Module):
         self.num_classes = out_channels
         self.do_ds = do_ds
         self.conv_op = nn.Conv3d
-        grids = [tuple(s // (p * 2 ** i) for s, p in zip(self.img_size, self.patch_size)) for i in range(4)]
+        grids = [tuple(s // (p * (1 if preserve_z and axis == 0 else 2 ** i))
+                       for axis, (s, p) in enumerate(zip(self.img_size, self.patch_size)))
+                 for i in range(4)]
         self.stage_shapes = tuple(grids)
         tokens = tuple(prod(g) for g in grids)
         self.unetr_pp_encoder = UnetrPPEncoder(
             input_size=tokens, dims=self.dims, depths=self.depths,
             num_heads=num_heads, in_channels=in_channels,
+            preserve_z=preserve_z,
         )
         self.encoder1 = UnetResBlock(3, in_channels, feature_size, 3, 1, norm_name)
-        self.decoder5 = UnetrUpBlock(3, self.dims[3], self.dims[2], 3, 2, norm_name, out_size=tokens[2])
-        self.decoder4 = UnetrUpBlock(3, self.dims[2], self.dims[1], 3, 2, norm_name, out_size=tokens[1])
-        self.decoder3 = UnetrUpBlock(3, self.dims[1], self.dims[0], 3, 2, norm_name, out_size=tokens[0])
+        up_stride = (1, 2, 2) if preserve_z else 2
+        self.decoder5 = UnetrUpBlock(3, self.dims[3], self.dims[2], 3, up_stride, norm_name, out_size=tokens[2])
+        self.decoder4 = UnetrUpBlock(3, self.dims[2], self.dims[1], 3, up_stride, norm_name, out_size=tokens[1])
+        self.decoder3 = UnetrUpBlock(3, self.dims[1], self.dims[0], 3, up_stride, norm_name, out_size=tokens[0])
         self.decoder2 = UnetrUpBlock(
             3, self.dims[0], feature_size, 3, self.patch_size, norm_name,
             out_size=prod(self.img_size), conv_decoder=True,
@@ -103,7 +110,7 @@ class UNETRPP(nn.Module):
         if tuple(x.shape[2:]) != self.img_size:
             raise ValueError(
                 f"Expected configured img_size={self.img_size}, got {tuple(x.shape[2:])}. "
-                "The native MERGE slab (11,512,512) is not directly supported; "
+                "A different slab shape is not directly supported; "
                 "input preparation requires a separate training protocol. No automatic resize/pad."
             )
         if not x.is_floating_point():

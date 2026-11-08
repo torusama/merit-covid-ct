@@ -21,10 +21,12 @@ def identifier(value, field: str) -> str:
     return value
 
 
-def load_cases(manifest, expected_count=None, patient_map=None):
+def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=True):
     """Paths are relative to the manifest. A volume ID is never a patient ID."""
     manifest = Path(manifest).resolve()
     records = json.loads(manifest.read_text(encoding="utf-8-sig"))
+    if manifest.parent.name.lower() == "zenodo20":
+        raise ValueError("Zenodo20 is external only, never development folds")
     if isinstance(records, dict) and records.get("schema_version") == 1:
         converted = []
         for row in records.get("cases", []):
@@ -35,6 +37,8 @@ def load_cases(manifest, expected_count=None, patient_map=None):
         records = converted
     if not isinstance(records, list) or not records:
         raise ValueError("Manifest must contain a nonempty list of cases")
+    if any(r.get("dataset", "covid19_20") != "covid19_20" for r in records):
+        raise ValueError("Only primary covid19_20 cases may enter development folds")
     if expected_count is not None and len(records) != expected_count:
         raise ValueError(f"Expected {expected_count} cases, found {len(records)}")
     ids = [identifier(r["id"], "id") for r in records]
@@ -60,7 +64,7 @@ def load_cases(manifest, expected_count=None, patient_map=None):
         pair = []
         for key in ("image", "mask"):
             path = (manifest.parent / identifier(record[key], key)).resolve()
-            if not path.is_file():
+            if (key == "image" or check_masks) and not path.is_file():
                 raise FileNotFoundError(f"{case_id}: missing {key}: {path}")
             if path in paths:
                 raise ValueError(f"Reused CT/mask path in manifest: {path}")

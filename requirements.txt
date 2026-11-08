@@ -1,11 +1,4 @@
-nibabel
-numpy
-Pillow
-opencv-python
-matplotlib
-huggingface_hub
-requests
--e .
-
-torch>=2.2
+# Dependency definitions live in pyproject.toml; install the runnable research stack.
+-e .[unetrpp,test,tools]
+# Preserve the original convenience workflow's pytest minimum.
 pytest>=8

@@ -29,7 +29,7 @@ def write_case(tmp_path):
 
 @pytest.fixture
 def grouped_split(write_case, tmp_path):
-    """10 series nhỏ thuộc 5 bệnh nhân giả lập, chỉ phục vụ unit tests."""
+    """Ten small series from five synthetic patients, for unit tests only."""
     from ct_pipeline.cases import load_cases
     from ct_pipeline.splits import create_splits
 

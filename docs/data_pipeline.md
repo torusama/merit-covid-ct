@@ -1,215 +1,213 @@
-> Current source: `src/merit_covid/data/pipeline/`; legacy `ct_pipeline` imports are aliases. See [merge report](merge_report.md).
+# Shared data pipeline and contracts
 
-# Pipeline dữ liệu: chỉ giai đoạn 1–3
+Implementation: `src/merit_covid/data/pipeline/`.
+Both public Dataset APIs and the standalone baseline patch adapter reuse this
+core. `ct_pipeline` is a legacy import bridge. For model training commands see
+[MERIT execution](merit_pipeline.md).
 
-Code nằm trong `ct_pipeline/`; CLI split/audit/smoke/evaluate là `tools/data_pipeline.py`.
-Không có model, optimizer, training loop hoặc checkpoint. Không sử dụng Zenodo20.
+## Data, identity and the saved split
 
-Sau lần sắp xếp source ngày 07/11/2026, bắt đầu với [README chính](../README.md),
-[bản đồ source](../ct_pipeline/README.md) và
-[ví dụ đọc batch thật](../examples/read_training_batch.py).
-`PreprocessConfig` ở `config.py`, kiểm tra/restore geometry ở `geometry.py`,
-`read_volume()` ở `preprocessing.py`, cắt slab ở `dataset.py`, ghép batch/chọn fold
-ở `dataloader.py`. Các import cũ từ `ct_pipeline.dataset` vẫn được giữ tương thích.
+The legacy manifest is a list of records containing `id`, `image` and `mask`;
+optional metadata includes shape, spacing and patient/group identity. Versioned
+manifests are also supported. Paths resolve relative to the manifest, not the
+current working directory. Duplicate IDs/paths, missing required files and
+inconsistent partial patient mappings are rejected.
 
-## Chạy lại trên Windows PowerShell
+Grouping prefers recorded patient IDs, then group IDs, then volume IDs.
+A complete verified patient-map JSON may supply `case_id -> patient_id`.
+Filnames are never used to infer clinical identity. Current primary metadata
+does not independently establish patient-level independence.
 
-```powershell
-Set-Location C:\1_HDD\paper\merit-covid-ct
+The canonical `splits/covid19_20_5fold.json` contains seed-42 grouped folds:
+folds 0-3 have `127/32/40` train/validation/test volumes; fold 4 has `128/32/39`.
+Each outer test group appears once. Validation takes approximately 20% of the
+remaining development volumes. Groups remain disjoint in every fold.
+The loader validates IDs, partitions and the manifest fingerprint before use.
+The fingerprint identifies names/grouping, not the bytes of every CT voxel.
+Do not regenerate the split before training.
 
-# Khi cần tạo môi trường mới. Có thể dùng Python 3.11 trở lên.
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Zenodo20 is external-only and must not enter development partitions or tuning.
+A new verified patient mapping requires a separately named split and protocol.
 
-# Chỉ chạy nếu bộ COVID-19-20 chưa có. Script dùng cache khi tải gián đoạn.
-.\.venv\Scripts\python.exe tools/download_covid19_20.py
+## Geometry and coordinate systems
 
-.\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe tools/data_pipeline.py split --seed 42
+`inspect_pair` checks 3D shape, finite/invertible affine, spacing consistency,
+units, orientation and paired CT/mask geometry before voxel preprocessing.
+It never resizes a mismatched mask to hide misalignment.
 
-# Chế độ nghiêm ngặt: báo lỗi nếu header không xác định đơn vị không gian.
-.\.venv\Scripts\python.exe tools/data_pipeline.py audit --output analysis/covid19_20/audit_strict.json
+Supported header units are converted to mm. Unknown units fail by default.
+`assume_mm=True` is an explicit recorded assumption, not source verification.
+Primary cases A-0161, A-0585 and A-0599 have unknown units.
 
-# Có 3 ca thiếu đơn vị trong header (xem báo cáo). Lệnh này CHỦ ĐỘNG giả định
-# các tọa độ/spacing của các ca đó cũng là mm. Đây chưa phải đơn vị đã xác minh.
-.\.venv\Scripts\python.exe tools/data_pipeline.py audit --assume-mm
-.\.venv\Scripts\python.exe tools/data_pipeline.py smoke --assume-mm --workers 1
-.\.venv\Scripts\python.exe tools/data_pipeline.py smoke --assume-mm --case-id volume-covid19-A-0025 --master 30 --output outputs/covid19_20_slab_5mm.png --report analysis/covid19_20/smoke_5mm.json
-```
+Reorientation permutes/flips arrays to LPS without interpolation or deobliquing.
+NiBabel world coordinates remain RAS+. NIfTI arrays/affines use XYZ; network
+volumes use ZYX, and samples use `[1,D,H,W]` with H=Y, W=X.
+Canonical slice indices can differ from original file indices after flips or
+axis permutations. Original shape, affine, unit conversion and inverse
+orientation are retained for export and evaluation.
 
-Không cần activate môi trường. Môi trường dùng trong phiên triển khai được tạo với
-`--system-site-packages` để tái sử dụng NumPy/NiBabel/Matplotlib đã cài sẵn;
-các lệnh trên tạo môi trường độc lập khi chạy từ đầu. CPU được dùng xuyên suốt.
+Slice-center positions come from the full affine. The signed stack distance is
+the projection along its Z-column direction, including oblique/sheared geometry;
+it is not merely the world-Z coordinate difference or slice thickness.
 
-## Manifest, patient identity và split
+## Intensity and resizing
 
-Manifest hiện có là danh sách `{id, image, mask, shape, spacing_mm}`. Đường dẫn
-CT/mask được resolve theo thư mục chứa manifest; kiểm tra trùng ID, trùng đường dẫn,
-tồn tại file và số lượng ca (CLI mặc định yêu cầu đúng 199). Không suy diễn patient
-ID bằng cách xóa hậu tố `_0`/`_1` của tên volume.
+NiBabel applies source slope/intercept before finite-value and binary-label
+checks. All masks must contain exactly labels 0/1; no automatic relabeling.
 
-Ưu tiên `patient_id` trong manifest; nếu thiếu thì dùng `group_id`; nếu cả hai thiếu,
-dùng volume ID và lưu `patient_ids_available: false`. Metadata hiện tại không đủ
-để kiểm chứng bệnh nhân có nhiều series hay không. Dataset card tuyên bố các bệnh
-nhân là duy nhất, nhưng đó không phải bảng ánh xạ identity có thể kiểm tra tại đây.
-**Split hiện tại bảo đảm độc lập theo volume/group, chưa bảo đảm patient-level
-independence.**
-
-Khi có ánh xạ bệnh nhân được xác minh, tạo JSON chứa đủ mọi case ID:
-
-```json
-{"volume-covid19-A-0003": "patient_001", "another_case_id": "patient_001"}
-```
-
-Đây chỉ là minh họa schema, không phải identity thực của các ca. Truyền cùng
-`--patient-map path/to/patients.json` khi chạy split, smoke, audit và evaluate.
-`patient_id` có một phần nhưng thiếu ở các ca khác sẽ gây lỗi. Danh tính được cung
-cấp vẫn cần được xác minh ở nguồn; code chỉ bảo đảm không tách nhóm đó giữa các tập.
-
-Split seed 42 được cân bằng theo số volume, giữ nguyên nhóm. Mỗi outer test group
-xuất hiện đúng một lần trong 5 fold. Validation lấy khoảng 20% phần còn lại; tất cả
-partition không rỗng. Không stratify lesion burden vì chưa có thống kê tin cậy
-được cung cấp tại thời điểm tạo split. Không dùng test mask để chọn split.
-
-Với manifest hiện tại: fold 0–3 có train/validation/test = 127/32/40;
-fold 4 = 128/32/39. JSON chứa case IDs, group IDs, seed, provenance và fingerprint
-của ID/group/tên file. Fingerprint không phải checksum nội dung ảnh. Dataset kiểm
-tra lại toàn bộ partition trước khi chọn dữ liệu của một fold.
-
-## Geometry, intensity và tensor
-
-`inspect_pair()` kiểm tra 3D shape, affine hữu hạn/khả nghịch, spacing header khớp
-affine, orientation, đơn vị không gian và geometry CT/mask trước preprocessing.
-Không sửa hoặc resample mask để che mismatch. mm/meter/micron được đổi về mm;
-đơn vị unknown bị từ chối trừ khi chủ động bật `assume_mm` và ghi vào metadata.
-
-`read_volume()` đọc một ca bằng NiBabel, áp dụng scaling NIfTI, kiểm tra toàn bộ
-NaN/Inf và nhãn đúng 0/1. Thống nhất hướng mảng LPS bằng hoán vị/đảo trục;
-không deoblique, không nội suy Z. Mặc định `intensity_encoding="native"`,
-`hu_window=None`: giữ giá trị CT sau scaling NIfTI, không clip/normalize hoặc
-suy đoán HU. Ảnh finite ở thang 0–255, có giá trị âm/dương hay hằng số đều được
-giữ nguyên; kiểm tra NaN/Inf và geometry vẫn thực hiện.
-
-Khi có yêu cầu rõ từ model/protocol, mới bật tùy chọn:
-`PreprocessConfig(intensity_encoding="hu", hu_window=(-1000,400))` hoặc CLI
-`--intensity-encoding hu --hu-window -1000 400`. `hu` là khai báo HU của caller.
-`auto_hu` vẫn có để tương thích nhưng chỉ là range sanity check, không xác minh
-HU; cả hai chế độ đều đòi window cụ thể. `normalized_0_1` chỉ kiểm tra dữ liệu
-đã [0,1], không tự normalize. Truyền window vào chế độ native gây lỗi rõ thay vì
-âm thầm thay đổi ảnh. PNG dùng thang xám theo min/max lát chỉ để hiển thị.
-
-Mặc định `size_hw=None`: giữ nguyên H,W từng volume, không nội suy CT/mask.
-Chỉ resize khi truyền `--size H W` hoặc `PreprocessConfig(size_hw=(H,W))`:
-CT bilinear (`align_corners=False`), mask `nearest-exact`. Không crop bằng GT. Số lát và
-spacing dọc trục lát được giữ nguyên. Các kích thước trong metadata NIfTI là X,Y,Z;
-tensor volume nội bộ là Z,Y,X, nên tensor H=Y, W=X.
-
-`CTSlabDataset` trả về:
-
-| Trường | Shape / ý nghĩa |
+| Encoding | Behavior |
 | --- | --- |
-| `image_slab` | float32 `[1, D, H, W]`, D thuộc 1/3/5/11 |
-| `master_mask` | float32 binary `[1, H, W]` |
-| `master_slice_index` | Chỉ số standardized LPS, bắt đầu từ 0 |
-| `case_id`, `group_id` | Identity từ manifest/split |
-| `z_offsets_mm` | `[D]`, khoảng cách có dấu tới master |
-| `slice_indices` | `[D]`, chỉ số thực sau padding |
-| `slice_positions_mm` | `[D,3]`, tâm lát trong tọa độ RAS world |
-| `metadata` | Affine/shape/orientation gốc, inverse orientation, cấu hình và intensity |
+| `native` (default) | Preserve scaled CT values; no window, normalization or HU inference |
+| `hu` | Caller-declared HU with an explicit window |
+| `auto_hu` | Legacy range sanity check plus explicit window; not HU provenance verification |
+| `normalized_0_1` | Validate an already normalized range; do not normalize it again |
 
-Master ở vị trí D//2. Padding lặp lát biên; lát lặp có offset thực trùng nhau,
-không giả tạo vị trí ngoài volume. Offset được chiếu từ chênh lệch tâm lát affine
-lên vector đơn vị dọc trục lát: với affine shear, đây là khoảng cách tâm có dấu,
-không phải khoảng cách vuông góc giữa hai mặt phẳng. Với Z=5 mm, master 30 lấy
-25..35 và offsets -25,-20,...,0,...,20,25 mm.
+Nonnative encodings warn when `intensity_provenance` is absent. A native encoding
+cannot silently activate windowing. No default per-volume min-max normalization
+is used. Viewer/PNG grayscale scaling is display-only.
 
-Khởi tạo Dataset chỉ đọc headers. Mỗi worker cache tối đa một ca, giải phóng cache
-cũ trước ca tiếp theo. Random slice shuffle có thể làm tăng số lần giải nén NIfTI;
-không preload cả cohort để tránh điều đó. Windows default `num_workers=0`;
-`num_workers=1` cũng đã được kiểm thử. Chạy code DataLoader dưới `if __name__ ==
-"__main__":` khi dùng workers. Metadata trong batch là danh sách vì geometry gốc
-khác nhau giữa các ca. Khi H,W khác nhau, dùng batch size 1 hoặc gom mẫu cùng shape;
-không tự resize để ghép batch. Tọa độ world của NiBabel vẫn là RAS+ dù mảng đã LPS.
+`size_hw=None` preserves native XY. Explicit resizing uses bilinear CT with
+`align_corners=False` and nearest-exact binary masks. Z is not interpolated.
+The MERIT experiment's `128x128` grid is an explicit experiment choice, not the
+shared-reader default.
+
+`lesion_retention` reports completely lost positive slices and 2D 4-connected
+components under the exact nearest-exact pixel-center mapping. Components can
+disappear even if another lesion keeps the slice positive. This report never
+automatically excludes a case. The stored historical native-resolution cohort
+report did not run this newer resize audit.
+
+## Sampling
+
+Default `slab_size=11` places the master at local index 5; the sampler also
+supports 1/3/5 slices.
+
+- `index` selects consecutive indices around the master; edge replication is
+  default and reflect is optional.
+- `physical_mm` requires an explicit finite `target_spacing_mm=d>0`. It requests
+  `[-5d,...,0,...,5d]` for 11 slices, finds nearest native centers using the affine
+  and clips to endpoints. Ties within 1e-7 voxel select the lower canonical
+  index. Only edge handling is supported; there is no Z interpolation.
+- Requested offsets and actual selected offsets are both retained. Sparse CT
+  stacks can map multiple requested targets to one actual slice.
+- `duplicate_slice_policy=unique` supervises one representative per selected
+  native slice within each slab. Prefer the master, then in-bounds requests,
+  then proximity to the local master, then lower local index. A clamped real
+  endpoint still retains one valid representative even if all its requests
+  are out of bounds. `all` is an explicit repeated-supervision ablation.
+- Validity affects loss only; duplicate context still enters the model.
+
+## Tensor Dataset contract
+
+One sample represents one master, including masters with empty masks.
+After collation:
+
+| Field | Batched value |
+| --- | --- |
+| `image_slab` | float32 `[B,1,D,H,W]` |
+| `mask_slab` | float32 binary `[B,1,D,H,W]`; true GT at selected native indices |
+| `master_mask` | float32 binary `[B,1,H,W]`; equals the slab target at the local master |
+| `master_index` | int64 `[B]`; slab-local position |
+| `master_slice_index` | int64 `[B]`; canonical volume index |
+| `slice_indices` | int64 `[B,D]`; actual selected indices |
+| `slice_positions_mm` | float64 `[B,D,3]`; RAS+ world centers |
+| `z_offsets_mm` / `requested_offsets_mm` | float32 `[B,D]`; actual/requested distances |
+| `slice_valid` | bool `[B,D]`; valid loss representatives |
+| `valid_region` | bool `[B,1,D,H,W]`; loss-valid voxels |
+| `case_id` / `group_id` | Lists of B identifiers |
+| `metadata` | List of B geometry/config dictionaries |
+| `sampling_mode` / `target_spacing_mm` | Sampling policy and configured nullable spacing |
+
+`mask_slab` is never a repeated copy of `master_mask`.
+`require_mask=False` removes label paths before all header/voxel reading and
+omits GT outputs. Split inference retains recorded mask filenames for fingerprint
+validation even if those mask files are absent.
+
+Initialization reads selected headers only. Each worker caches at most one
+processed volume, releasing it before loading another; cache is not pickled to
+Windows workers. `len(dataset)` counts master slices, not volumes.
+Random slice shuffle can repeatedly decompress CT files; no cohort preloading
+is used to conceal that cost.
+
+Collation checks compatible fields, stacks tensors, and keeps metadata/nullable
+values separate. Use batch size 1 or shape buckets when native H/W differ.
+Windows multiprocessing needs an `if __name__ == "__main__":` guard.
 
 ```python
-from merit_covid import CTSlabDataset, PreprocessConfig, make_dataloader
+from merit_covid import PreprocessConfig, build_fold_loaders
 
 if __name__ == "__main__":
-    dataset = CTSlabDataset.from_split(
+    loaders = build_fold_loaders(
         "data/covid19_20/cases.json", "splits/covid19_20_5fold.json",
-        fold=0, partition="train", config=PreprocessConfig(assume_mm=True),
+        fold=0, preprocess=PreprocessConfig(), batch_size=1, num_workers=0,
     )
-    loader = make_dataloader(dataset, batch_size=2, shuffle=True, seed=42)
-    batch = next(iter(loader))  # [2, 1, 11, 512, 512] với lát gốc 512×512, CPU
+    batch = next(iter(loaders.train))
+    image = batch["image_slab"]
+    full_target = batch["mask_slab"]
+    master_target = batch["master_mask"]
 ```
 
-`restore_volume()` đưa tensor prediction Z,Y,X về mảng X,Y,Z gốc. Mặc định không
-nội suy vì H,W giữ nguyên; chỉ nội suy 2D về native khi caller chủ động resize
-đầu vào. Sau đó đảo orientation về gốc. Binary dùng nearest; probability
-dùng bilinear. Evaluator khôi phục probability trước rồi mới threshold ở native
-grid. Chỉ số canonical không nhất thiết là chỉ số lát gốc khi affine đảo/hoán vị
-trục. Affine/shape gốc được giữ để lưu prediction NIfTI về đúng geometry.
+The default example rejects unknown-unit headers. Pass the explicit mm assumption
+only when justified. The older NumPy `SlabDataset` retains `image`, master `mask`,
+`context_indices`, `slice_index` and slab-local `master_index` keys. Both APIs
+share values and geometry; only the newer tensor contract includes full-slab GT.
 
-## Evaluator độc lập model
+## Reconstruction and prediction output
 
-`SliceReconstructor` nhận từng master slice theo thứ tự bất kỳ, báo lỗi nếu trùng,
-thiếu, sai shape, chỉ số ngoài volume, NaN/Inf hoặc probability ngoài [0,1]. Không
-nhận logits; caller phải sigmoid trước. Mỗi ca được đánh giá đúng một lần.
+`SliceReconstructor` requires each canonical probability slice exactly once;
+it rejects missing/duplicate indices, invalid shapes, nonfinite values and
+probabilities outside [0,1]. It accepts probabilities, not logits.
 
-Tính TP/FP/FN trên **toàn volume native**, rồi Foreground Dice, Foreground IoU
-(không bao gồm background), precision và recall. Không trung bình Dice từng lát.
-Nhiều series cùng group: trung bình metric các volume trong group, sau đó macro
-trung bình các group, mỗi group có trọng số như nhau. Báo từng ca, từng group và
-mean/std population (`ddof=0`). Khi patient identity chưa xác minh, báo group/volume
-macro thay vì tuyên bố patient-level macro đã xác minh.
+`VolumePrediction` contains `case_id`, float32 `probability_zyx [Z,H,W]` on the
+complete native-size LPS grid, and restoration metadata. Incomplete/resized or
+mismatched grids are rejected. `prediction_policy` records model-specific
+preparation and output choices.
 
-| Trường hợp | Dice / IoU / precision / recall | HD95 |
+Baseline patches are averaged as probabilities over real overlapping voxels,
+excluding padding. Master-slice outputs use the same existing reconstructor.
+`to_original_xyz()` delegates to `restore_volume`. Restore probabilities to
+native XY/orientation before thresholding; do not resize thresholded masks and
+report them as equivalent native predictions.
+
+Binary one-channel logits use sigmoid. MERIT two-channel logits use foreground
+softmax, equivalently `sigmoid(fg-bg)`, not sigmoid of the foreground alone.
+
+## Metrics
+
+Foreground Dice/IoU, precision and recall use TP/FP/FN over the whole original
+volume. Never average slice Dice and call it volume Dice.
+
+| Masks | Dice / IoU / precision / recall | HD95 |
 | --- | --- | --- |
-| Cả hai rỗng | 1 / 1 / 1 / 1 | null |
-| Chỉ một mask rỗng | 0 / 0 / 0 / 0 | null |
-| Khớp hoàn toàn, không rỗng | 1 / 1 / 1 / 1 | 0 mm |
+| Both empty | 1 / 1 / 1 / 1 | null |
+| Exactly one empty | 0 / 0 / 0 / 0 | null |
+| Identical nonempty | 1 / 1 / 1 / 1 | 0 mm |
 
-HD95 dùng bề mặt voxel 6-connected, tọa độ world từ đầy đủ affine và percentile 95
-của hai tập khoảng cách nearest-surface gộp lại. Undefined được ghi null và loại
-khỏi mean của metric đó; số ca/group hợp lệ và undefined được báo rõ. Sai số thể
-tích tổn thương dùng `abs(det(affine[:3,:3]))/1000` mL/voxel; ghi sai số có dấu,
-giá trị tuyệt đối và sai số tương đối (null khi GT rỗng).
+HD95 uses 6-connected voxel surfaces, full-affine world positions and the 95th
+percentile of pooled bidirectional nearest-surface distances. Undefined values
+are null, excluded from that metric's mean and counted explicitly.
+Lesion volume uses `abs(det(affine[:3,:3]))/1000` mL per voxel; relative volume
+error is null when GT is empty.
 
-Để dùng khi đã có prediction thực sau này, chuẩn bị một file `case_id.npz` cho mỗi
-ca trong partition: `indices` là mảng số nguyên `[Z]`, `probabilities` là float
-`[Z,H,W]` hoặc `[Z,1,H,W]` trên canonical processed grid. Cấu hình preprocessing
-phải trùng với lúc tạo prediction. Threshold được ấn định bằng validation trước;
-CLI không tìm threshold từ test GT.
+Average volume metrics within each recorded group, then compute equal-weight
+group macro and population standard deviation. `sensitivity` is a compatibility
+alias for recall. With unverified patient linkage, call results group/volume
+macro, not independently verified patient macro.
+Fix threshold using development policy; never select it from test labels.
 
-```powershell
-# Chỉ chạy khi đã có các file prediction thực. Task hiện tại không tạo prediction.
-.\.venv\Scripts\python.exe tools/data_pipeline.py evaluate --assume-mm --fold 0 --partition test --predictions path/to/predictions --threshold 0.5 --hd95 --output outputs/metrics_fold0.json
-```
-
-Mọi mask/prediction tổng hợp trong `tests/` chỉ dùng kiểm tra phần mềm. Các giá trị
-Dice/IoU trong unit tests không phải kết quả thí nghiệm COVID-19-20.
-
-## CSV và biểu đồ mô tả 199 volume
-
-Sau khi có manifest và audit đầy đủ, chạy:
+## Data commands
 
 ```powershell
-.\.venv\Scripts\python.exe tools/summarize_covid19_20.py --assume-mm
+py tools/data_pipeline.py --help
+py scripts/read_training_batch.py --fold 0 --partition train --batch-size 1
+py scripts/merit_pipeline.py check-split --config configs/merit_index.yaml
+py scripts/merit_pipeline.py audit --config configs/merit_index.yaml --limit 1 --output outputs/data_audit.json
+# Only if a separately versioned split is genuinely needed:
+py scripts/make_splits.py data/covid19_20/cases.json --output outputs/new_split.json
+# Requires complete saved predictions matching the preprocessing policy:
+py tools/data_pipeline.py evaluate --fold 0 --partition test --predictions outputs/predictions --threshold 0.5 --hd95 --output outputs/metrics.json
 ```
 
-Lệnh tạo `case_statistics.csv`, `summary.json`, `dataset_overview.png`,
-`lesion_trajectories.png`, `ct_mask_examples.png` và `REPORT.md` trong
-`analysis/covid19_20/`. CSV dùng UTF-8 BOM và mỗi dòng tương ứng một volume.
-Patient ID chưa biết được để trống; không coi volume ID là patient ID.
-
-Thống kê mask dùng native-resolution standardized LPS; không nội suy Z.
-Script kiểm tra lại headers CT/mask và toàn bộ mask từng ca, đối chiếu geometry và
-voxel count với audit cũ. Min/max CT tái sử dụng kết quả audit cũ, không đọc lại
-toàn bộ intensity CT của 199 ca. Chỉ các ca minh họa mới được đọc CT để xuất PNG.
-Spacing/diện tích/thể tích của ba ca thiếu đơn vị phụ thuộc `--assume-mm`.
-
-Tỷ lệ lesion lấy mẫu số là toàn bộ volume CT, không phải volume phổi vì không có
-lung mask. GT Dice giữa các lát liên tiếp mô tả tính liên tục nhãn, không phải
-chất lượng mô hình. Xem [hướng dẫn đọc báo cáo](dataset_reports.md) để đối chiếu
-với các báo cáo Zenodo20 đã có sẵn.
+The generic data CLI is for data inspection or already exported predictions.
+The MERIT CLI adds physical experiment settings, training and checkpoint-based
+inference. Neither command should silently regenerate the canonical split.

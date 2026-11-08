@@ -1,7 +1,7 @@
-"""CLI giai đoạn dữ liệu: split, audit, smoke và evaluate.
+"""Data-only CLI: split, audit, smoke and evaluate saved predictions.
 
-Mỗi lệnh có một hàm run_* riêng. Muốn xem input cho train, dùng ví dụ
-examples/read_training_batch.py thay vì tìm training loop trong file này.
+Each command has a run_* handler. Inspect a training batch with
+examples/read_training_batch.py; this module does not contain a trainer.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def save_json(path, value) -> None:
 
 
 def visualize(sample: dict, destination) -> None:
-    """Xuất CT master, GT mask và overlay từ dữ liệu thật, không dùng model."""
+    """Export a master CT plane, GT and overlay without model inference."""
     import matplotlib
 
     matplotlib.use("Agg")
@@ -47,7 +47,7 @@ def visualize(sample: dict, destination) -> None:
     mask = sample["master_mask"][0].numpy()
     figure, axes = plt.subplots(1, 3, figsize=(12, 4), constrained_layout=True)
 
-    # Matplotlib tự chọn thang xám để hiển thị; không đổi tensor đầu vào.
+    # Matplotlib scales display grayscale only; input tensor values are unchanged.
     axes[0].imshow(master, cmap="gray", origin="lower")
     axes[1].imshow(
         mask, cmap="gray", vmin=0, vmax=1, origin="lower", interpolation="nearest"
@@ -85,7 +85,7 @@ def visualize(sample: dict, destination) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Tập trung đường dẫn và tùy chọn CLI tại một chỗ."""
+    """Define CLI paths and options in one place."""
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("split", "audit", "smoke", "evaluate"):
@@ -191,7 +191,7 @@ def selected_dataset(args, config: PreprocessConfig) -> CTSlabDataset:
 
 
 def run_split(args, cases: list, identity: dict) -> None:
-    """Lệnh split: tạo danh sách ID, không copy CT/mask hoặc chạy model."""
+    """Create split ID lists without copying volumes or running a model."""
     result = create_splits(cases, identity, args.seed, args.validation_fraction)
     save_json(args.output, result)
     print(
@@ -204,7 +204,7 @@ def run_split(args, cases: list, identity: dict) -> None:
 
 
 def run_audit(args, cases: list, identity: dict, config: PreprocessConfig) -> None:
-    """Lệnh audit: đọc/kiểm tra từng cặp thật và lưu metadata hoặc lỗi."""
+    """Read/check each pair and record either metadata or validation errors."""
     valid, failures = [], []
     for index, case in enumerate(cases, start=1):
         try:
@@ -250,7 +250,7 @@ def run_audit(args, cases: list, identity: dict, config: PreprocessConfig) -> No
 
 
 def run_smoke(args, identity: dict, config: PreprocessConfig) -> None:
-    """Lệnh smoke: lấy batch size 1/2 và vẽ một master, không train."""
+    """Inspect batches of size 1/2 and render one master without training."""
     selected = selected_dataset(args, config)
     if args.case_id:
         case = next(
@@ -303,11 +303,11 @@ def run_smoke(args, identity: dict, config: PreprocessConfig) -> None:
 
 
 def run_evaluate(args, identity: dict, config: PreprocessConfig) -> None:
-    """Lệnh evaluate: chỉ chạy khi caller đã có prediction cho từng ca trong split."""
+    """Evaluate existing predictions for every case in the selected partition."""
     selected = selected_dataset(args, config)
     evaluator = VolumeEvaluator(config, args.threshold, args.hd95, identity)
 
-    # Chỉ đánh giá cohort của partition đã chọn, không tự chọn ca theo thư mục output.
+    # The saved partition defines the cohort, not files found in the output folder.
     for case in selected.cases:
         path = args.predictions / f"{case.case_id}.npz"
         with np.load(path, allow_pickle=False) as archive:

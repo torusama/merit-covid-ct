@@ -11,13 +11,14 @@ from .config import PreprocessConfig
 from .geometry import affine_mm, inspect_pair, reorient_to_lps
 
 
-# Giữ thứ tự cột CSV ổn định dù thứ tự key trong JSON audit thay đổi.
+# Keep CSV column order stable even when audit JSON key insertion order changes.
 AUDIT_CSV_FIELDS = (
     "original_shape_xyz", "canonical_shape_xyz", "original_affine", "original_affine_mm",
     "canonical_affine_mm", "canonical_to_original_orientation", "original_orientation",
     "canonical_orientation", "native_spacing_mm", "processed_size_hw", "native_size_hw",
     "spatial_unit_in_header", "assume_mm", "scaled_intensity_range", "intensity_encoding",
     "label_values", "native_lesion_voxels", "nifti_scaling", "hu_window", "padding", "z_resampled",
+    "intensity_provenance", "lesion_retention",
 )
 
 

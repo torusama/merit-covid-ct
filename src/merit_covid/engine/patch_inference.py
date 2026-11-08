@@ -11,6 +11,8 @@ def predict_patch_batch(model, batch):
     import torch
     if model.training:
         raise ValueError("Call model.eval() before forward-only patch prediction")
+    if getattr(model, "position_mode", None) is not None or hasattr(model, "pcg_ramp"):
+        raise ValueError("MERIT requires designated-master slab inference; use predict_slab_case, not the UNETR++ patch path")
     image = batch["image_patch"]
     if not isinstance(image, torch.Tensor) or image.ndim != 5 or image.shape[1] != 1:
         raise ValueError("Expected collated image_patch tensor [B,1,D,H,W]")

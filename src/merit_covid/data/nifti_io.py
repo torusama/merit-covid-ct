@@ -84,7 +84,7 @@ def load_case(case: Case, *, require_mask=True, lesion_labels=None, assumed_unit
     unit,scale=validate_image_header(case,image,assumed_unit=assumed_unit)
     if unit=='unknown' and assumed_unit!='mm':
         raise ValueError("Only the agreed assumed_unit='mm' override is supported")
-    if case.infection_mask is not None:
+    if require_mask and case.infection_mask is not None:
         verify_alignment(image,nib.load(str(case.infection_mask)))
     if lesion_labels is not None:
         raise ValueError('load_case requires binary masks; map combined labels before loading')

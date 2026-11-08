@@ -1,0 +1,44 @@
+# E2: sampling-only ablation versus E1. Set d from train/validation; do not
+# run this template until replacing null with a documented positive mm spacing.
+# PE and weighting deliberately remain index-based to isolate sampling effects.
+data:
+  manifest: ../data/covid19_20/cases.json
+  split_path: ../splits/covid19_20_5fold.json
+preprocess:
+  slab_size: 11
+  size_hw: [128, 128]
+  intensity_encoding: native
+  assume_mm: false
+  sampling_mode: physical_mm
+  target_spacing_mm: null
+  boundary_policy: edge
+  duplicate_slice_policy: unique
+model:
+  img_size: [11, 128, 128]
+  feature_size: 16
+  depths: [3, 3, 3, 3]
+  use_tep: true
+  use_mer: true
+  use_pcg: true
+  position_mode: index
+  position_unit_mm: 1.0
+  query_chunk_size: 128
+loss:
+  weighting_mode: index
+  sigma_slices: 2.0
+  alignment_pool: max
+  presence_weight: 0.2
+  alignment_weight: 0.05
+  salience_weight: 0.03
+training:
+  device: auto
+  epochs: 100
+  batch_size: 1
+  num_workers: 0
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  gradient_clip: 1.0
+  warmup_epochs: 30
+  amp: true
+  threshold: 0.5
+  seed: 42

@@ -1,7 +1,7 @@
-"""Dataset trả một mẫu; file này ghép các mẫu thành batch và chọn một fold.
+"""Collate Dataset samples and construct loaders for one saved fold.
 
-Điểm bắt đầu cho code train sau này: build_fold_loaders().
-File không chứa model, loss, optimizer hoặc training loop.
+build_fold_loaders() is the shared Tensor API entry point. Models, losses and
+training loops are separate from this module.
 """
 
 from __future__ import annotations
@@ -18,18 +18,22 @@ from .config import PreprocessConfig
 
 
 def collate_slabs(samples: list[dict]) -> dict:
-    """Ghép tensor thành batch; giữ metadata từng ca trong một list riêng."""
+    """Stack tensors while retaining per-case metadata in a separate list."""
+    if not samples or any(set(sample) != set(samples[0]) for sample in samples):
+        raise ValueError("Nonempty samples with consistent keys required")
+    nullable = {key for key in samples[0] if any(sample[key] is None for sample in samples)}
     tensor_samples = [
-        {key: value for key, value in sample.items() if key != "metadata"}
+        {key: value for key, value in sample.items() if key != "metadata" and key not in nullable}
         for sample in samples
     ]
     batch = default_collate(tensor_samples)
     batch["metadata"] = [sample["metadata"] for sample in samples]
+    batch.update({key: [sample[key] for sample in samples] for key in nullable})
     return batch
 
 
 def seed_worker(worker_id: int) -> None:
-    """Hàm cấp module để Windows multiprocessing có thể pickle."""
+    """Module-level initializer so Windows multiprocessing can pickle it."""
     worker_seed = torch.initial_seed() % (2**32)
     np.random.seed(worker_seed)
     random.seed(worker_seed)
@@ -42,7 +46,7 @@ def make_dataloader(
     seed: int = 42,
     num_workers: int = 0,
 ) -> DataLoader:
-    """Tạo loader CPU. Validation/test giữ thứ tự master để ghép volume."""
+    """Build a CPU loader; validation/test preserve master reconstruction order."""
     if getattr(dataset, "partition", None) in ("validation", "test") and shuffle:
         raise ValueError("Validation/test loaders must preserve deterministic slice order")
 
@@ -60,7 +64,7 @@ def make_dataloader(
 
 @dataclass(frozen=True)
 class FoldDataLoaders:
-    """Ba loader cùng một fold. Truy cập bằng .train, .validation, .test."""
+    """One fold's loaders, exposed as .train, .validation and .test."""
 
     fold: int
     train: DataLoader
@@ -80,13 +84,13 @@ def build_fold_loaders(
     num_workers: int = 0,
     patient_map: str | Path | None = None,
 ) -> FoldDataLoaders:
-    """Đọc split ĐÃ LƯU và tạo ba loader; không tạo lại hay thay đổi split.
+    """Read the saved split and build three loaders without rewriting partitions.
 
-    Mỗi Dataset xác minh split trước khi chọn case IDs. Khởi tạo chỉ đọc headers;
-    dữ liệu voxel của một ca được xử lý khi loader yêu cầu mẫu của ca đó.
-    Cùng một PreprocessConfig áp dụng cho cả train/validation/test.
+    Each Dataset validates the split before selecting case IDs. Initialization
+    reads headers only; voxel processing is lazy. All three partitions share
+    the same PreprocessConfig.
     """
-    # Local import giữ hướng phụ thuộc rõ và hỗ trợ API cũ từ dataset.py.
+    # Local import avoids a cycle with historical dataset.py re-exports.
     from .dataset import CTSlabDataset
 
     config = preprocess or PreprocessConfig()

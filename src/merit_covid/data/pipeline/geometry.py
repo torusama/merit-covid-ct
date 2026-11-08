@@ -1,7 +1,7 @@
-"""Shape, affine, orientation, đơn vị mm và đường quay về geometry gốc.
+"""Shape, affine, orientation, mm units and original-geometry restoration.
 
-File này không window cường độ CT và không lấy slab. inspect_pair() chỉ đọc
-headers; restore_volume() được dùng sau khi đã ghép đủ prediction từng lát.
+This module neither windows CT intensity nor samples slabs. inspect_pair reads
+headers; restore_volume handles complete assembled predictions.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from .config import PreprocessConfig
 
 
 def affine_mm(image, assume_mm: bool = False) -> np.ndarray:
-    """Đổi tọa độ affine về mm; từ chối đơn vị unknown theo mặc định."""
+    """Convert affine coordinates to mm, rejecting unknown units by default."""
     unit = image.header.get_xyzt_units()[0]
     unit_factors = {"mm": 1.0, "meter": 1000.0, "micron": 0.001}
     if unit not in unit_factors and not (unit == "unknown" and assume_mm):
@@ -55,12 +55,15 @@ def _validate_header(image, case_id: str, image_name: str) -> None:
 
 
 def inspect_pair(case: Case, config: PreprocessConfig, *, require_mask: bool = True):
-    """Mở headers CT/mask và báo lỗi nếu hai file khác geometry.
+    """Read paired headers and reject mismatched geometry before voxel decoding.
 
-    Không giải mã toàn bộ volume tại bước này. Không resize mask để che lệch.
+    Never resize a mask to hide misalignment. CT-only mode does not open GT.
     """
     ct = nib.load(case.image)
     _validate_header(ct, case.case_id, "CT")
+    if not require_mask:
+        affine_mm(ct, config.assume_mm)
+        return ct, None
     if case.mask is None:
         affine_mm(ct, config.assume_mm)
         if require_mask:
@@ -85,7 +88,7 @@ def inspect_pair(case: Case, config: PreprocessConfig, *, require_mask: bool = T
 
 
 def _lps_transform(image) -> np.ndarray:
-    """Đổi hướng các trục mảng về LPS; tọa độ world của NiBabel vẫn là RAS+."""
+    """Map array axes to LPS; NiBabel world coordinates remain RAS+."""
     return nib.orientations.ornt_transform(
         nib.orientations.io_orientation(image.affine),
         nib.orientations.axcodes2ornt(("L", "P", "S")),
@@ -93,22 +96,22 @@ def _lps_transform(image) -> np.ndarray:
 
 
 def reorient_to_lps(image):
-    """Chỉ đảo/hoán vị voxel và cập nhật affine; không nội suy hay sửa file.
+    """Permute/flip voxels and update affine without interpolation or file writes.
 
-    Ảnh đã LPS được trả nguyên trạng. Không làm thẳng ảnh oblique.
+    Already-LPS images remain unchanged; oblique images are not deobliqued.
     """
     return image.as_reoriented(_lps_transform(image))
 
 
 def canonical_shape(image) -> tuple[int, int, int]:
-    """Tính shape sau thống nhất LPS chỉ từ header, không đọc voxel."""
+    """Compute the LPS shape from headers without loading voxels."""
     transform = _lps_transform(image)
     reordered_shape = np.asarray(image.shape)[np.argsort(transform[:, 0])]
     return tuple(int(size) for size in reordered_shape)
 
 
 def geometry_metadata(original_ct, canonical_ct, assume_mm: bool) -> dict:
-    """Giữ tọa độ native để offsets và prediction có thể quay về ảnh gốc."""
+    """Retain native coordinates for physical offsets and inverse restoration."""
     canonical_affine_mm = affine_mm(canonical_ct, assume_mm)
     inverse_orientation = nib.orientations.ornt_transform(
         nib.orientations.io_orientation(canonical_ct.affine),
@@ -131,11 +134,11 @@ def geometry_metadata(original_ct, canonical_ct, assume_mm: bool) -> dict:
 
 
 def restore_volume(prediction_zyx, metadata: dict, probabilities: bool = False):
-    """Prediction Z,Y,X → orientation X,Y,Z gốc; mặc định không nội suy.
+    """Restore ZYX prediction to original XYZ orientation, normally without resize.
 
-    Chỉ resize XY native nếu trước đó caller chủ động yêu cầu resize đầu vào.
-    Binary mask dùng nearest neighbor. Probability dùng bilinear, sau đó
-    evaluator mới threshold trên native grid. Không nội suy theo chiều Z.
+    Restore native XY only if input was explicitly resized. Binary masks use
+    nearest-exact; probabilities use bilinear before evaluator thresholding.
+    Never interpolate along Z.
     """
     prediction = np.asarray(prediction_zyx, dtype=np.float32)
     canonical_xyz = metadata["canonical_shape_xyz"]
