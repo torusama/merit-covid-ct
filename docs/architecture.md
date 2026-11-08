@@ -15,7 +15,9 @@ src/merit_covid/
       config.py, cases.py, geometry.py, preprocessing.py
       slab.py, dataset.py, dataloader.py, splits.py, reporting.py, metrics.py
   engine/                           Main evaluation/reconstruction API on shared logic
-  models/                           Preserved future model adapter; no model/trainer
+  models/base.py                    Preserved torch-independent model adapter contract
+  models/unetrpp/                   Synapse UNETR++ 3D architecture + master-output adapter; no trainer
+  models/merit_unetrpp/             Existing research placeholder, unchanged
 configs/                            Main YAML, defaults LPS / native size / native intensity
 scripts/                            Main check/split/synthetic-smoke entry points
 tools/                              Preserved downloads, audits, viewer and primary report CLI
@@ -38,6 +40,9 @@ tests/                              Main suite, tests/duong suite, cross-API int
    [fold loaders](../src/merit_covid/data/pipeline/dataloader.py).
 6. [Main NumPy API](../src/merit_covid/data/dataset.py), if using the existing model adapter contract.
 7. [Data contract](data_contract.md) and [verification](../analysis/merge/verification.json).
+8. [UNETR++ baseline](unetrpp_baseline.md), then
+   [model.py](../src/merit_covid/models/unetrpp/model.py), encoder, transformer/EPA,
+   decoder and adapter. The native 11-slice batch is not a supported model input.
 
 Arrays in NIfTI/PreparedVolume are XYZ. Samples use [1,D,H,W], with H=Y and W=X.
 Both public APIs share native intensities, LPS orientation and physical offsets.

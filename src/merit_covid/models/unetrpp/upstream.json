@@ -1,0 +1,34 @@
+{
+  "repository": "https://github.com/Amshaker/unetr_plus_plus",
+  "commit": "dcba1c6e8179b77e2ec72b5f4daced8926259f01",
+  "variant": "synapse",
+  "license": "Apache-2.0",
+  "source_sha256": {
+    "LICENSE": "b6ec69dae07a971684b64b36ac55bd920fc1fa4bd4d2f5aee6c11a142a4c208c",
+    "requirements.txt": "379a567451d1bad624c1b991b11e9d718d3eb53112477162e23e009d11ce605c",
+    "unetr_pp/network_architecture/dynunet_block.py": "6e226c227738d055a909ad8bbe50664f7a6b556654fbd80f92f72d22a6c56311",
+    "unetr_pp/network_architecture/layers.py": "42bf3f59bd9e654f432f1702f7e937e3639aaa5371a657c1ec56e2d15eac8a48",
+    "unetr_pp/network_architecture/synapse/model_components.py": "c9610a8227251e141fad8b9026ad1b19770066248f2658903f5dbad0720b98b4",
+    "unetr_pp/network_architecture/synapse/transformerblock.py": "814a4ef0bb342799db1ef840937badf0f4f3dfbf701fb46c0a6faab731b64d21",
+    "unetr_pp/network_architecture/synapse/unetr_pp_synapse.py": "bbf6f745b485f6349b4c076a0e021f989daf5bc40f289cdf9add8e78a96f77ef",
+    "unetr_pp/training/network_training/unetr_pp_trainer_synapse.py": "467257aad88287ee3f2f2d90ed995294b42e8d50958cec9a9a7058f972d85250"
+  },
+  "upstream_environment": {
+    "python": "3.8",
+    "torch": "1.11.0+cu113",
+    "monai": "0.7.0",
+    "timm": "0.4.12",
+    "einops": "0.6.0"
+  },
+  "notes": "Only architecture files reused. Trainer read to verify constructor settings, never executed. SHA256 hashes identify UTF-8 LF source content including the trailing newline.",
+  "source_git_blobs": {
+    "LICENSE": "11a75c70e2d36414fe20b6600709de6df8b2fa43",
+    "requirements.txt": "ab3384fdb5ac156ece89f4c0cf4be7584e23e023",
+    "unetr_pp/network_architecture/dynunet_block.py": "74eb64241bd78fb0ec20289cf9740442ea02667b",
+    "unetr_pp/network_architecture/layers.py": "7ba0662c5cb6d80aca14f4e027c0d7fc2aa41eee",
+    "unetr_pp/network_architecture/synapse/model_components.py": "3a573254eb74a24aabefe847b51c52db707ee5ff",
+    "unetr_pp/network_architecture/synapse/transformerblock.py": "9cf402d6a05fbe59a712a7530fdba96e9cb6b366",
+    "unetr_pp/network_architecture/synapse/unetr_pp_synapse.py": "637a8e5d55f92ab8cd32d0c336c6a8e8868178fd",
+    "unetr_pp/training/network_training/unetr_pp_trainer_synapse.py": "63060f16330b85f40df0ce8bc34f2eff8333cdd1"
+  }
+}

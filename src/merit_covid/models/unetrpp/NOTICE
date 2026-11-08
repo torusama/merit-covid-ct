@@ -1,0 +1,43 @@
+UNETR++ architecture integration
+
+Original work: UNETR++: Delving into Efficient and Accurate 3D Medical
+Image Segmentation, Abdelrahman Shaker et al.
+Copyright [2024] [Abdelrahman Mohamed Shaker Youssief]
+https://github.com/Amshaker/unetr_plus_plus
+Reference commit: dcba1c6e8179b77e2ec72b5f4daced8926259f01
+License: Apache License, Version 2.0 (included as LICENSE).
+The upstream tree at this commit contains no separate NOTICE file.
+
+Derived files (all paths relative to unetr_pp/network_architecture/):
+- synapse/transformerblock.py -> epa.py and transformer.py
+- synapse/model_components.py -> encoder.py and decoder.py
+- synapse/unetr_pp_synapse.py -> model.py
+- dynunet_block.py -> blocks.py (only used classes/functions retained)
+The convolution helpers are based on MONAI, also Apache-2.0.
+MONAI Consortium, https://github.com/Project-MONAI/MONAI
+
+Changes by this project (2026-11-08):
+- Move architecture into merit_covid.models.unetrpp, split modules, format
+  code and explain tensor dimensions; retain upstream parameter names.
+- Replace SegmentationNetwork with torch.nn.Module; omit nnU-Net trainer,
+  sliding-window inference framework and their unrelated dependencies.
+- Use torch.nn.init.trunc_normal_ instead of timm's equivalent initializer;
+  use einops directly; omit unused custom LayerNorm and Fourier modules.
+- Supply consistent default dimensions (upstream expects dims explicitly);
+  forward in_channels to the patch stem (upstream omitted this argument).
+- Derive encoder/decoder token counts and final feature shape from an
+  explicitly declared fixed img_size. The original (64,128,128) produces
+  the original constants. Smaller configured grids/channels are test
+  adaptations, not published experimental settings.
+- Validate shapes, channel/head/group compatibility and invalid inputs.
+- Add a separate binary master-slice output adapter with no input transform.
+- Add model-only YAML, synthetic tests, provenance and Vietnamese docs.
+
+No EPA equations, shared E/F projection, additive decoder skips, residual
+paths or segmentation-head activations were changed. Upstream Synapse has
+one residual conv block per transformer (the Lung variant differs); this
+integration intentionally uses the Synapse variant throughout. Deep
+supervision returns the same three resolutions; no automatic upsampling.
+
+No dataset/preprocessing/split changes, training, pretrained weights,
+checkpoint downloads or experimental model results are included.

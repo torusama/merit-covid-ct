@@ -1,0 +1,166 @@
+{
+  "verified_date": "2026-11-08",
+  "branch": "MERGE",
+  "base_commit": "1b9c1cedd54efd8e1d0da030027738c365ee8795",
+  "environment": {
+    "os": "Windows-10-10.0.19045-SP0",
+    "python": "3.13.16",
+    "torch": "2.15.0+cpu",
+    "monai": "1.5.2",
+    "einops": "0.8.2",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "nibabel": "5.4.2",
+    "pytest": "9.2.0",
+    "PyYAML": "6.0.3"
+  },
+  "tests": {
+    "new_unetrpp": {
+      "passed": 53,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 9.61
+    },
+    "full_suite": {
+      "passed": 188,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 34.54
+    },
+    "existing_regression_cases": 135
+  },
+  "test_scope": {
+    "synthetic_only": true,
+    "forward_original_grid": [
+      1,
+      1,
+      64,
+      128,
+      128
+    ],
+    "backward_small_grid": [
+      1,
+      1,
+      32,
+      32,
+      32
+    ],
+    "backward_feature_size": 2,
+    "encoder_depths": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "decoder_transformer_depth": 3,
+    "compact_parameters_with_deep_supervision": 801877,
+    "all_compact_parameters_have_finite_gradients": true,
+    "parameters_unchanged_after_backward": true
+  },
+  "upstream_equivalence": {
+    "upstream_commit": "dcba1c6e8179b77e2ec72b5f4daced8926259f01",
+    "variant": "synapse",
+    "synthetic_only": true,
+    "input_shape": [
+      1,
+      1,
+      64,
+      128,
+      128
+    ],
+    "output_shapes": [
+      [
+        1,
+        1,
+        64,
+        128,
+        128
+      ],
+      [
+        1,
+        1,
+        32,
+        32,
+        32
+      ],
+      [
+        1,
+        1,
+        16,
+        16,
+        16
+      ]
+    ],
+    "state_dict_keys_and_shapes_match": true,
+    "same_seed_initialization_equal": true,
+    "strict_state_dict_loading": true,
+    "all_three_outputs_bitwise_equal": true,
+    "max_absolute_errors": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "parameters": 42951355,
+    "reference_adaptations": [
+      "local import wiring",
+      "SegmentationNetwork -> nn.Module",
+      "timm trunc_normal_ -> torch.nn.init.trunc_normal_"
+    ],
+    "torch": "2.15.0+cpu",
+    "training_or_weight_update": false
+  },
+  "smoke_checks": {
+    "small_forward_backward": true,
+    "model_yaml_original_grid_forward": true,
+    "editable_model_extra_install": true,
+    "wheel_build_import_and_forward": true,
+    "license_notice_provenance_in_wheel": true,
+    "numpy_pipeline_import_without_model_dependencies": true,
+    "pip_check": "No broken requirements found."
+  },
+  "data_pipeline": {
+    "protected_tracked_paths_unchanged_from_base": [
+      "ct_pipeline",
+      "src/merit_covid/data",
+      "src/merit_covid/engine",
+      "src/merit_covid/models/base.py",
+      "src/merit_covid/models/merit_unetrpp",
+      "splits",
+      "configs/experiment_baseline.yaml",
+      "data"
+    ],
+    "split_working_sha256": "d9567a68c33c74b560de70cecda4a462f8c17dca3aea2e0933836bad65c01896",
+    "split_sha256_matches_preexisting_merge_report": true,
+    "split_committed_lf_sha256": "7b31f9e250e64826f1fff0d9fec4a4aba034252cec7d5123d5f0393ec665e54d",
+    "split_note": "Working tree CRLF; Git blob LF. Working-tree bytes match the preexisting MERGE verification hash. No split edit or regeneration.",
+    "lps_native_size_native_intensity_unchanged": true,
+    "source_dataset_not_rewritten_by_integration": true,
+    "current_native_slab_direct_model_support": false
+  },
+  "limitations": [
+    "Native MERGE [B,1,11,512,512] does not fit the fixed model grid. No implicit resize/pad/normalization.",
+    "Master-mask batches do not supply full 3D ground truth. Input/supervision/inference protocol remains future training work.",
+    "CPU verification only; no GPU, AMP, distributed training or torch.compile verification.",
+    "Upstream comparison uses the current dependencies for BOTH implementations; it does not reproduce published training/evaluation.",
+    "MONAI import emits a torch.jit.interface FutureWarning with Torch 2.15."
+  ],
+  "not_performed": [
+    "training epochs",
+    "optimizer updates",
+    "checkpoints or pretrained-weight downloads",
+    "model evaluation on real CT",
+    "cross-validation experiments",
+    "MERIT/TEP/MER/PCG implementation",
+    "dataset downloads or Zenodo20 processing"
+  ],
+  "commands": [
+    "python -m pytest tests/test_unetrpp.py -q --tb=short",
+    "python -m pytest -q --tb=short",
+    "python examples/unetrpp_smoke.py --backward",
+    "python examples/unetrpp_smoke.py --config configs/unetrpp_baseline.yaml",
+    "python tools/verify_unetrpp_upstream.py --source-dir references/unetrpp-pinned --report outputs/unetrpp_upstream_check.json",
+    "python -m pip check",
+    "python -m pip install --no-index --no-build-isolation -e .[unetrpp,test]",
+    "python -m pip wheel --no-index --no-deps --no-build-isolation . --wheel-dir outputs/unetrpp-package-check"
+  ]
+}

@@ -6,9 +6,12 @@ Pipeline thực thi ở `src/merit_covid/data/pipeline/`, chuyển từ `Duong`:
 Xem [báo cáo tích hợp](docs/merge_report.md) và [bản đồ source](docs/architecture.md).
 `ct_pipeline/` chỉ còn alias tương thích; không có bản xử lý thứ hai.
 
-Repository hiện có pipeline dữ liệu và evaluator độc lập model cho dự án
-MERIT-UNETR++. **Chưa triển khai model hoặc training loop.** Điểm bắt đầu để lấy
-input sau này là [examples/read_training_batch.py](examples/read_training_batch.py).
+Repository hiện có pipeline dữ liệu, evaluator và **kiến trúc UNETR++ baseline
+3D độc lập, chưa train**. Chưa có training loop hoặc checkpoint. Điểm bắt đầu
+để lấy dữ liệu là [examples/read_training_batch.py](examples/read_training_batch.py).
+Đọc [hướng dẫn UNETR++](docs/unetrpp_baseline.md) để import model, chạy thử bằng
+tensor tổng hợp và hiểu giới hạn input: **slab `11×512×512` hiện chưa đưa trực
+tiếp vào model gốc được**. Không có thay đổi preprocessing để làm model chạy.
 
 ## 1. Mới vào dự án: đọc gì trước?
 
@@ -23,6 +26,8 @@ Nếu mới tiếp cận, đi theo thứ tự này:
    `config → cases → splits → geometry → preprocessing → dataset → dataloader`.
 5. Khi đã hiểu batch và cần nối model, dùng `build_fold_loaders()` ở mục 4.
    Sau khi có prediction mới đọc phần evaluator trong [hướng dẫn chi tiết](docs/data_pipeline.md).
+6. Đọc [UNETR++ baseline](docs/unetrpp_baseline.md): kiến trúc, code, adapter,
+   kích thước input hợp lệ và phần người phụ trách training cần tiếp tục.
 
 Không cần đọc hết audit JSON hoặc lịch sử thay đổi trước khi chạy batch đầu tiên.
 Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
@@ -30,6 +35,7 @@ Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
 | Bạn muốn làm gì? | Mở file nào? |
 | --- | --- |
 | Chạy thử xem một batch gồm những gì | [examples/read_training_batch.py](examples/read_training_batch.py) |
+| Chạy thử model UNETR++ bằng dữ liệu tổng hợp | [Hướng dẫn baseline](docs/unetrpp_baseline.md), [unetrpp_smoke.py](examples/unetrpp_smoke.py) |
 | Hiểu nhánh MERGE giữ/thay những gì | [Báo cáo tích hợp](docs/merge_report.md) |
 | Đổi số lát, kích thước ảnh, chính sách cường độ | [config.py](src/merit_covid/data/pipeline/config.py) |
 | Hiểu thứ tự gọi các hàm trong source | [Bản đồ source](docs/architecture.md) |

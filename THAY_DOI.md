@@ -481,3 +481,41 @@ Final MERGE verification: 135 tests passed, no skips; six pre-merge real slab re
 README bổ sung đường đọc cho người mới trên MERGE: báo cáo tích hợp, ví dụ một
 volume, chạy batch và bản đồ source thật trong `src/merit_covid/data/pipeline/`.
 Các liên kết đọc code trỏ trực tiếp vào implementation thay cho module alias cũ.
+
+## 15. Tích hợp UNETR++ baseline độc lập — 08/11/2026
+
+Thêm kiến trúc Synapse từ UNETR++ chính thức, commit
+`dcba1c6e8179b77e2ec72b5f4daced8926259f01`, giấy phép Apache-2.0, vào
+`src/merit_covid/models/unetrpp/`. Có patch embedding, bốn encoder stages,
+EPA, transformer blocks, decoder với skip cộng, segmentation heads và deep
+supervision. Không thêm MERIT/TEP/MER/PCG hoặc sửa folder `merit_unetrpp/`.
+
+Giữ công thức EPA và đường forward của bản Synapse. Tách khỏi superclass
+trainer nnU-Net, dùng import nội bộ, thay initializer timm bằng Torch, thêm
+validation và tính token grid từ img_size khai báo. NOTICE và upstream.json
+ghi source, hash, giấy phép và mọi điều chỉnh constructor. Bộ convolution
+helpers chỉ giữ phần được dùng, không sao chép framework huấn luyện.
+
+Adapter riêng trả logits lát master theo hợp đồng MERGE; phân biệt vị trí
+`master_index` với chỉ số volume `master_slice_index`. Không đọc GT hoặc đổi
+input. Slab `11×512×512` chưa tương thích trực tiếp với model. Cấu hình gốc
+kiểm chứng là `64×128×128`; đây không phải yêu cầu resize dataset của nhóm.
+Việc chuẩn bị input và supervision cho training để lại cho bước tiếp theo.
+
+Thêm YAML riêng, ví dụ synthetic forward/backward, tests và công cụ đối chiếu
+source. `pyproject.toml` thêm extra `unetrpp` (Torch, MONAI, einops) và đóng gói
+LICENSE/NOTICE/provenance. README, architecture và data contract liên kết tới
+[hướng dẫn tiếng Việt](docs/unetrpp_baseline.md); bằng chứng kiểm tra ở
+[verification.json](analysis/unetrpp/verification.json).
+
+Không thay CT/mask, LPS, native intensity/size, đơn vị, split, DataLoader hoặc
+evaluator. Không train, không optimizer update, không tải/tạo checkpoint và
+không chạy mô hình để đánh giá trên dữ liệu thật. Báo cáo merge ở mục 14 vẫn
+là lịch sử tích hợp dữ liệu trước khi bổ sung model này.
+
+Kiểm chứng: 53 tests model mới và toàn bộ 188 tests đạt (không skip), giữ đủ
+135 regression cases cũ. Cả ba output ở cấu hình đầy đủ bằng từng giá trị so
+với source upstream trong cùng môi trường; backward cấu hình nhỏ có gradient
+hữu hạn và không đổi tham số. Kiểm tra cài extra, build/import/forward từ wheel,
+đóng gói LICENSE/NOTICE và dependency đều đạt. Đây là kiểm thử phần mềm, không
+phải kết quả model trên dataset.

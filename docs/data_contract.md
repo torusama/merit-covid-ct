@@ -60,6 +60,10 @@ group macro; population std. Never average slice Dice and call it volume Dice.
 Main `sensitivity` aliases Duong `recall`. Threshold default 0.5 remains a
 configurable evaluator convention, not a validation-selected model threshold.
 
-No model, logits, training, checkpoints or research performance are provided.
+The data pipeline itself supplies inputs/targets and model-independent evaluation.
+The separate [UNETR++ baseline](unetrpp_baseline.md) now supplies 3D logits and
+an optional master-output adapter. Its fixed token grid does not accept the
+native [B,1,11,512,512] batch directly. No implicit input transform or 3D target
+generation is provided; no training/checkpoints/research performance are provided.
 
 `models.base.master_slice_input()` accepts either batch convention; for a Duong slab it selects D//2, independently of the volume slice index.
