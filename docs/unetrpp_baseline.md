@@ -8,9 +8,11 @@ checkpoint, pretrained weights của dự án, kết quả Dice/IoU/HD95 hay so 
 
 Pipeline MERGE vẫn xuất slab `[B,1,11,512,512]` và GT của riêng lát master
 `[B,1,512,512]`. Model gốc được kiểm chứng ở kích thước `[B,1,64,128,128]`.
-**Hai kích thước này chưa nối trực tiếp được.** Adapter bên dưới chỉ nối cách
-lấy output, không tự sửa input. Bàn giao lần này hoàn thành phần kiến trúc;
-người phụ trách training còn phải quyết định protocol chuẩn bị input/supervision.
+**Hai kích thước này không nối trực tiếp.** Adapter master bên dưới chỉ nối
+cách lấy output. Hiện đã có [input patch riêng](unetrpp_input.md): đọc volume
+qua reader hiện hành, crop/padding về patch model cần và ghép output về volume.
+Không đổi slab loader hoặc kiến trúc; các lựa chọn training/supervision vẫn là
+bước tiếp theo. Ví dụ CT thật: `examples/unetrpp_real_input.py`.
 
 Không sửa preprocessing, split, CT/mask gốc, DataLoader hay evaluator để chạy model.
 
@@ -264,9 +266,11 @@ deep supervision, adapter chọn `output[0]`; muốn dùng logits phụ phải g
 3D trực tiếp và tự xác định supervision phù hợp.
 
 **Slab có 11 CT slices không đồng nghĩa có GT của 11 slices trong batch.**
-Pipeline hiện tại chỉ đưa mask master. Không nhân bản mask đó để giả làm GT
-3D. Việc dùng loss chỉ ở master, dùng GT 3D thực, hoặc tổ chức patch/inference
-khác là quyết định thí nghiệm sau này, phải mô tả rõ khi gọi đây là baseline.
+Slab loader hiện tại chỉ đưa mask master. Không nhân bản mask đó để giả làm GT
+3D. [Patch Dataset mới](unetrpp_input.md) có thể đọc GT 3D thực đúng vùng khi
+`require_mask=True`; valid mask loại vùng padding. Việc chọn loss/supervision
+vẫn cần quyết định trong protocol thí nghiệm. Đường inference patch gọi model
+3D trực tiếp, không đưa `image_patch` vào adapter master cũ.
 
 ## 8. Source, bản quyền và các điều chỉnh
 
@@ -342,7 +346,7 @@ model (trainer không được thực thi).
 
 ## 10. Phần bàn giao và việc còn lại cho training
 
-File mới: package `models/unetrpp/` gồm tám module Python, LICENSE, NOTICE,
+Ở bước tích hợp kiến trúc `a528e42`, các file mới: package `models/unetrpp/` gồm tám module Python, LICENSE, NOTICE,
 upstream.json; `configs/unetrpp_baseline.yaml`; `examples/unetrpp_smoke.py`;
 `tests/test_unetrpp.py`; công cụ đối chiếu upstream; tài liệu này và báo cáo
 kiểm chứng JSON. Các file có sẵn được sửa để khai báo dependency/đóng gói và
@@ -352,10 +356,10 @@ cập nhật tài liệu: `pyproject.toml`, `README.md`, `docs/architecture.md`,
 
 Người phụ trách training cần tiếp tục:
 
-1. Chốt cách chuẩn bị input phù hợp với model và cách ánh xạ prediction trở
-   về grid CT gốc, không tự đổi protocol dữ liệu đã thống nhất.
-2. Chọn supervision trung thực: GT 3D thực hoặc loss master được mô tả rõ;
-   quyết định có dùng deep supervision và cách cung cấp target tương ứng.
+1. Dùng [crop/tiling và đường ghép output mới](unetrpp_input.md) để chuẩn bị
+   input phù hợp mà giữ native grid; ghi nhận/chốt stride và overlap cho thí nghiệm.
+2. Dùng GT 3D thực tùy chọn và valid mask từ Patch Dataset; quyết định loss,
+   supervision và target các mức deep supervision, không nhân bản master mask.
 3. Chốt loss, optimizer, batch size, GPU/RAM và các lựa chọn chỉ dựa trên train/
    validation; chưa mặc định chuẩn hóa CT hoặc resize để làm model chạy được.
 4. Viết trainer/checkpoint/inference rồi mới chạy thí nghiệm theo split đã có,

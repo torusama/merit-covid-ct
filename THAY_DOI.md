@@ -519,3 +519,40 @@ với source upstream trong cùng môi trường; backward cấu hình nhỏ có
 hữu hạn và không đổi tham số. Kiểm tra cài extra, build/import/forward từ wheel,
 đóng gói LICENSE/NOTICE và dependency đều đạt. Đây là kiểm thử phần mềm, không
 phải kết quả model trên dataset.
+
+## 16. Input patch CT thật và output volume chung — 08/11/2026
+
+Thêm `data/unetrpp_input/`: PatchConfig, cửa sổ Z/Y/X, crop native, padding ở
+cuối chiều ngắn và valid-region mask. Dataset gọi reader LPS/native cũ, cache
+một volume mỗi worker; không preload cohort, không resize/normalize/Z resample.
+Đọc split đã lưu và kiểm tra fingerprint/partition, không chia lại dữ liệu.
+GT 3D chỉ đọc khi require_mask=True, không dùng GT chọn patch. Inference bỏ
+đường dẫn mask trước mọi thao tác header/voxel, chạy được khi file GT vắng mặt.
+
+Thêm `engine/prediction.py`, `patch_reconstruction.py`, `patch_inference.py`:
+chuẩn VolumePrediction (case_id, probability_zyx float32 native LPS, metadata),
+sigmoid ngoài model, mean probabilities tại overlap, bỏ padding, kiểm tra đủ
+patch và geometry. Đường master-slice gọi SliceReconstructor cũ để ra cùng
+contract. Restore và đường vào VolumeEvaluator cũ được giữ, không thêm metric
+hoặc evaluator riêng. Ghi input/output policy và nguồn split cho từng model.
+
+Thêm ví dụ `examples/unetrpp_real_input.py`, hai file tests mới và
+[docs/unetrpp_input.md](docs/unetrpp_input.md). README, architecture, data
+contract và hướng dẫn baseline được cập nhật để không còn mô tả input patch
+là phần chưa triển khai. Không sửa model/adapter, core data pipeline, split,
+config dữ liệu hoặc tests cũ. Không thêm dependency.
+
+Đã đọc/forward một patch CT thật A-0025: 61×128×128 voxel thật + 3 lát padding,
+input 1×1×64×128×128. Model đầy đủ chạy eval/inference_mode, hash tham số không
+đổi, không gradient hoặc GT đọc; file CT giữ size/mtime. Chưa chạy model toàn
+bộ CT/cohort; kiểm chứng ghép đầy đủ dùng volumes tổng hợp. Chi tiết PASS/FAIL/
+SKIP được ghi trong [verification.json](analysis/unetrpp_input/verification.json).
+
+Không train, tối ưu loss, tạo/tải checkpoint, chọn threshold hoặc đánh giá
+hiệu suất. Ban đầu giữ thay đổi local theo yêu cầu; sau khi nhận báo cáo kiểm
+thử, người dùng đã xác nhận cho phép commit và push lên MERGE. Các cờ Git trong
+verification.json ghi nhận trạng thái lúc kiểm thử, trước bước công bố.
+
+Kiểm chứng lần này: 74 tests mới PASS, 0 FAIL, 0 SKIP; toàn bộ 262 tests PASS,
+0 FAIL, 0 SKIP, giữ đủ 188 tests trước đó. Dependency check và build/import từ
+package đạt. Report là kiểm tra phần mềm, không phải kết quả thí nghiệm model.

@@ -1,0 +1,252 @@
+{
+  "verified_date": "2026-11-08",
+  "branch": "MERGE",
+  "base_commit": "a528e42a6c8f01607e94d7b9670be4ce4431556c",
+  "environment": {
+    "os": "Windows-10-10.0.19045-SP0",
+    "python": "3.13.16",
+    "torch": "2.15.0+cpu",
+    "monai": "1.5.2",
+    "einops": "0.8.2",
+    "numpy": "2.5.4",
+    "nibabel": "5.4.2",
+    "scipy": "1.18.1",
+    "pytest": "9.2.0"
+  },
+  "tests": {
+    "new_input_and_prediction": {
+      "pass": 74,
+      "fail": 0,
+      "skip": 0,
+      "seconds": 8.44
+    },
+    "full_regression_suite": {
+      "pass": 262,
+      "fail": 0,
+      "skip": 0,
+      "seconds": 36.92
+    },
+    "prior_cases_preserved": 188
+  },
+  "checks": {
+    "ct_scaling_native_values_and_zyx_order": true,
+    "ct_mask_3d_alignment": true,
+    "constant_and_edge_padding_valid_region": true,
+    "all_three_axis_coverage": true,
+    "overlap_uniform_probability_average": true,
+    "padding_predictions_discarded": true,
+    "lps_lpi_permuted_and_sheared_affine_restoration": true,
+    "no_gt_open_during_inference": true,
+    "existing_split_unchanged_and_validated": true,
+    "one_volume_cache_per_worker": true,
+    "dataloader_workers_tested": [
+      0,
+      1
+    ],
+    "patch_and_master_outputs_same_contract": true,
+    "existing_slice_reconstructor_and_restore_reused": true,
+    "full_case_software_inference_tested_on_synthetic_data": true,
+    "small_unetrpp_forward_on_synthetic_padded_ct": true,
+    "model_state_unchanged_in_forward_test": true,
+    "numpy_geometry_output_import_without_torch": true,
+    "wheel_modules_import_and_public_api_check": true,
+    "pip_check": "No broken requirements found."
+  },
+  "real_ct_smoke": {
+    "purpose": "real CT -> native crop -> untrained UNETR++ forward software check",
+    "case_id": "volume-covid19-A-0025",
+    "fold": 0,
+    "partition": "train",
+    "volume_shape_zyx": [
+      61,
+      512,
+      512
+    ],
+    "patches_to_cover_case": 16,
+    "forwarded_patches": 1,
+    "patch": {
+      "index": 0,
+      "start_zyx": [
+        0,
+        0,
+        0
+      ],
+      "stop_zyx": [
+        61,
+        128,
+        128
+      ],
+      "patch_size": [
+        64,
+        128,
+        128
+      ],
+      "valid_shape_zyx": [
+        61,
+        128,
+        128
+      ],
+      "padding_zyx": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    "input_shape": [
+      1,
+      1,
+      64,
+      128,
+      128
+    ],
+    "input_dtype": "torch.float32",
+    "input_range": [
+      -2048.0,
+      -805.0
+    ],
+    "real_voxels_in_patch": 999424,
+    "crop_equals_shared_native_reader": true,
+    "ground_truth_read": false,
+    "probability_shape": [
+      1,
+      64,
+      128,
+      128
+    ],
+    "probability_dtype": "float32",
+    "probability_finite": true,
+    "probability_range": [
+      0.04683883860707283,
+      0.9855803847312927
+    ],
+    "weights_unchanged": true,
+    "parameter_sha256": "163cc705b32e937afe8ae09fe6d72b9a6e9d036a50a9315e41879c9d9d6b5012",
+    "gradients_created": false,
+    "source_size_and_timestamp_unchanged": true,
+    "input_policy": {
+      "type": "3d_crop_tiling",
+      "axes": "Z,Y,X",
+      "patch_size": [
+        64,
+        128,
+        128
+      ],
+      "requested_stride": null,
+      "requested_overlap": null,
+      "effective_stride": [
+        64,
+        128,
+        128
+      ],
+      "end_alignment": "append final window ending at the real volume boundary",
+      "padding_mode": "edge",
+      "padding_value": null,
+      "padding_placement": "after each short axis only",
+      "mask_padding_value": 0,
+      "orientation": "LPS",
+      "intensity": "native_after_nifti_scaling",
+      "resize": false,
+      "z_resampling": false,
+      "hu_window": null,
+      "normalization": null,
+      "assume_mm": false,
+      "patch_selection": "all spatial tiles; independent of ground truth"
+    },
+    "selection": {
+      "source": "existing canonical split",
+      "fold": 0,
+      "partition": "train",
+      "split_manifest_fingerprint": "c1a313cd1e57a8e526108fd413ed052d00afab2b72ac9392595e603a742ffde0",
+      "split_sha256_lf": "7b31f9e250e64826f1fff0d9fec4a4aba034252cec7d5123d5f0393ec665e54d",
+      "selected_case_ids": [
+        "volume-covid19-A-0025"
+      ],
+      "identity": {
+        "group_source": "volume_id_fallback",
+        "patient_ids_available": false,
+        "identity_note": "Patient identity is unverified. Group/volume independence does not establish patient independence across series."
+      }
+    },
+    "full_case_prediction_created": false,
+    "training_or_metrics_performed": false,
+    "note": "Random initialization; probability range has no model-quality meaning. One patch is not a whole CT prediction."
+  },
+  "protected_paths_unchanged": [
+    "ct_pipeline",
+    "src/merit_covid/data/pipeline",
+    "src/merit_covid/models",
+    "src/merit_covid/engine/metrics.py",
+    "src/merit_covid/engine/reconstruction.py",
+    "splits",
+    "configs",
+    "pyproject.toml",
+    "requirements.txt"
+  ],
+  "split_working_sha256": "d9567a68c33c74b560de70cecda4a462f8c17dca3aea2e0933836bad65c01896",
+  "split_sha256_lf": "7b31f9e250e64826f1fff0d9fec4a4aba034252cec7d5123d5f0393ec665e54d",
+  "changed_files": {
+    "existing_modified": [
+      "README.md",
+      "THAY_DOI.md",
+      "docs/architecture.md",
+      "docs/data_contract.md",
+      "docs/unetrpp_baseline.md"
+    ],
+    "new": [
+      "analysis/unetrpp_input/verification.json",
+      "docs/unetrpp_input.md",
+      "examples/unetrpp_real_input.py",
+      "src/merit_covid/data/unetrpp_input/__init__.py",
+      "src/merit_covid/data/unetrpp_input/config.py",
+      "src/merit_covid/data/unetrpp_input/dataset.py",
+      "src/merit_covid/data/unetrpp_input/tiling.py",
+      "src/merit_covid/engine/patch_inference.py",
+      "src/merit_covid/engine/patch_reconstruction.py",
+      "src/merit_covid/engine/prediction.py",
+      "tests/test_prediction_contract.py",
+      "tests/test_unetrpp_input.py"
+    ]
+  },
+  "limitations": [
+    "Real smoke forwards one A0025 patch only, not the entire CT or cohort.",
+    "Whole-volume reconstruction and the shared output contract are verified on synthetic volumes; these are not experimental model-quality results.",
+    "CPU only; no new GPU/AMP/distributed checks.",
+    "Default edge padding/uniform probability mean is explicit bookkeeping policy, not a validated optimal experimental hyperparameter.",
+    "GT 3D and valid masks are provided on request; losses/deep-supervision targets are future training work.",
+    "Patient-level independence remains unverified without trusted patient mapping."
+  ],
+  "not_performed": [
+    "training epochs",
+    "backward on real CT",
+    "loss optimization or optimizer updates",
+    "checkpoint creation/download",
+    "cross-validation or real performance evaluation",
+    "test-based threshold/hyperparameter selection",
+    "raw-data download or Zenodo20 processing",
+    "commits or pushes"
+  ],
+  "commands": [
+    "python -m pytest tests/test_unetrpp_input.py tests/test_prediction_contract.py -q --tb=short",
+    "python -m pytest -q --tb=short",
+    "python examples/unetrpp_real_input.py --report outputs/unetrpp_real_A0025_input.json",
+    "python -m pip check",
+    "python -m pip wheel --no-index --no-deps --no-build-isolation . --wheel-dir outputs/unetrpp-input-package-check"
+  ],
+  "git_snapshot_note": "The following Git fields and not_performed list describe verification time, before the user subsequently authorized committing and pushing to MERGE.",
+  "git": {
+    "local_uncommitted_changes": true,
+    "commit_performed": false,
+    "push_performed": false,
+    "unresolved_conflicts": false,
+    "dataset_checkpoint_or_cache_added": false
+  }
+}

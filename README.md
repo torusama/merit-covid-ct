@@ -11,7 +11,9 @@ Repository hiện có pipeline dữ liệu, evaluator và **kiến trúc UNETR++
 để lấy dữ liệu là [examples/read_training_batch.py](examples/read_training_batch.py).
 Đọc [hướng dẫn UNETR++](docs/unetrpp_baseline.md) để import model, chạy thử bằng
 tensor tổng hợp và hiểu giới hạn input: **slab `11×512×512` hiện chưa đưa trực
-tiếp vào model gốc được**. Không có thay đổi preprocessing để làm model chạy.
+tiếp vào model gốc được**. Đã có [đường input patch riêng](docs/unetrpp_input.md):
+đọc volume bằng reader cũ, crop `64×128×128`, padding có valid mask và ghép output
+về volume gốc. Không resize hoặc chuẩn hóa cường độ; slab loader giữ nguyên.
 
 ## 1. Mới vào dự án: đọc gì trước?
 
@@ -24,10 +26,13 @@ Nếu mới tiếp cận, đi theo thứ tự này:
    offsets và shape batch. Ví dụ chỉ đọc dữ liệu, chưa huấn luyện.
 4. Đọc [bản đồ source](docs/architecture.md), sau đó đi lần lượt
    `config → cases → splits → geometry → preprocessing → dataset → dataloader`.
-5. Khi đã hiểu batch và cần nối model, dùng `build_fold_loaders()` ở mục 4.
+5. Khi đã hiểu batch và cần nối model dùng slab/master, dùng `build_fold_loaders()` ở mục 4.
    Sau khi có prediction mới đọc phần evaluator trong [hướng dẫn chi tiết](docs/data_pipeline.md).
 6. Đọc [UNETR++ baseline](docs/unetrpp_baseline.md): kiến trúc, code, adapter,
    kích thước input hợp lệ và phần người phụ trách training cần tiếp tục.
+7. Muốn đưa **CT thật vào UNETR++**, đọc [input patch và output chung](docs/unetrpp_input.md),
+   rồi chạy `python examples/unetrpp_real_input.py`. Ví dụ chỉ forward một patch,
+   không train hoặc đánh giá chất lượng mô hình.
 
 Không cần đọc hết audit JSON hoặc lịch sử thay đổi trước khi chạy batch đầu tiên.
 Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
@@ -36,6 +41,8 @@ Bảng dưới là chỗ tra nhanh khi đã biết mình cần tìm phần nào:
 | --- | --- |
 | Chạy thử xem một batch gồm những gì | [examples/read_training_batch.py](examples/read_training_batch.py) |
 | Chạy thử model UNETR++ bằng dữ liệu tổng hợp | [Hướng dẫn baseline](docs/unetrpp_baseline.md), [unetrpp_smoke.py](examples/unetrpp_smoke.py) |
+| Đưa CT thật vào UNETR++, hiểu crop/padding/overlap | [Input patch](docs/unetrpp_input.md), [unetrpp_real_input.py](examples/unetrpp_real_input.py) |
+| Ghép output để các model dùng chung evaluator | [Hợp đồng output](src/merit_covid/engine/prediction.py), [ghép patch](src/merit_covid/engine/patch_reconstruction.py) |
 | Hiểu nhánh MERGE giữ/thay những gì | [Báo cáo tích hợp](docs/merge_report.md) |
 | Đổi số lát, kích thước ảnh, chính sách cường độ | [config.py](src/merit_covid/data/pipeline/config.py) |
 | Hiểu thứ tự gọi các hàm trong source | [Bản đồ source](docs/architecture.md) |

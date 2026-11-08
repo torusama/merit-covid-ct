@@ -14,7 +14,12 @@ src/merit_covid/
     pipeline/                       Authoritative Duong data/evaluation implementation
       config.py, cases.py, geometry.py, preprocessing.py
       slab.py, dataset.py, dataloader.py, splits.py, reporting.py, metrics.py
+    unetrpp_input/                   Native 3D crops/padding; reuses pipeline.read_arrays
+      config.py, tiling.py, dataset.py, __init__.py
   engine/                           Main evaluation/reconstruction API on shared logic
+    prediction.py                   Unified full-volume probability contract and slice bridge
+    patch_reconstruction.py         Coordinate-based uniform probability averaging
+    patch_inference.py              Forward-only patch/case inference, no metrics
   models/base.py                    Preserved torch-independent model adapter contract
   models/unetrpp/                   Synapse UNETR++ 3D architecture + master-output adapter; no trainer
   models/merit_unetrpp/             Existing research placeholder, unchanged
@@ -43,6 +48,8 @@ tests/                              Main suite, tests/duong suite, cross-API int
 8. [UNETR++ baseline](unetrpp_baseline.md), then
    [model.py](../src/merit_covid/models/unetrpp/model.py), encoder, transformer/EPA,
    decoder and adapter. The native 11-slice batch is not a supported model input.
+9. [Real CT patch input](unetrpp_input.md): crop/tiling, padding, valid mask and
+   common output. This separate input adapter leaves the slab loader/model intact.
 
 Arrays in NIfTI/PreparedVolume are XYZ. Samples use [1,D,H,W], with H=Y and W=X.
 Both public APIs share native intensities, LPS orientation and physical offsets.

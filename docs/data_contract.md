@@ -8,7 +8,7 @@ See [merge report](merge_report.md) for migration details and verification.
 - Strict paired 3D geometry, finite CT/mask and binary labels 0/1.
 - Standardized array orientation LPS, without spatial interpolation/deobliquing.
 - Native H,W and native intensity by default. No clipping, normalization or HU inference.
-- No Z resampling. D in 1/3/5/11, centered master; default D=11 and edge replication.
+- No Z resampling. Slab API: D in 1/3/5/11, centered master; default D=11 and edge replication.
 - Unknown spatial units fail unless the explicit agreed mm assumption is enabled.
 - Optional window/resize requires explicit config; cannot silently activate on defaults.
 - Primary-only development folds. External Zenodo20 remains external; no real external data was reprocessed.
@@ -63,7 +63,31 @@ configurable evaluator convention, not a validation-selected model threshold.
 The data pipeline itself supplies inputs/targets and model-independent evaluation.
 The separate [UNETR++ baseline](unetrpp_baseline.md) now supplies 3D logits and
 an optional master-output adapter. Its fixed token grid does not accept the
-native [B,1,11,512,512] batch directly. No implicit input transform or 3D target
-generation is provided; no training/checkpoints/research performance are provided.
+native [B,1,11,512,512] batch directly. The separate [patch input adapter](unetrpp_input.md)
+now crops the SAME reader's native CT to [B,1,64,128,128], with controlled padding
+and a boolean valid_region. Optional mask_patch is actual aligned 3D GT, never
+repeated master labels. Neither the slab loader nor model is modified. No
+training/checkpoints/research performance are provided.
+
+## Unified prediction output
+
+`engine.prediction.VolumePrediction` contains case_id, probability_zyx float32
+[Z,H,W] in [0,1] on the complete native-size LPS CT grid, and metadata for
+original NIfTI restoration. It rejects resized/incomplete/mismatched grids.
+`prediction_policy` records model-specific preparation and output policy.
+
+PatchReconstructor removes padding by coordinates, requires every planned patch
+exactly once, rejects wrong case/geometry, and computes a uniform arithmetic mean
+of probabilities at overlap voxels. Sigmoid is applied outside the model, before
+assembly; no threshold is applied. `prediction_from_slices()` uses the EXISTING
+SliceReconstructor for master-slice/2D models and returns the same output type.
+
+`to_original_xyz()` delegates to the existing restore_volume(). Alternatively,
+`slice_predictions()` yields the interface for the existing VolumeEvaluator,
+which restores probabilities before thresholding on the original CT grid.
+No new evaluator or metric convention is introduced. Same case partitions,
+original GT, evaluator, validation-selected threshold policy and volume/group
+aggregation remain required for comparisons. Different model input shapes are
+allowed and recorded; training choices are not made by this contract.
 
 `models.base.master_slice_input()` accepts either batch convention; for a Duong slab it selects D//2, independently of the volume slice index.
