@@ -159,9 +159,11 @@ py scripts/merit_pipeline.py benchmark --config configs/merit_index.yaml --devic
 ```
 
 Reports use exclusive creation: use new output filenames on repeat runs.
-Three primary cases lack spatial units; default full-cohort loading rejects
-them. `--assume-mm` records an explicit evidence-backed assumption and must
-match when resuming; it is not an automatic workaround for invalid metadata.
+Three primary cases lack spatial units. The shared reader rejects unknown units
+by default, while `merit_index.yaml` and `merit_colab_256.yaml` explicitly set
+`assume_mm: true`. The CLI's `--assume-mm` can enable the same assumption for
+other configs. This is not source verification or an intensity/HU conversion,
+and the setting must match when resuming.
 
 To create a genuinely new split version, do not overwrite the canonical file:
 
@@ -229,6 +231,35 @@ validation/test voxels or selects a best checkpoint, and guards against reading
 GT during inference. Its checkpoint and mask are diagnostic, not clinical.
 `PASS` means the requested software checks completed, not research readiness;
 `OOM`, `FAIL` and unverified provenance must be reviewed separately.
+
+## Colab training notebook
+
+`notebooks/train_merit_colab.ipynb` clones the `train/merit-unetrpp-colab`
+branch, mounts the existing primary dataset on Drive, checks the saved split,
+and requires a four-step real-CT 256x256 pilot before its training cell. Publish
+the new branch and changes to GitHub before the notebook clones it. A successful
+synthetic T4 profile alone does not establish that the full real run will fit.
+
+The initial `EPOCHS=1` budget is one complete TRAIN epoch and full validation,
+not a four-step pilot; it may take hours. `RUN_NAME` chooses a new Drive output
+folder. Successful epochs save `last.pt` and validation-selected `best.pt`;
+raise the total `EPOCHS` value to resume from `last.pt`. A recorded code commit,
+config hash, dataset path, fold and sampler policy must match the existing run.
+An interruption before an epoch checkpoint restarts that epoch; changed paths,
+code or config require a new run. No full run is started by creating the file.
+
+The notebook calls `scripts/train_colab.py`, which shuffles case order and then
+master slices within each case, with a shared seeded loader/sampler generator.
+Each master is visited once per epoch. This respects the shared Dataset's
+one-volume cache with `num_workers=0`; randomizing all slices globally can
+otherwise repeatedly decompress entire CT volumes. The ordering policy is saved
+in checkpoint provenance, and epoch-boundary resume is regression-tested.
+
+The 256 config retains native scaled intensity: no HU window or fitted z-score
+has been applied. Decide and implement a normalization policy before claiming a
+formal protocol. The dataset lacks reliable patient IDs, so the saved splits
+remain volume/group-level. Training uses TRAIN, checkpoint selection uses
+validation, and neither the notebook nor trainer uses test to choose settings.
 
 ## External testing and experiment design
 

@@ -4,6 +4,16 @@ Major milestones are listed below. Current behavior belongs in the topic guides,
 not in historical implementation notes. Numeric verification artifacts in
 analysis/ retain their original snapshot content.
 
+## 2026-11-09 - Colab training preparation
+
+- Set the MERIT index config's explicit unknown-spatial-unit mm assumption.
+- Add a 256x256 Colab training config and a separate pilot-gated notebook with
+  Drive checkpoint/resume, fixed run provenance and no automatic test evaluation.
+- Add seeded case-grouped master shuffling to avoid repeated full-volume loads;
+  preserve the shared Trainer and test epoch-boundary replay on synthetic data.
+- Keep native intensity; HU calibration, patient linkage, normalization and
+  clinical performance remain unverified.
+
 ## 2026-11-08 - Train-only preflight diagnostics
 
 - Add bounded-memory native CT moments, all-voxel percentiles/histogram and

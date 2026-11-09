@@ -6,7 +6,7 @@ preprocess:
   slab_size: 11
   size_hw: [128, 128]
   intensity_encoding: native
-  assume_mm: false
+  assume_mm: true  # Explicit assumption for three cases with unknown spatial units.
   sampling_mode: index
   boundary_policy: edge
   duplicate_slice_policy: unique

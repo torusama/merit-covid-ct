@@ -48,8 +48,9 @@ Read the existing split; do not regenerate it before training.
 
 Patient identity is not independently verified: current grouping falls back to
 volume IDs. Three cases have unknown spatial units: A-0161, A-0585 and A-0599.
-The default is to reject unknown units. Use `--assume-mm` only after accepting
-an evidence-backed mm assumption; it does not verify or repair the source.
+The shared reader rejects unknown units by default. The MERIT index and Colab
+configs explicitly set `assume_mm: true`; this documents an assumption and
+does not verify or repair the source.
 
 Zenodo20 is an external dataset, not development data. Do not use it to select
 preprocessing, thresholds, hyperparameters or checkpoints.
@@ -69,8 +70,8 @@ py scripts/merit_pipeline.py audit --config configs/merit_index.yaml --limit 1 -
 py scripts/merit_pipeline.py train --config configs/merit_index.yaml --fold 0 --output outputs/e1/fold0
 ```
 
-Full-cohort training will reject the three unknown-unit cases until their units
-are verified or the explicit mm assumption is accepted. See the
+The checked-in MERIT index config explicitly assumes mm for the three unknown-unit
+cases; review this assumption before a full run. See the
 [MERIT pipeline guide](docs/merit_pipeline.md) for resume, validation, CV, physical
 sampling, GPU checks and the explicitly gated external-test command.
 
