@@ -16,6 +16,12 @@ full training run. Start with the real-case notebook below. The measured
 activation-checkpointing overlay is isolated in experimental helpers; selecting
 `merit_native512.yaml` in the production trainer does **not** enable that overlay.
 
+Handoff status: the identified runtime repairs and bounded single-case GPU
+checks are complete. The team member's training/validation results are still
+awaited. This closes the current repair-and-pilot phase, not every open research
+or production task: full native training still needs the trainer integration
+listed below, and the older 128-grid resize/auxiliary-label issue remains open.
+
 Read in this order:
 
 1. This README: current status, runnable entry points and data requirements.
@@ -37,7 +43,7 @@ Read in this order:
 | Runtime repairs | CT/GT source binding on resume, strict thresholds and finite-logit checks, reproducible volume-block shuffle | `src/merit_covid/engine/`, `data/pipeline/dataloader.py` under the package |
 | Diagnostics | Split/input/resize audits, isolated optimizer profiles, restored smoke and baseline input scripts | `scripts/merit_preflight.py`, `scripts/model_smoke.py`, `scripts/unetrpp_real_input.py` |
 | Native-512 feasibility | Separate config and notebook helpers; two synthetic updates and two real A-0025 updates passed on a user-run Colab T4 | `configs/merit_native512.yaml`, `tools/merit_checkpoint_trial.py`, `tools/merit_real_case_trial.py` |
-| One proposed improvement | MER-only checkpointing notebook and comparison export; compact local checks pass, native-512 T4 measurement is pending | `tools/merit_mer_only_trial.py`, improvement note 01 |
+| One measured improvement candidate | MER-only native-512 T4 pilot PASS; retain the earlier all-region overlay as reference because memory nearly doubles for an inconclusive timing gain | `tools/merit_mer_only_trial.py`, improvement note 01 |
 
 The latest full CPU suite reports **389 passed, 1 CUDA-only skipped**. The compact
 CUDA AMP test also passed separately in the local GPU environment. These checks
@@ -55,12 +61,21 @@ versions and original ZIP checksums are preserved in
 | Original execution, full allocator budget | CUDA out of memory in MER forward | 14627.58 MiB before failure | 0 |
 | Checkpointing overlay, synthetic input | PASS | 4650.55 MiB | 2 |
 | Same overlay, real A-0025 CT/GT | PASS | 4649.68 MiB | 2 |
+| MER-only checkpointing, same real A-0025 | PASS | 9219.69 MiB | 2 |
 
 The real steps took 13.958 s and 13.731 s. They preserved source bytes, native
 pixels and `[1,1,11,512,512]` input, produced finite gradients and changed learned
 parameters. One CT-only master prediction also passed; full-volume prediction
 and segmentation quality were not evaluated in this pilot. Two steps are too
 few to establish training throughput or a reliable speed comparison.
+
+The MER-only report from another account used the same GPU model, Torch version,
+input/config and initial parameters. Its mean step time was 13.625 s versus
+13.845 s for the earlier overlay (observed 1.59% lower), with identical losses
+and final parameter hashes. Two steps in different sessions cannot establish
+a speedup. Keep the earlier all-region overlay as the recommended pilot mode:
+4.54 GiB peak allocation versus 9.00 GiB for MER-only. Production defaults remain
+unchanged; see the completed experiment note for details.
 
 ## Quick start
 
@@ -91,7 +106,7 @@ does not count as a failed model experiment or a completed measurement.
 | [Real case](notebooks/colab_real_case.ipynb) | Original A-0025 pair; bounded two-update pilot with checkpointing | Native-512 T4 PASS; recommended first run |
 | [Checkpoint trial](notebooks/colab_checkpoint_trial.ipynb) | Synthetic input; numerical checks followed by memory profile | Native-512 T4 PASS |
 | [Original execution](notebooks/colab_connect.ipynb) | Synthetic 128 sanity check followed by unoptimized 512 profile | 128 PASS; 512 T4 OOM recorded |
-| [MER-only candidate](notebooks/colab_mer_only_case.ipynb) | Same A-0025 pair; retain more backbone activations to measure a possible speed improvement | Native-512 T4 result pending |
+| [MER-only candidate](notebooks/colab_mer_only_case.ipynb) | Same A-0025 pair; retain more backbone activations to measure a possible speed improvement | Native-512 T4 PASS; retain earlier overlay as reference |
 
 All four notebooks fetch model/source commit
 `e3493dd9f2dac704d2def6225d76f19df3262ec4` and embed their experimental helpers.
@@ -189,8 +204,8 @@ restores probabilities to native geometry and then evaluates whole volumes.
 
 ### Work still required before full native training
 
-- Measure the MER-only candidate on the same native A-0025/T4 setup; retain the
-  measured all-region overlay unless evidence supports a change.
+- Retain the measured all-region overlay as reference. The MER-only comparison
+  is complete for this two-step pilot; further timing measurements are optional.
 - Integrate the selected overlay into the production trainer and verify training,
   validation and resume together. It is currently enabled only in trial helpers.
 - Add persistent progress and mid-epoch resume for long cloud sessions. The

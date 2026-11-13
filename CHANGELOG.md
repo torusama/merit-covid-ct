@@ -6,6 +6,12 @@ analysis/ retain their original snapshot content.
 
 ## 2026-11-13 - MERIT runtime and source-binding repair
 
+- Record the completed MER-only native A-0025/T4 comparison from the user's
+  second account. Two updates pass with identical losses/final parameter hash;
+  retain the all-region pilot reference (4.54 versus 9.00 GiB peak allocation)
+  because the observed 1.59% timing reduction is inconclusive. Mark the current
+  runtime repair-and-pilot phase complete, awaiting team training results,
+  while retaining explicit production integration and 128-grid issue limits.
 - Rewrite the root README for handoff: reading order, source responsibilities,
   real-case Colab entry, input transfer, pinned-source behavior, measured native
   results and outstanding production work. Distinguish 128-grid research configs
@@ -16,7 +22,8 @@ analysis/ retain their original snapshot content.
 - Add one scoped MER-only checkpointing notebook for A-0025. Reuse the previous
   helpers unchanged, gate the candidate on numerical/buffer checks, and export
   a comparison with the existing real-case baseline. Test the workflow with
-  compact CPU/GPU fixtures; native-512 candidate timing on T4 remains pending.
+  compact CPU/GPU fixtures; the subsequent native-512 T4 comparison is recorded
+  in improvement note 01.
 - Add the single-real-case Colab notebook, an input ZIP for local delivery,
   and a bounded pilot helper. Verify A-0025 source SHA-256 and frozen TRAIN
   membership, preserve native CT/GT pixels, attempt two optimizer updates and

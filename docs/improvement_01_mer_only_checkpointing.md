@@ -1,6 +1,6 @@
 # Improvement note 01: MER-only checkpointing
 
-Date: 2026-11-13. Status: **prototype notebook ready; A-0025/T4 measurement pending**.
+Date: 2026-11-13. Status: **A-0025/T4 pilot PASS; retain all-region reference mode**.
 This note defines one improvement experiment on one CT volume. It does not
 authorize running the complete improvement plan or the full cohort.
 
@@ -46,7 +46,7 @@ loss, optimizer, AMP/scaler policy, seed 42, epoch-0 PCG warmup, source hashes,
 sampling and the frozen split. Do not resize, alter labels, remove modules or
 reduce channels/layers to make this experiment pass.
 
-## Next execution steps
+## Executed experiment protocol
 
 1. Compare the candidate against the original model on compact fixtures:
    outputs, losses, input/all parameter gradients, state keys/counts and BatchNorm
@@ -58,14 +58,31 @@ reduce channels/layers to make this experiment pass.
 4. Compare with the baseline and stop. If it OOMs or is not clearly faster,
    retain the baseline and report the outcome; do not silently change other settings.
 
-## Result to fill after the experiment
+## Recorded result and decision
+
+Evidence: user-supplied `20261113_090150_4f13abdd.zip`, run from another account.
+The GPU model and Torch version match the reference. Source bytes, config,
+masters, geometry and initial parameter hashes also match; helper SHA-256
+matches the repository files. JSON and archive SHA-256 are stored in
+[portable evidence](../analysis/merit_native512/colab_evidence_20261113.json).
 
 | Candidate result | Value |
 | --- | --- |
-| Numerical/buffer comparison | Compact CPU/GPU fixtures PASS; repeated on the assigned GPU before the real pilot |
-| Successful optimizer updates | NOT RUN |
-| Step times and memory peaks | NOT RUN |
-| Decision and limitations | NOT RUN |
+| Numerical/buffer comparison | Compact MER/FP32/AMP fixtures PASS on the assigned GPU; recorded errors zero and buffers unchanged |
+| Successful optimizer updates | 2/2; no AMP skips; finite gradient norms |
+| Step times | 13.729979 s and 13.519343 s; mean 13.624661 s |
+| Memory peaks | 9219.69 MiB allocated; 9408 MiB reserved |
+| Reference comparison | Mean 13.844556 s and peak allocation 4649.68 MiB |
+| Native input and files | Preserved; no XY interpolation or intensity normalization |
+| Real pilot outputs | Both per-step losses and final learned-parameter SHA-256 exactly match the reference; CT-only master prediction PASS |
+| Decision and limitations | Retain all-region checkpointing as the recommended pilot reference; observed 1.59% lower step time is inconclusive with two steps in separate sessions, while allocation rises from 4.54 to 9.00 GiB |
+
+This completes the scoped improvement experiment. MER-only remains an optional
+comparison notebook; no production defaults or model architecture were changed.
+The current runtime repair-and-pilot phase is complete and the team member's
+training/validation results are awaited. Full native training still requires
+production integration of the selected overlay; this report is not evidence
+that a complete training run has succeeded.
 
 The complete notebook workflow was checked locally with synthetic native 32x32
 NIfTI: the candidate completed an actual GPU update, passed the CT-only guard,

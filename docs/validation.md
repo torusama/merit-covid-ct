@@ -8,6 +8,19 @@ not claims about the latest checkout.
 
 ## 2026-11-13 review and runtime repairs
 
+Handoff update: the user-supplied MER-only report
+`20261113_090150_4f13abdd.zip` passes two native A-0025 updates on Tesla T4.
+Source/config/initial-weight identities match the previous all-region trial;
+both losses and final parameter hashes match exactly. Mean step time is
+13.624661 s versus 13.844556 s, while peak allocation increases from 4649.68
+to 9219.69 MiB. The observed 1.59% timing reduction across two separate-session
+steps is inconclusive; retain the all-region overlay as the pilot reference.
+See [the completed experiment](improvement_01_mer_only_checkpointing.md).
+The identified runtime repairs and bounded pilots are complete; team-member
+training results are awaited. Production overlay integration and the older
+128-grid resize/auxiliary-label issue remain open, so this does not close all
+known issues or establish full-training readiness.
+
 Latest handoff verification: **389 passed, one CUDA-only skipped**, zero failures
 or errors in 108.048 seconds for the full CPU suite. The earlier counts below
 describe intermediate snapshots. The compact CUDA AMP test passed separately
