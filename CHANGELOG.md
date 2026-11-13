@@ -6,6 +6,12 @@ analysis/ retain their original snapshot content.
 
 ## 2026-11-13 - MERIT runtime and source-binding repair
 
+- Add the integrated-main Colab notebook pinned to published integration commit
+  `ac46169`. Automatically cache the real pinned cohort for production source
+  binding; train A-0025 for two bounded updates, verify a temporary checkpoint,
+  resume for one update and check a CT-only master using actual Trainer methods.
+  Export small reports after failures and exclude images/weights. Test compact
+  CPU/GPU workflows; native-512 T4 execution remains pending a user run.
 - Integrate all-region activation checkpointing into the production trainer,
   checkpoint loading, optimizer profiler and benchmark. Preserve model/state
   shapes, dropout RNG and single BatchNorm updates; retain frozen trial helpers.

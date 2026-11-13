@@ -82,6 +82,28 @@ candidate stays optional. See the completed experiment note for details.
 
 ## Quick start
 
+### Test the integrated main trainer on Colab
+
+Open [the integrated-main notebook in Colab](https://colab.research.google.com/github/torusama/merit-covid-ct/blob/main/notebooks/colab_main_integrated.ipynb),
+select **T4 GPU**, then **Run all**. No input upload is required. It pins
+`ac461691450b2046f19b6c61ba7fb7426cb14884`, the published integration commit,
+and imports the production Trainer/checkpointing module from that source.
+
+The first run automatically downloads/caches all 199 original pairs, about
+3.5 GiB, because production source binding requires their real paths/stats.
+Only A-0025 receives two optimizer updates followed by one after save/resume.
+One distinct validation member is checked by headers only; there is no
+validation metric, complete epoch or full-volume inference. No spatial-unit
+assumption is enabled. The notebook verifies native pixels and a CT-only master
+prediction, then downloads a small report ZIP without images or weights.
+The temporary diagnostic checkpoint is removed after verification. Keep about
+2 GiB additional free disk for checkpoint verification, besides the data cache.
+
+The orchestration helper is embedded and hashed; it calls the actual
+`Trainer.train_epoch`, `save_checkpoint` and `resume`. It does not install an
+experimental model overlay or implement a separate optimizer loop. Full native
+T4 results from this integrated notebook are pending the user's run.
+
 ### Train from the current source
 
 Install the local environment below and make the development data available.
@@ -103,7 +125,7 @@ through an epoch. Use persistent storage for outputs and allow for long native
 epochs. The production path has compact train/validation/resume regression
 coverage; the complete 512-grid cohort run is for the receiving team to measure.
 
-### Recommended handoff: one real case on Colab
+### Historical overlay pilot: upload only one real case
 
 Open [the real-case notebook in Colab](https://colab.research.google.com/github/torusama/merit-covid-ct/blob/main/notebooks/colab_real_case.ipynb),
 select a GPU runtime, then **Run all**. When prompted, upload either the team's
@@ -127,16 +149,17 @@ does not count as a failed model experiment or a completed measurement.
 
 | Notebook | Input and purpose | Current evidence |
 | --- | --- | --- |
+| [Integrated main](notebooks/colab_main_integrated.ipynb) | Automatic cohort cache for source binding; bounded actual production Trainer steps/save/resume on A-0025 | Compact CPU/GPU workflow PASS; native-512 T4 run pending |
 | [Real case](notebooks/colab_real_case.ipynb) | Original A-0025 pair; bounded two-update pilot with checkpointing | Native-512 T4 PASS; recommended first run |
 | [Checkpoint trial](notebooks/colab_checkpoint_trial.ipynb) | Synthetic input; numerical checks followed by memory profile | Native-512 T4 PASS |
 | [Original execution](notebooks/colab_connect.ipynb) | Synthetic 128 sanity check followed by unoptimized 512 profile | 128 PASS; 512 T4 OOM recorded |
 | [MER-only candidate](notebooks/colab_mer_only_case.ipynb) | Same A-0025 pair; retain more backbone activations to measure a possible speed improvement | Native-512 T4 PASS; retain earlier overlay as reference |
 
-All four notebooks fetch model/source commit
+The four historical overlay/profile notebooks fetch model/source commit
 `e3493dd9f2dac704d2def6225d76f19df3262ec4` and embed their experimental helpers.
 This pin reproduces the measured experiments; it does not fetch the latest
 production runtime repairs on `main`. Do not repin during a baseline comparison.
-The four pilot notebooks remain two-update experiments; they do not launch the
+Those four pilot notebooks remain two-update experiments; they do not launch the
 current production trainer or a complete fold. For training, use the current
 `main` checkout and the command above. They reuse runtime Torch/CUDA and install
 only missing dependencies. Activation
@@ -256,6 +279,7 @@ restores probabilities to native geometry and then evaluates whole volumes.
 | `configs/` | Experiment configs and model-only smoke configs |
 | `scripts/` | Experiment and package entry points |
 | `tools/` | Acquisition, data audit/reporting, viewer and upstream verification |
+| `tools/merit_main_trial.py` | Bounded integrated Trainer diagnostic with complete real source binding and temporary checkpoint verification |
 | `scripts/model_smoke.py` | Synthetic model forward/backward without optimizer updates |
 | `scripts/unetrpp_real_input.py` | One real native CT patch through the baseline, without training |
 | `tests/` | Synthetic regression and integration checks |

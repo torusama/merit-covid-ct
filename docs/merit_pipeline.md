@@ -68,6 +68,34 @@ Recorded local feasibility results are in [validation.md](validation.md).
 
 ## Colab and Kaggle quick start
 
+### Integrated production trainer check
+
+Use [colab_main_integrated.ipynb](../notebooks/colab_main_integrated.ipynb), enable
+GPU and Run all. It pins the published main integration commit `ac46169`, reuses
+runtime Torch/CUDA, and automatically caches all 199 original pairs from dataset
+revision `e6ce5e1c01f59b29843e6a969655a42d33a52729` (about 3.5 GiB). Source
+binding uses real cohort paths/stats; missing sources are never fabricated.
+
+Its embedded [orchestration helper](../tools/merit_main_trial.py) imports the
+actual production Trainer. It declares one TRAIN volume (A-0025) and one
+validation header member, performs two native updates, saves/reloads a temporary
+diagnostic checkpoint, performs one more update, and predicts one CT-only master.
+The production constructor, optimizer loop, source checks and checkpoint/resume
+are used directly; there is no experimental model execution patch. No validation
+voxel evaluation or full epoch is performed. Unknown source units retain strict
+handling; availability of other cohort files is not a full voxel/unit audit.
+
+The JSON records source commit/module hashes, selected scope, effective config,
+updates/losses, model/optimizer roundtrip, source integrity and inference guards.
+The temporary roughly 2-GiB checkpoint is removed after verification and cannot
+be mistaken for a complete-epoch research checkpoint. ZIP export whitelists
+JSON/log/Python/text files and excludes all patient images and weights. Data
+preparation or worker failures still produce a small FAIL/OOM report ZIP.
+Compact CPU/GPU workflows are checked locally; native-512 T4 verification of
+this integrated notebook awaits a user run.
+
+### Historical original-execution memory profile
+
 Use [notebooks/colab_connect.ipynb](../notebooks/colab_connect.ipynb).
 
 1. Colab: upload the supplied notebook, select a GPU runtime, then **Run all**.

@@ -8,6 +8,17 @@ not claims about the latest checkout.
 
 ## 2026-11-13 production native-512 integration
 
+Follow-up notebook: `colab_main_integrated.ipynb` targets published integration
+commit `ac46169`. Its bounded orchestration uses real complete-manifest sources
+and the actual Trainer optimizer/checkpoint/resume methods, then one CT-only
+master prediction. The complete notebook worker/export path passed locally on
+a native compact CPU fixture; the same three-update/checkpoint/resume helper
+also passed on the local GPU with AMP. Focused notebook/bootstrap/worker checks
+passed 19 tests with one CPU-environment CUDA skip, and the CUDA workflow passed
+separately in 11.86 seconds. Native-512 T4 results for this integrated notebook
+are pending. The earlier cloud reports used separate experiment helpers and
+must not be relabeled as integrated-Trainer results.
+
 The user selected native full slices and the validated all-region recomputation
 strategy for the main trainer. `configs/merit_native512.yaml` now sets native
 `size_hw: null` and `training.activation_checkpointing: true`; `train` and `cv`

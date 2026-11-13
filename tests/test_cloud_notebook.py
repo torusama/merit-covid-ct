@@ -20,7 +20,7 @@ def code_cells():
     return ["".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"]
 
 
-@pytest.mark.parametrize("filename", ["colab_connect.ipynb", "colab_checkpoint_trial.ipynb", "colab_real_case.ipynb", "colab_mer_only_case.ipynb"])
+@pytest.mark.parametrize("filename", ["colab_connect.ipynb", "colab_checkpoint_trial.ipynb", "colab_real_case.ipynb", "colab_mer_only_case.ipynb", "colab_main_integrated.ipynb"])
 def test_notebook_and_generated_worker_compile_without_saved_outputs(filename):
     notebook = json.loads((ROOT / "notebooks" / filename).read_text(encoding="utf-8"))
     assert notebook["nbformat"] == 4 and notebook["metadata"]["accelerator"] == "GPU"
