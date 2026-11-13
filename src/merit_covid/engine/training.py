@@ -25,7 +25,7 @@ from merit_covid.data.pipeline.config import PreprocessConfig
 from merit_covid.data.pipeline.dataset import CTSlabDataset
 from merit_covid.data.pipeline.dataloader import make_dataloader
 from merit_covid.data.pipeline.geometry import inspect_pair
-from merit_covid.data.pipeline.metrics import aggregate_results, volume_metrics
+from merit_covid.data.pipeline.metrics import aggregate_results, volume_metrics, validate_threshold
 from merit_covid.data.pipeline.splits import validate_splits
 from merit_covid.models.merit_unetrpp import MERITUNETRPP, MERITLoss
 from .slab_inference import predict_slab_case
@@ -34,7 +34,7 @@ from .slab_inference import predict_slab_case
 TRAIN_DEFAULTS = dict(epochs=100, batch_size=1, num_workers=0, learning_rate=3e-4,
     weight_decay=1e-4, device="auto", amp=True, amp_init_scale=1024.0, gradient_clip=1.0,
     seed=42, warmup_epochs=30, patience=20, scheduler_patience=5, scheduler_factor=0.5,
-    threshold=0.5, include_hd95=True, threads=2, deterministic=True)
+    threshold=0.5, include_hd95=True, threads=2, deterministic=True, shuffle_mode="slice")
 
 
 def json_ready(value):
@@ -87,6 +87,8 @@ def validate_experiment(config):
     if unknown:
         raise ValueError(f"Unknown training settings: {unknown}")
     settings = {**TRAIN_DEFAULTS, **config["training"]}
+    if settings["shuffle_mode"] not in ("slice", "volume", "sequential"):
+        raise ValueError("Invalid training shuffle_mode")
     for key in ("epochs", "batch_size", "threads", "warmup_epochs", "patience", "scheduler_patience"):
         if type(settings[key]) is not int or settings[key] < 1:
             raise ValueError(f"{key} must be a positive integer")
@@ -99,8 +101,9 @@ def validate_experiment(config):
             raise ValueError(f"{key} must be finite and positive")
     if not math.isfinite(settings["weight_decay"]) or settings["weight_decay"] < 0:
         raise ValueError("weight_decay must be nonnegative")
-    if not 0 < settings["scheduler_factor"] < 1 or not 0 <= settings["threshold"] <= 1:
-        raise ValueError("Invalid scheduler_factor/threshold")
+    if not 0 < settings["scheduler_factor"] < 1:
+        raise ValueError("Invalid scheduler_factor")
+    validate_threshold(settings["threshold"])
     for key in ("amp", "deterministic", "include_hd95"):
         if type(settings[key]) is not bool:
             raise ValueError(f"{key} must be boolean")
@@ -128,6 +131,30 @@ def load_development_split(config):
     return cases, split, identity, hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
 
 
+def source_identity(config, cases):
+    """Bind resolved CT/GT paths, file stats and manifest bytes without decoding CTs.
+
+    Stats detect normal in-place edits, not adversarial byte replacement with
+    forged size/mtime. Pin the upstream data revision separately for that case.
+    """
+    def source(path):
+        path = Path(path).resolve()
+        stat = path.stat()
+        return {"path": str(path), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+
+    manifest = Path(config["data"]["manifest"]).resolve()
+    mapping = config["data"].get("patient_map")
+    return {
+        "manifest": {"path": str(manifest), "sha256": hashlib.sha256(manifest.read_bytes()).hexdigest()},
+        "patient_map": None if mapping is None else {
+            "path": str(Path(mapping).resolve()),
+            "sha256": hashlib.sha256(Path(mapping).read_bytes()).hexdigest()},
+        "cases": [{"case_id": c.case_id, "group_id": c.group_id,
+                   "image": source(c.image), "mask": source(c.mask)}
+                  for c in sorted(cases, key=lambda c: c.case_id)],
+    }
+
+
 def split_datasets(config, fold):
     if type(fold) is not int or fold not in range(5):
         raise ValueError("fold must be 0..4")
@@ -144,13 +171,20 @@ def split_datasets(config, fold):
         "identity": identity, "partitions": part,
         "all_case_ids": [c.case_id for c in cases], "all_group_ids": sorted({c.group_id for c in cases})}
     provenance["all_image_paths"] = sorted(str(c.image.resolve()) for c in cases)
+    provenance["all_mask_paths"] = sorted(str(c.mask.resolve()) for c in cases)
+    provenance["source_identity"] = source_identity(config, cases)
     return datasets, provenance
 
 
-def protocol_fingerprint(config, provenance):
+def protocol_fingerprint(config, provenance, *, version=2):
     payload = deepcopy(config)
     payload["training"].pop("epochs")  # Extending the epoch budget is allowed on resume.
-    payload["data"] = provenance  # Freeze split identity and resolved source-path provenance.
+    # Version 1 is retained ONLY for loading historical models for inference.
+    # It omitted source-data configuration and did not bind resolved GT paths.
+    if version not in (1, 2):
+        raise ValueError("Unsupported protocol fingerprint version")
+    payload["data"] = (provenance if version == 1 else
+                       {"configuration": payload["data"], "provenance": provenance})
     return hashlib.sha256(json.dumps(payload, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 
@@ -199,14 +233,33 @@ class Trainer:
     def __init__(self, config, train_loader, validation_cases, provenance, output_dir):
         self.config = validate_experiment(config)
         self.settings = self.config["training"]
+        validation_cases = list(validation_cases)
+        if not getattr(train_loader.dataset, "require_mask", False):
+            raise ValueError("Full-slab training requires true GT")
+        actual_order = getattr(train_loader, "shuffle_mode", None)
+        if actual_order is not None and actual_order != self.settings["shuffle_mode"]:
+            raise ValueError("Training loader order differs from frozen shuffle_mode")
+        if actual_order is None and self.settings["shuffle_mode"] != "sequential":
+            raise ValueError("Custom training samplers must declare sequential diagnostic order")
         self.provenance = deepcopy(provenance)
-        self.fingerprint = protocol_fingerprint(self.config, provenance)
+        sources, _, _, _ = load_development_split(self.config)
+        binding = source_identity(self.config, sources)
+        if self.provenance.get("source_identity", binding) != binding:
+            raise ValueError("Dataset/manifest changed after split indexing")
+        self.provenance["source_identity"] = binding
+        self.provenance["all_mask_paths"] = sorted(str(c.mask.resolve()) for c in sources)
+        by_id = {c.case_id: c for c in sources}
+        for case in [*train_loader.dataset.cases, *validation_cases]:
+            expected = by_id.get(case.case_id)
+            if (expected is None or case.group_id != expected.group_id
+                    or Path(case.image).resolve() != expected.image.resolve()
+                    or case.mask is None or Path(case.mask).resolve() != expected.mask.resolve()):
+                raise ValueError("Training/validation source differs from the current manifest")
+        self.fingerprint = protocol_fingerprint(self.config, self.provenance)
         self.output_dir = Path(output_dir)
         self.train_loader, self.validation_cases = train_loader, list(validation_cases)
         if not self.validation_cases or not len(train_loader):
             raise ValueError("Training and validation must be nonempty")
-        if not getattr(train_loader.dataset, "require_mask", False):
-            raise ValueError("Full-slab training requires true GT")
         if json_ready(asdict(train_loader.dataset.config)) != self.config["preprocess"]:
             raise ValueError("Training Dataset preprocessing differs from frozen experiment config")
         train_cases = train_loader.dataset.cases
@@ -271,7 +324,7 @@ class Trainer:
             identity=self.provenance.get("identity"))
 
     def save_checkpoint(self, path, epoch):
-        payload = {"schema_version": 1, "model": self.model.state_dict(), "optimizer": self.optimizer.state_dict(),
+        payload = {"schema_version": 2, "model": self.model.state_dict(), "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(), "scaler": self.scaler.state_dict(), "epoch": epoch,
             "best_metric": self.best_metric, "bad_epochs": self.bad_epochs, "config": self.config,
             "provenance": self.provenance, "protocol_fingerprint": self.fingerprint,
@@ -290,8 +343,12 @@ class Trainer:
 
     def resume(self, path):
         checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-        if checkpoint.get("schema_version") != 1 or checkpoint.get("protocol_fingerprint") != self.fingerprint:
+        if checkpoint.get("schema_version") != 2 or "source_identity" not in checkpoint.get("provenance", {}):
+            raise ValueError("Checkpoint lacks verified CT/GT source identity; unsafe legacy resume is not supported")
+        if checkpoint.get("protocol_fingerprint") != self.fingerprint:
             raise ValueError("Checkpoint config/preprocessing/sampling/split/fold mismatch")
+        if self.settings["epochs"] < checkpoint["config"]["training"]["epochs"]:
+            raise ValueError("Resume may extend, but cannot reduce, the saved epoch budget")
         if checkpoint.get("environment", {}).get("device_type", self.device.type) != self.device.type:
             raise ValueError("Resume device type changed; exact RNG replay across CPU/CUDA is not guaranteed")
         self.model.load_state_dict(checkpoint["model"])
@@ -342,9 +399,10 @@ class Trainer:
 def load_checkpoint_model(path, device="cpu"):
     """Trusted local checkpoints only; no pickle fetched from external services."""
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-    if checkpoint.get("schema_version") != 1:
+    version = checkpoint.get("schema_version")
+    if version not in (1, 2):
         raise ValueError("Unsupported checkpoint schema")
-    if protocol_fingerprint(checkpoint["config"], checkpoint["provenance"]) != checkpoint["protocol_fingerprint"]:
+    if protocol_fingerprint(checkpoint["config"], checkpoint["provenance"], version=version) != checkpoint["protocol_fingerprint"]:
         raise ValueError("Checkpoint protocol metadata is inconsistent")
     torch.set_num_threads(checkpoint["config"]["training"]["threads"])
     model = MERITUNETRPP(**checkpoint["config"]["model"]).to(resolve_device(device))

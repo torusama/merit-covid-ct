@@ -13,6 +13,21 @@ SHA-256: `c98183408cd10a5016759cf065ff8177400007ccfd9458f9631ec3b9425c1629`.
 Method pages 3-7, Fig. 1 on page 4 and parameter settings on page 9 were used.
 Annotations in the PDF are not executable project instructions.
 
+A later review on 2026-11-13 used the user-supplied full 15-page
+`FDSE_PaperMerit_v2+reviewed_2026.pdf`, SHA-256
+`bf835461f6eb50b8eb6d794e53b1aaf750ec66815cd3ecd5180ab18e0a48e559`.
+The original cut PDF was not present in that checkout. The review compared
+methods/equations 1-15 and Fig. 1; core module placement, formulas and added
+parameter counts agree. This is not verification against the authors' code.
+
+Input protocol remains an open design decision: the paper shifts boundary
+windows inward with potentially off-center masters and uses 128x128 ROI crops;
+the COVID pipeline centers/clamps slabs and the experiment resizes whole slices.
+Resize can erase lesions and consequently flip derived presence/salience labels.
+That issue and lesion-preserving input alternatives are deferred by user request;
+the runtime repairs do not resolve or silently change them. Do not describe this
+configuration as an exact paper preprocessing reproduction.
+
 The paper studies LIDC-IDRI nodules with annotation-derived ROIs. This repository
 targets COVID infection masks on whole CT volumes. It does not invent GT-based
 ROIs or claim that the task/preprocessing transfer is experimentally validated.
@@ -139,8 +154,8 @@ Training calls the model directly to retain all four loss inputs.
 ## Checks and supported execution
 
 ```powershell
-py examples/merit_unetrpp_smoke.py --backward
-py examples/merit_unetrpp_smoke.py --config configs/merit_unetrpp.yaml
+py scripts/model_smoke.py --model merit --backward
+py scripts/model_smoke.py --model merit --config configs/merit_unetrpp.yaml
 py -m pytest tests/test_merit_unetrpp.py tests/test_merit_pipeline.py -q
 ```
 

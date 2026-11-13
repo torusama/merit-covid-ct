@@ -7,6 +7,7 @@ another measurement. Production YAML, source images and splits are never edited.
 from copy import deepcopy
 import gc
 import hashlib
+import math
 import os
 from pathlib import Path
 import time
@@ -36,7 +37,7 @@ def diagnostic_config(path, size, device, batch_size=1):
         raise ValueError("Positive batch size required")
     config["preprocess"]["size_hw"] = [size, size]
     config["model"]["img_size"] = [11, size, size]
-    config["training"].update(device=device, batch_size=batch_size, num_workers=0)
+    config["training"].update(device=device, batch_size=batch_size, num_workers=0, shuffle_mode="sequential")
     if config["preprocess"]["sampling_mode"] != "index" or config["preprocess"]["slab_size"] != 11:
         raise ValueError("This preflight requires 11 index-sampled slices")
     return validate_experiment(config)
@@ -77,10 +78,86 @@ def _failure(report, error):
                   error_type=type(error).__name__, error=str(error), traceback=traceback.format_exc())
 
 
-def profile_model(config_path, output, *, size, batch_size, device="cuda", warmup=1, repeats=2):
+def check_native_input(config_path, output, *, fold=0, case_id="volume-covid19-A-0025"):
+    """Verify one full native TRAIN slab against source pixels, with no model run.
+
+    Fail instead of resizing a source that does not match the declared grid.
+    This is an input-integrity check, not a cohort audit or a training result.
+    """
+    output = Path(output)
+    if output.exists():
+        raise FileExistsError(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    report = {"status": "NOT_RUN", "case_id": case_id, "fold": fold,
+              "scope": "one TRAIN case, one central full-native slab; no model or optimizer"}
+    def file_hash(path):
+        digest = hashlib.sha256()
+        with Path(path).open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+    try:
+        config = load_experiment(config_path)
+        preprocess = PreprocessConfig(**config["preprocess"])
+        if preprocess.intensity_encoding != "native" or preprocess.hu_window is not None:
+            raise ValueError("Native input check requires native intensity without a HU window")
+        cases, split, _, split_hash = load_development_split(config)
+        part = next(f for f in split["folds"] if f["fold"] == fold)
+        if case_id not in part["train"]["case_ids"]:
+            raise ValueError("Native input check must use the selected fold TRAIN partition")
+        case = next(c for c in cases if c.case_id == case_id)
+        from merit_covid.data.pipeline.geometry import reorient_to_lps
+        ct, truth = reorient_to_lps(nib.load(case.image)), reorient_to_lps(nib.load(case.mask))
+        shape = (ct.shape[1], ct.shape[0])
+        if shape != tuple(preprocess.size_hw or ()) or shape != tuple(config["model"]["img_size"][1:]):
+            raise ValueError("Source native XY does not match the declared grid; refusing to resize")
+        before = {"ct": file_hash(case.image), "gt": file_hash(case.mask)}
+        dataset = CTSlabDataset([case], preprocess)
+        master = len(dataset) // 2
+        def forbidden_resize(*args, **kwargs):
+            raise AssertionError("Native route unexpectedly attempted XY interpolation")
+        with patch("merit_covid.data.pipeline.preprocessing.resize_in_plane", forbidden_resize):
+            sample = dataset[master]
+        indices = sample["slice_indices"].tolist()
+        native_ct = np.stack([np.asarray(ct.dataobj[:, :, i], dtype=np.float32).T for i in indices])
+        native_gt = np.stack([np.asarray(truth.dataobj[:, :, i], dtype=np.float32).T for i in indices])
+        np.testing.assert_array_equal(sample["image_slab"][0].numpy(), native_ct)
+        np.testing.assert_array_equal(sample["mask_slab"][0].numpy(), native_gt)
+        info = sample["metadata"]
+        if info["lesion_retention"]["resize_applied"]:
+            raise AssertionError("Native input recorded a resize")
+        after = {"ct": file_hash(case.image), "gt": file_hash(case.mask)}
+        if before != after:
+            raise AssertionError("Source CT/GT bytes changed")
+        report.update(status="PASS", config=config, split_sha256_lf=split_hash,
+            canonical_shape_xyz=list(ct.shape), input_shape=list(sample["image_slab"].shape),
+            original_orientation=list(nib.aff2axcodes(nib.load(case.image).affine)),
+            master_slice_index=master, slice_indices=indices,
+            native_size_hw=list(shape), processed_size_hw=info["processed_size_hw"],
+            xy_interpolation_called=False, crop_or_tiling_applied=False,
+            ct_equals_native_source=True, gt_equals_native_source=True,
+            positive_voxels_by_selected_slice=(native_gt == 1).sum(axis=(1, 2)).tolist(),
+            presence_by_selected_slice=(native_gt == 1).any(axis=(1, 2)).tolist(),
+            ct_range=[float(native_ct.min()), float(native_ct.max())],
+            source_sha256_before=before, source_sha256_after=after,
+            source_files_unchanged=True, lesion_retention=info["lesion_retention"],
+            model_run=False, optimizer_steps=0)
+    except Exception as error:
+        _failure(report, error)
+    dump_json(output, report)
+    return report
+
+
+def profile_model(config_path, output, *, size, batch_size, device="cuda", warmup=1, repeats=2,
+                  memory_fraction=None):
     """Full training step including AdamW state; synthetic inputs, not accuracy."""
     if type(warmup) is not int or warmup < 1 or type(repeats) is not int or repeats < 1:
         raise ValueError("At least one warmup and measured iteration required")
+    if memory_fraction is not None and (type(memory_fraction) not in (int, float)
+            or not math.isfinite(memory_fraction) or not 0 < memory_fraction <= 1):
+        raise ValueError("memory_fraction must be finite and in (0,1]")
+    if memory_fraction is not None and torch.device(device).type != "cuda":
+        raise ValueError("memory_fraction requires the isolated CUDA profiler")
     output = Path(output)
     if output.exists():
         raise FileExistsError(output)
@@ -88,7 +165,8 @@ def profile_model(config_path, output, *, size, batch_size, device="cuda", warmu
     report = {"status": "NOT_RUN", "size": size, "batch_size": batch_size,
               "warmup": warmup, "repeats": repeats, "input": "synthetic normal intensity, binary central lesion",
               "scope": "forward + MERIT loss + backward + unscale/clip + AdamW optimizer step; CUDA AMP as configured",
-              "timings_seconds": [], "optimizer_steps": 0, "amp_skipped_steps": 0}
+              "timings_seconds": [], "optimizer_steps": 0, "amp_skipped_steps": 0,
+              "cuda_memory_fraction": memory_fraction}
     resolved = None
     try:
         config = diagnostic_config(config_path, size, device, batch_size)
@@ -97,6 +175,11 @@ def profile_model(config_path, output, *, size, batch_size, device="cuda", warmu
         settings = config["training"]
         report.update(device=str(resolved), torch_version=torch.__version__, cuda_runtime=torch.version.cuda)
         if resolved.type == "cuda":
+            if memory_fraction is not None:
+                # This command runs in its own process; reserve room for display
+                # use instead of letting WDDM spill a large job into host RAM.
+                index = resolved.index if resolved.index is not None else torch.cuda.current_device()
+                torch.cuda.set_per_process_memory_fraction(float(memory_fraction), index)
             free, total = torch.cuda.mem_get_info(resolved)
             report.update(hardware=torch.cuda.get_device_name(resolved),
                           total_vram_mib=torch.cuda.get_device_properties(resolved).total_memory / 2**20,

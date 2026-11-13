@@ -38,3 +38,5 @@ training:
   amp: true
   threshold: 0.5
   seed: 42
+  # Shuffle case blocks and their masters; keep one-volume cache effective.
+  shuffle_mode: volume

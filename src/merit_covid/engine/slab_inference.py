@@ -33,6 +33,10 @@ def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0):
         for batch in loader:
             batch["image_slab"] = batch["image_slab"].to(device)
             logits = adapter.predict_logits(batch)
+            if (not isinstance(logits, torch.Tensor)
+                    or logits.shape != (len(batch["image_slab"]), 1, *batch["image_slab"].shape[-2:])
+                    or not logits.is_floating_point() or not torch.isfinite(logits).all()):
+                raise ValueError("MERIT master logits must be finite floating [B,1,H,W] before sigmoid")
             for i, metadata in enumerate(batch["metadata"]):
                 if batch["case_id"][i] != case.case_id or metadata["case_id"] != case.case_id:
                     raise ValueError("Wrong case during master reconstruction")

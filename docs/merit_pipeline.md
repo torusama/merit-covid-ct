@@ -25,6 +25,132 @@ defaults are materialized into the frozen config. The model's fixed
 `configs/merit_unetrpp.yaml` is model/loss-only smoke configuration; it is not a
 full experiment. Use `merit_index.yaml` or `merit_physical.yaml` for this CLI.
 
+## Full native XY feasibility (route 1)
+
+`configs/merit_native512.yaml` is a separate full-slice experiment: input is
+`[B,1,11,512,512]`, with the same feature size 16, depths 3/3/3/3 and all three
+MERIT modules enabled. It preserves native intensity and the existing sampling,
+loss, split and unknown-unit policies. Source slices already matching 512x512
+skip XY interpolation in the shared reader. The model still has a fixed grid:
+do not apply this config blindly to a dataset with other native XY dimensions.
+
+The `native-input` diagnostic checks one central slab from a selected TRAIN
+case. It refuses a source/grid mismatch, forbids calls to the XY interpolation
+function, compares CT and GT tensors with source pixels, and verifies source
+file SHA-256 before/after. It does not run a model or an optimizer.
+
+```powershell
+py scripts/merit_preflight.py native-input --config configs/merit_native512.yaml --fold 0 --case-id volume-covid19-A-0025 --output outputs/native512/input.json
+```
+
+Profile the unmodified full architecture in a separate CUDA process before
+training. `--memory-fraction` is an optional PyTorch allocator limit relative
+to physical VRAM; 1.0 allows the full physical budget, not extra shared system
+memory. Omit it for the allocator's default behavior. It does not change input
+values, model parameters or attention rules. A failed profile records the
+exception, peak allocated/reserved memory and successful optimizer-step count.
+
+```powershell
+py scripts/merit_preflight.py profile --config configs/merit_native512.yaml --size 512 --batch-size 1 --device cuda --warmup 1 --repeats 1 --memory-fraction 1.0 --output outputs/native512/profile.json
+```
+
+Larger grids also enlarge grid-dependent positional/projection parameters in
+the original backbone. Rebuild the model for this config; a 128x128 checkpoint
+is not interchangeable with a 512x512 checkpoint. Preserving input details does
+not itself establish training feasibility or improved segmentation accuracy.
+Recorded local feasibility results are in [validation.md](validation.md).
+
+## Colab and Kaggle quick start
+
+Use [notebooks/colab_connect.ipynb](../notebooks/colab_connect.ipynb).
+
+1. Colab: upload the supplied notebook, select a GPU runtime, then **Run all**.
+   A GitHub launch URL loads the published notebook, not uncommitted local edits.
+2. Kaggle: import the same notebook, enable GPU and Internet, then **Run all**.
+3. Save the generated report ZIP. Colab provides a final download cell; on
+   Kaggle retain `/kaggle/working/merit-results/` with Save Version.
+
+If Colab's browser download does not start, open the left Files panel, refresh,
+expand `merit-results`, and choose Download from the ZIP file's three-dot menu.
+The printed `/content/...` path identifies a runtime file, not a browser URL.
+
+There is no Drive mount, hard-coded personal folder, token, CT download or
+manual source checkout. The public source is fetched once and reused while
+the runtime remains alive. Installed dependencies are checked before pip runs.
+Torch and NumPy are constrained to the runtime's existing versions: setup will
+fail on an incompatible runtime instead of downloading a replacement CUDA/Torch
+stack. Colab/Kaggle still need a GPU assignment and network access; a new VM
+may need to install the small missing project dependencies again.
+
+Defaults run the full 128-grid sanity profile, then the full 512-grid profile,
+both batch 1 with AMP and complete optimizer steps. A failed sanity check stops
+the larger attempt. Each runs in a fresh child process; the notebook kernel
+does not import Torch or reserve a CUDA context. The allocator budget is
+explicitly recorded (default 90% physical VRAM). OOM/other failures remain
+visible in JSON/logs and are included in the ZIP; OOM does not become PASS.
+
+The notebook intentionally pins published source commit
+`e3493dd9f2dac704d2def6225d76f19df3262ec4`. Its model is identical to the local
+route-1 measurement. Unpublished local checkpoint/data-binding/inference repairs
+are not fetched, and the notebook does not use those paths: it is synthetic
+profiling only, with no dataset, checkpoint/resume, full training or evaluation.
+Update the pinned commit deliberately when publishing a new experiment.
+
+These cloud operations are described in the
+[Colab FAQ](https://research.google.com/colaboratory/faq.html) and
+[Kaggle notebook guide](https://www.kaggle.com/docs/notebooks).
+
+### Experimental activation checkpointing
+
+Upload [colab_checkpoint_trial.ipynb](../notebooks/colab_checkpoint_trial.ipynb),
+enable GPU, and Run all. Defaults are 512x512, batch 1, AMP, and the full physical
+allocator budget. No dataset is needed. The standalone helper
+`tools/merit_checkpoint_trial.py` is embedded verbatim, with its SHA-256 recorded,
+so it can be tested against the same pinned public model without publishing
+changes to that model. Core model files remain untouched.
+
+The helper checkpoints complete MER query-block calculations including the
+distance bias; each query still attends all context keys. It also checkpoints
+EPA, TEP, encoder1 and the final decoder. BatchNorm regions are excluded so
+running statistics are not updated a second time during recomputation. RNG
+state is preserved. Parameter objects, state keys and counts are unchanged.
+
+Before profiling, the worker checks float64 MER output/all gradients, compact
+full-model FP32 and AMP outputs/loss/input and parameter gradients, and exact
+normalization-buffer equality. Failure stops profiling. Comparisons use
+explicit recorded numerical tolerances; they are not a universal bitwise
+equivalence claim. These checks also run on the assigned cloud GPU.
+
+The report ZIP additionally contains `profile_512_equivalence.json` and the
+exact trial helper. A compact validation PASS is not a native-512 training PASS:
+read successful optimizer steps and memory results in `profile_512.json`.
+This experiment is not enabled in the production trainer or model config.
+
+### One uploaded real TRAIN case
+
+Use [colab_real_case.ipynb](../notebooks/colab_real_case.ipynb): enable GPU, Run all,
+and upload the prepared `A0025_CT_GT.zip` when prompted. The ZIP contains only
+the original A-0025 CT and mask; alternatively upload both original `.nii.gz`
+files. No manual extraction or full-cohort download is required. Verified inputs
+are reused within the same runtime. Wrong hashes, unexpected ZIP members and
+non-TRAIN selections are rejected before training.
+
+Base reader/model/loss and the canonical split come from the pinned public
+commit. `tools/merit_real_case_trial.py` and the checkpoint helper are embedded
+verbatim and hashed in the report, so a GitHub push is not required for the
+experiment. The frozen split bytes and case/group membership are verified;
+the other 198 source files are not replaced with placeholders or claimed as
+audited. Complete-cohort manifest validation and Trainer.fit/resume are outside
+this bounded pilot.
+
+The pilot forbids XY interpolation, compares each selected CT/GT slab with
+native source pixels, retains intensity/unit/sampling policies, and selects
+central consecutive masters without lesion-based selection. It attempts two
+AdamW/AMP updates with the shared MERIT loss and checkpointed model, records
+losses/gradient checks/timing/memory and parameter changes, and runs one CT-only
+master prediction under a GT-read guard. No complete volume or quality metric
+is produced. The report ZIP excludes patient images and large model weights.
+
 ## Sampling and independent physical settings
 
 `master_index` is local (5 of 11); `master_slice_index` is canonical-volume level.
@@ -70,6 +196,18 @@ The Dataset's CT-only mode strips mask paths before header/voxel reading.
 Recorded mask names can still participate in split fingerprint validation when
 the files are missing. Each Windows worker caches at most one volume.
 
+The experiment YAML files explicitly set `training.shuffle_mode: volume`:
+shuffle the case order, then shuffle masters within each case. Every master is
+visited once per epoch; no GT or lesion statistics control selection. With
+workers=0 this needs one cache fill per case instead of reloading a whole CT
+after almost every globally shuffled slice. Workers maintain separate bounded
+caches, so multiple workers can each load the same case. This changes sample
+order and is recorded in the frozen training protocol; it does not change the
+split, CT values, or targets. `slice` retains global slice shuffling, the shared
+loader API default. `sequential` disables shuffling for bounded diagnostics.
+Validation/test always remain sequential. Loader RNG state includes volume
+and within-volume permutations for exact epoch-boundary resume.
+
 ## Model and loss
 
 ```python
@@ -102,20 +240,30 @@ PCG `set_epoch(epoch)` is called every epoch, default warmup 30.
 Best checkpoint selection uses validation **group-macro full native-volume
 Dice**, not paper LIDC master-ROI Dice. Default threshold 0.5 is declared in the
 experiment; it is not selected from internal/external test labels.
+The shared config/metric validator requires a finite `0 < threshold < 1`;
+invalid endpoints fail before model construction or any optimizer step.
 
 `best.pt` and `last.pt` save model, optimizer, scheduler, scaler, epoch,
 best metric, early-stop counter, Python/NumPy/Torch/CUDA RNG, loader shuffle
 state, PCG ramp, effective config, split identity/fingerprint/hash, resolved
-source paths and runtime. Checkpoints replace atomically.
+CT and GT source paths and runtime. Schema 2 also binds the data configuration,
+manifest/patient-map bytes (SHA-256), and each resolved CT/GT path, size and
+nanosecond modification time. Checkpoints replace atomically.
 Existing runs require explicit resume.
 
 Resume verifies the frozen protocol. Only extension of the epoch budget is
 permitted; model/loss/preprocessing/sampling/fold/path changes are rejected.
+The trainer also rejects stale indexed source bindings and supplied CT/GT paths
+that disagree with the current manifest. Schema-1 checkpoints lack this binding:
+they remain loadable for CT-only inference, but cannot resume training. No
+automatic legacy migration is performed.
 Moving a dataset requires a new protocol or verified migration.
 Exact interrupted/uninterrupted replay is tested at epoch boundaries, not
 mid-batch. CPU/CUDA type switches are rejected; cross-hardware/version bitwise
 reproducibility is not promised. Checkpoints do not hash every source voxel:
-version and pin upstream data separately. Load only trusted local checkpoints.
+file stats catch ordinary in-place edits, not replacement with deliberately
+preserved size and timestamp. Version and pin upstream data separately. Load
+only trusted local checkpoints.
 
 ## Inference and metrics
 
@@ -123,6 +271,8 @@ version and pin upstream data separately. Load only trusted local checkpoints.
 without reading GT, converts two-class logits using `sigmoid(fg-bg)`, restores
 probabilities to native XY, then constructs `VolumePrediction`.
 Slice assembly rejects duplicate/missing slices or changed case/geometry.
+Master logits must have the expected floating shape and be finite before
+sigmoid; infinite logits cannot silently become apparently valid 0/1 scores.
 Original orientation is restored before thresholding.
 
 Standalone baseline patch inference remains separate and explicitly rejects

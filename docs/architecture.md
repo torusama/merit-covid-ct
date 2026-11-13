@@ -47,7 +47,8 @@ ct_pipeline/                       Legacy import aliases only
 configs/                           Explicit experiment/model configurations
 scripts/                           Experiment, split, dataset and smoke CLIs
 tools/                             Downloads, audit/report, viewer, source checks
-examples/                          Batch, baseline and MERIT usage
+scripts/model_smoke.py              Synthetic baseline/MERIT forward and backward
+scripts/unetrpp_real_input.py       One real CT patch through the baseline
 splits/                            Canonical saved five-fold partitions
 analysis/                          Stored descriptive evidence; not training input
 tests/                             Shared core, adapters and integrated regression

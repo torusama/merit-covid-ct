@@ -127,7 +127,10 @@ Initialization reads selected headers only. Each worker caches at most one
 processed volume, releasing it before loading another; cache is not pickled to
 Windows workers. `len(dataset)` counts master slices, not volumes.
 Random slice shuffle can repeatedly decompress CT files; no cohort preloading
-is used to conceal that cost.
+is used to conceal that cost. MERIT experiment configs explicitly use volume
+block shuffling with randomized masters inside each case; see
+[training order and resume](merit_pipeline.md#preprocessing-and-supervision).
+The shared loader keeps global slice shuffling as its compatibility default.
 
 Collation checks compatible fields, stacks tensors, and keeps metadata/nullable
 values separate. Use batch size 1 or shape buckets when native H/W differ.

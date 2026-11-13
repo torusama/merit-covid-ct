@@ -205,11 +205,14 @@ def test_native_master_inference_two_class_conversion_and_patch_rejection(nifti_
         predict_patch_batch(model, {"image_patch": torch.zeros(1,1,64,32,32)})
 
 
-def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_path):
+@pytest.mark.parametrize("shuffle_mode", ["slice", "volume"])
+def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_path, shuffle_mode):
     config = validate_experiment(synthetic_experiment(tmp_path / "data"))
+    config["training"]["shuffle_mode"] = shuffle_mode
     datasets, info = split_datasets(config, 0)
     def trainer(cfg, path):
-        loader = make_dataloader(datasets["train"], batch_size=2, shuffle=True, seed=cfg["training"]["seed"])
+        loader = make_dataloader(datasets["train"], batch_size=2, shuffle=True,
+                                 shuffle_mode=shuffle_mode, seed=cfg["training"]["seed"])
         return Trainer(cfg, loader, datasets["validation"].cases, info, path)
     short = trainer(config, tmp_path / "resume")
     original = {name: p.detach().clone() for name, p in short.model.named_parameters()}

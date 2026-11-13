@@ -1,0 +1,1088 @@
+{
+  "recorded_on": "2026-11-13",
+  "provenance": "JSON copied from user-supplied Colab report ZIPs; no attached source code executed. These are bounded feasibility checks, not segmentation accuracy or full-cohort training.",
+  "local_cpu_suite": {
+    "command": "python -m pytest -q --tb=short",
+    "tests": 390,
+    "passed": 389,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 108.048,
+    "skip_reason": "CUDA unavailable in the CPU test environment"
+  },
+  "runs": [
+    {
+      "archive": "20261113_035852_00e556ea.zip",
+      "archive_sha256": "f7a235a316f5beefc1b83a8c4825cdf10aa9b68228bc93eacbe72bd65ccc5096",
+      "reports": {
+        "environment.json": {
+          "torch": "2.14.1+cu130",
+          "cuda": "13.0",
+          "cuda_available": true,
+          "gpus": [
+            {
+              "name": "Tesla T4",
+              "vram_mib": 14912.6875
+            }
+          ],
+          "packages": {
+            "monai": "1.5.2",
+            "einops": "0.8.2",
+            "numpy": "2.4.6",
+            "nibabel": "5.4.2",
+            "scipy": "1.16.3",
+            "PyYAML": "6.0.3"
+          },
+          "source_commit": "e3493dd9f2dac704d2def6225d76f19df3262ec4",
+          "source_repository": "https://github.com/torusama/merit-covid-ct.git"
+        },
+        "profile_128.json": {
+          "status": "PASS",
+          "size": 128,
+          "batch_size": 1,
+          "warmup": 1,
+          "repeats": 1,
+          "input": "synthetic normal intensity, binary central lesion",
+          "scope": "forward + MERIT loss + backward + unscale/clip + AdamW optimizer step; CUDA AMP as configured",
+          "timings_seconds": [
+            0.2794927649999863
+          ],
+          "optimizer_steps": 2,
+          "amp_skipped_steps": 0,
+          "config": {
+            "data": {
+              "manifest": "/content/merit-source-e3493dd9f2da/data/covid19_20/cases.json",
+              "split_path": "/content/merit-source-e3493dd9f2da/splits/covid19_20_5fold.json"
+            },
+            "preprocess": {
+              "slab_size": 11,
+              "size_hw": [
+                128,
+                128
+              ],
+              "hu_window": null,
+              "intensity_encoding": "native",
+              "assume_mm": false,
+              "sampling_mode": "index",
+              "target_spacing_mm": null,
+              "boundary_policy": "edge",
+              "duplicate_slice_policy": "unique",
+              "intensity_provenance": null
+            },
+            "model": {
+              "in_channels": 1,
+              "out_channels": 2,
+              "img_size": [
+                11,
+                128,
+                128
+              ],
+              "feature_size": 16,
+              "depths": [
+                3,
+                3,
+                3,
+                3
+              ],
+              "num_heads": 4,
+              "norm_name": "instance",
+              "use_tep": true,
+              "use_mer": true,
+              "use_pcg": true,
+              "salience_hidden": 64,
+              "position_dim": 64,
+              "position_hidden": 16,
+              "mer_attention_dim": 64,
+              "gate_hidden": 16,
+              "presence_hidden": 8,
+              "query_chunk_size": 128,
+              "pcg_ramp": 1.0,
+              "position_mode": "index",
+              "position_unit_mm": 1.0
+            },
+            "loss": {
+              "gaussian_sigma": 2.0,
+              "presence_weight": 0.2,
+              "alignment_weight": 0.05,
+              "salience_weight": 0.03,
+              "presence_positive_weight": 1.0,
+              "smooth": 1e-05,
+              "weighting_mode": "index",
+              "sigma_slices": 2.0,
+              "sigma_mm": null,
+              "alignment_pool": "max",
+              "top_k_fraction": 0.05
+            },
+            "training": {
+              "epochs": 100,
+              "batch_size": 1,
+              "num_workers": 0,
+              "learning_rate": 0.0003,
+              "weight_decay": 0.0001,
+              "device": "cuda",
+              "amp": true,
+              "amp_init_scale": 1024.0,
+              "gradient_clip": 1.0,
+              "seed": 42,
+              "warmup_epochs": 30,
+              "patience": 20,
+              "scheduler_patience": 5,
+              "scheduler_factor": 0.5,
+              "threshold": 0.5,
+              "include_hd95": true,
+              "threads": 2,
+              "deterministic": true
+            }
+          },
+          "device": "cuda",
+          "torch_version": "2.14.1+cu130",
+          "cuda_runtime": "13.0",
+          "hardware": "Tesla T4",
+          "total_vram_mib": 14912.6875,
+          "free_vram_before_model_mib": 14807.8125,
+          "parameter_count": 29836242,
+          "last_losses": {
+            "total": 1.754966139793396,
+            "segmentation": 1.6836601495742798,
+            "presence": 0.29251575469970703,
+            "alignment": 0.057361532002687454,
+            "salience": 0.331159383058548
+          },
+          "last_gradient_norm_finite": true,
+          "mean_step_seconds": 0.2794927649999863,
+          "seconds_per_slab": 0.2794927649999863,
+          "peak_allocated_mib": 966.71533203125,
+          "peak_reserved_mib": 1018.0,
+          "cloud_allocator_fraction": 0.9
+        },
+        "profile_512.json": {
+          "status": "OOM",
+          "size": 512,
+          "batch_size": 1,
+          "warmup": 1,
+          "repeats": 1,
+          "input": "synthetic normal intensity, binary central lesion",
+          "scope": "forward + MERIT loss + backward + unscale/clip + AdamW optimizer step; CUDA AMP as configured",
+          "timings_seconds": [],
+          "optimizer_steps": 0,
+          "amp_skipped_steps": 0,
+          "config": {
+            "data": {
+              "manifest": "/content/merit-source-e3493dd9f2da/data/covid19_20/cases.json",
+              "split_path": "/content/merit-source-e3493dd9f2da/splits/covid19_20_5fold.json"
+            },
+            "preprocess": {
+              "slab_size": 11,
+              "size_hw": [
+                512,
+                512
+              ],
+              "hu_window": null,
+              "intensity_encoding": "native",
+              "assume_mm": false,
+              "sampling_mode": "index",
+              "target_spacing_mm": null,
+              "boundary_policy": "edge",
+              "duplicate_slice_policy": "unique",
+              "intensity_provenance": null
+            },
+            "model": {
+              "in_channels": 1,
+              "out_channels": 2,
+              "img_size": [
+                11,
+                512,
+                512
+              ],
+              "feature_size": 16,
+              "depths": [
+                3,
+                3,
+                3,
+                3
+              ],
+              "num_heads": 4,
+              "norm_name": "instance",
+              "use_tep": true,
+              "use_mer": true,
+              "use_pcg": true,
+              "salience_hidden": 64,
+              "position_dim": 64,
+              "position_hidden": 16,
+              "mer_attention_dim": 64,
+              "gate_hidden": 16,
+              "presence_hidden": 8,
+              "query_chunk_size": 128,
+              "pcg_ramp": 1.0,
+              "position_mode": "index",
+              "position_unit_mm": 1.0
+            },
+            "loss": {
+              "gaussian_sigma": 2.0,
+              "presence_weight": 0.2,
+              "alignment_weight": 0.05,
+              "salience_weight": 0.03,
+              "presence_positive_weight": 1.0,
+              "smooth": 1e-05,
+              "weighting_mode": "index",
+              "sigma_slices": 2.0,
+              "sigma_mm": null,
+              "alignment_pool": "max",
+              "top_k_fraction": 0.05
+            },
+            "training": {
+              "epochs": 100,
+              "batch_size": 1,
+              "num_workers": 0,
+              "learning_rate": 0.0003,
+              "weight_decay": 0.0001,
+              "device": "cuda",
+              "amp": true,
+              "amp_init_scale": 1024.0,
+              "gradient_clip": 1.0,
+              "seed": 42,
+              "warmup_epochs": 30,
+              "patience": 20,
+              "scheduler_patience": 5,
+              "scheduler_factor": 0.5,
+              "threshold": 0.5,
+              "include_hd95": true,
+              "threads": 2,
+              "deterministic": true
+            }
+          },
+          "device": "cuda",
+          "torch_version": "2.14.1+cu130",
+          "cuda_runtime": "13.0",
+          "hardware": "Tesla T4",
+          "total_vram_mib": 14912.6875,
+          "free_vram_before_model_mib": 14807.8125,
+          "parameter_count": 174043602,
+          "error_type": "OutOfMemoryError",
+          "error": "CUDA out of memory. Tried to allocate 80.00 MiB. GPU 0 has a total capacity of 14.56 GiB of which 1.31 GiB is free. Including non-PyTorch memory, this process has 13.25 GiB memory in use. 13.11 GiB allowed; Of the allocated memory 13.01 GiB is allocated by PyTorch, and 84.61 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+          "traceback": "Traceback (most recent call last):\n  File \"/content/merit-source-e3493dd9f2da/src/merit_covid/engine/preflight.py\", line 123, in profile_model\n    predictions = model(image, master, offsets)\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1783, in _wrapped_call_impl\n    return self._call_impl(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1794, in _call_impl\n    return forward_call(*args, **kwargs)\n  File \"/content/merit-source-e3493dd9f2da/src/merit_covid/models/merit_unetrpp/model.py\", line 94, in forward\n    mid = self.mer(mid, master, z_offsets_mm)\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1783, in _wrapped_call_impl\n    return self._call_impl(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1794, in _call_impl\n    return forward_call(*args, **kwargs)\n  File \"/content/merit-source-e3493dd9f2da/src/merit_covid/models/merit_unetrpp/modules.py\", line 194, in forward\n    bias = -self.distance_scale * distance\n           ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~\ntorch.OutOfMemoryError: CUDA out of memory. Tried to allocate 80.00 MiB. GPU 0 has a total capacity of 14.56 GiB of which 1.31 GiB is free. Including non-PyTorch memory, this process has 13.25 GiB memory in use. 13.11 GiB allowed; Of the allocated memory 13.01 GiB is allocated by PyTorch, and 84.61 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)\n",
+          "peak_allocated_mib": 13331.39013671875,
+          "peak_reserved_mib": 13408.0,
+          "cloud_allocator_fraction": 0.9
+        }
+      }
+    },
+    {
+      "archive": "20261113_041302_22583460.zip",
+      "archive_sha256": "83a491a72b31477e272248ea9a8c614f3685ec6b0a9ab9dee3c1d80d2f7f9591",
+      "reports": {
+        "environment.json": {
+          "torch": "2.14.1+cu130",
+          "cuda": "13.0",
+          "cuda_available": true,
+          "gpus": [
+            {
+              "name": "Tesla T4",
+              "vram_mib": 14912.6875
+            }
+          ],
+          "packages": {
+            "monai": "1.5.2",
+            "einops": "0.8.2",
+            "numpy": "2.4.6",
+            "nibabel": "5.4.2",
+            "scipy": "1.16.3",
+            "PyYAML": "6.0.3"
+          },
+          "source_commit": "e3493dd9f2dac704d2def6225d76f19df3262ec4",
+          "source_repository": "https://github.com/torusama/merit-covid-ct.git"
+        },
+        "profile_512.json": {
+          "status": "OOM",
+          "size": 512,
+          "batch_size": 1,
+          "warmup": 1,
+          "repeats": 1,
+          "input": "synthetic normal intensity, binary central lesion",
+          "scope": "forward + MERIT loss + backward + unscale/clip + AdamW optimizer step; CUDA AMP as configured",
+          "timings_seconds": [],
+          "optimizer_steps": 0,
+          "amp_skipped_steps": 0,
+          "config": {
+            "data": {
+              "manifest": "/content/merit-source-e3493dd9f2da/data/covid19_20/cases.json",
+              "split_path": "/content/merit-source-e3493dd9f2da/splits/covid19_20_5fold.json"
+            },
+            "preprocess": {
+              "slab_size": 11,
+              "size_hw": [
+                512,
+                512
+              ],
+              "hu_window": null,
+              "intensity_encoding": "native",
+              "assume_mm": false,
+              "sampling_mode": "index",
+              "target_spacing_mm": null,
+              "boundary_policy": "edge",
+              "duplicate_slice_policy": "unique",
+              "intensity_provenance": null
+            },
+            "model": {
+              "in_channels": 1,
+              "out_channels": 2,
+              "img_size": [
+                11,
+                512,
+                512
+              ],
+              "feature_size": 16,
+              "depths": [
+                3,
+                3,
+                3,
+                3
+              ],
+              "num_heads": 4,
+              "norm_name": "instance",
+              "use_tep": true,
+              "use_mer": true,
+              "use_pcg": true,
+              "salience_hidden": 64,
+              "position_dim": 64,
+              "position_hidden": 16,
+              "mer_attention_dim": 64,
+              "gate_hidden": 16,
+              "presence_hidden": 8,
+              "query_chunk_size": 128,
+              "pcg_ramp": 1.0,
+              "position_mode": "index",
+              "position_unit_mm": 1.0
+            },
+            "loss": {
+              "gaussian_sigma": 2.0,
+              "presence_weight": 0.2,
+              "alignment_weight": 0.05,
+              "salience_weight": 0.03,
+              "presence_positive_weight": 1.0,
+              "smooth": 1e-05,
+              "weighting_mode": "index",
+              "sigma_slices": 2.0,
+              "sigma_mm": null,
+              "alignment_pool": "max",
+              "top_k_fraction": 0.05
+            },
+            "training": {
+              "epochs": 100,
+              "batch_size": 1,
+              "num_workers": 0,
+              "learning_rate": 0.0003,
+              "weight_decay": 0.0001,
+              "device": "cuda",
+              "amp": true,
+              "amp_init_scale": 1024.0,
+              "gradient_clip": 1.0,
+              "seed": 42,
+              "warmup_epochs": 30,
+              "patience": 20,
+              "scheduler_patience": 5,
+              "scheduler_factor": 0.5,
+              "threshold": 0.5,
+              "include_hd95": true,
+              "threads": 2,
+              "deterministic": true
+            }
+          },
+          "device": "cuda",
+          "torch_version": "2.14.1+cu130",
+          "cuda_runtime": "13.0",
+          "hardware": "Tesla T4",
+          "total_vram_mib": 14912.6875,
+          "free_vram_before_model_mib": 14807.8125,
+          "parameter_count": 174043602,
+          "error_type": "OutOfMemoryError",
+          "error": "CUDA out of memory. Tried to allocate 80.00 MiB. GPU 0 has a total capacity of 14.56 GiB of which 61.81 MiB is free. Including non-PyTorch memory, this process has 14.50 GiB memory in use. Of the allocated memory 14.23 GiB is allocated by PyTorch, and 116.42 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+          "traceback": "Traceback (most recent call last):\n  File \"/content/merit-source-e3493dd9f2da/src/merit_covid/engine/preflight.py\", line 123, in profile_model\n    predictions = model(image, master, offsets)\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1783, in _wrapped_call_impl\n    return self._call_impl(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1794, in _call_impl\n    return forward_call(*args, **kwargs)\n  File \"/content/merit-source-e3493dd9f2da/src/merit_covid/models/merit_unetrpp/model.py\", line 94, in forward\n    mid = self.mer(mid, master, z_offsets_mm)\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1783, in _wrapped_call_impl\n    return self._call_impl(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/dist-packages/torch/nn/modules/module.py\", line 1794, in _call_impl\n    return forward_call(*args, **kwargs)\n  File \"/content/merit-source-e3493dd9f2da/src/merit_covid/models/merit_unetrpp/modules.py\", line 193, in forward\n    distance = (delta / float(height ** 2 + width ** 2)).repeat(1, depth - 1)\ntorch.OutOfMemoryError: CUDA out of memory. Tried to allocate 80.00 MiB. GPU 0 has a total capacity of 14.56 GiB of which 61.81 MiB is free. Including non-PyTorch memory, this process has 14.50 GiB memory in use. Of the allocated memory 14.23 GiB is allocated by PyTorch, and 116.42 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)\n",
+          "peak_allocated_mib": 14627.578125,
+          "peak_reserved_mib": 14688.0,
+          "cloud_allocator_fraction": 1.0
+        }
+      }
+    },
+    {
+      "archive": "20261113_061303_03f5c52a.zip",
+      "archive_sha256": "fe579442c8c16e762f64e915efa1ce3909a38bfdc4f773e893dbf453aa407b01",
+      "reports": {
+        "environment.json": {
+          "torch": "2.14.1+cu130",
+          "cuda": "13.0",
+          "cuda_available": true,
+          "gpus": [
+            {
+              "name": "Tesla T4",
+              "vram_mib": 14912.6875
+            }
+          ],
+          "packages": {
+            "monai": "1.5.2",
+            "einops": "0.8.2",
+            "numpy": "2.4.6",
+            "nibabel": "5.4.2",
+            "scipy": "1.16.3",
+            "PyYAML": "6.0.3"
+          },
+          "source_commit": "e3493dd9f2dac704d2def6225d76f19df3262ec4",
+          "source_repository": "https://github.com/torusama/merit-covid-ct.git",
+          "checkpoint_trial_sha256": "8c2bb3133e96ff2bb5a20e080c30eb446ffe0b62e05608ff5132acb6730b26f8",
+          "checkpoint_trial": true
+        },
+        "profile_512.json": {
+          "status": "PASS",
+          "size": 512,
+          "batch_size": 1,
+          "warmup": 1,
+          "repeats": 1,
+          "input": "synthetic normal intensity, binary central lesion",
+          "scope": "forward + MERIT loss + backward + unscale/clip + AdamW optimizer step; CUDA AMP as configured",
+          "timings_seconds": [
+            13.702913685999988
+          ],
+          "optimizer_steps": 2,
+          "amp_skipped_steps": 0,
+          "config": {
+            "data": {
+              "manifest": "/content/merit-source-e3493dd9f2da/data/covid19_20/cases.json",
+              "split_path": "/content/merit-source-e3493dd9f2da/splits/covid19_20_5fold.json"
+            },
+            "preprocess": {
+              "slab_size": 11,
+              "size_hw": [
+                512,
+                512
+              ],
+              "hu_window": null,
+              "intensity_encoding": "native",
+              "assume_mm": false,
+              "sampling_mode": "index",
+              "target_spacing_mm": null,
+              "boundary_policy": "edge",
+              "duplicate_slice_policy": "unique",
+              "intensity_provenance": null
+            },
+            "model": {
+              "in_channels": 1,
+              "out_channels": 2,
+              "img_size": [
+                11,
+                512,
+                512
+              ],
+              "feature_size": 16,
+              "depths": [
+                3,
+                3,
+                3,
+                3
+              ],
+              "num_heads": 4,
+              "norm_name": "instance",
+              "use_tep": true,
+              "use_mer": true,
+              "use_pcg": true,
+              "salience_hidden": 64,
+              "position_dim": 64,
+              "position_hidden": 16,
+              "mer_attention_dim": 64,
+              "gate_hidden": 16,
+              "presence_hidden": 8,
+              "query_chunk_size": 128,
+              "pcg_ramp": 1.0,
+              "position_mode": "index",
+              "position_unit_mm": 1.0
+            },
+            "loss": {
+              "gaussian_sigma": 2.0,
+              "presence_weight": 0.2,
+              "alignment_weight": 0.05,
+              "salience_weight": 0.03,
+              "presence_positive_weight": 1.0,
+              "smooth": 1e-05,
+              "weighting_mode": "index",
+              "sigma_slices": 2.0,
+              "sigma_mm": null,
+              "alignment_pool": "max",
+              "top_k_fraction": 0.05
+            },
+            "training": {
+              "epochs": 100,
+              "batch_size": 1,
+              "num_workers": 0,
+              "learning_rate": 0.0003,
+              "weight_decay": 0.0001,
+              "device": "cuda",
+              "amp": true,
+              "amp_init_scale": 1024.0,
+              "gradient_clip": 1.0,
+              "seed": 42,
+              "warmup_epochs": 30,
+              "patience": 20,
+              "scheduler_patience": 5,
+              "scheduler_factor": 0.5,
+              "threshold": 0.5,
+              "include_hd95": true,
+              "threads": 2,
+              "deterministic": true
+            }
+          },
+          "device": "cuda",
+          "torch_version": "2.14.1+cu130",
+          "cuda_runtime": "13.0",
+          "hardware": "Tesla T4",
+          "total_vram_mib": 14912.6875,
+          "free_vram_before_model_mib": 14645.8125,
+          "parameter_count": 174043602,
+          "last_losses": {
+            "total": 1.8139522075653076,
+            "segmentation": 1.7266480922698975,
+            "presence": 0.35628610849380493,
+            "alignment": 0.05968649312853813,
+            "salience": 0.43541839718818665
+          },
+          "last_gradient_norm_finite": true,
+          "mean_step_seconds": 13.702913685999988,
+          "seconds_per_slab": 13.702913685999988,
+          "peak_allocated_mib": 4650.55419921875,
+          "peak_reserved_mib": 4958.0,
+          "checkpoint_trial": true,
+          "equivalence": {
+            "status": "PASS",
+            "mer": {
+              "status": "PASS",
+              "dtype": "float64",
+              "off_center_masters": true,
+              "max_parameter_gradient_abs_error": 0.0
+            },
+            "model_fp32": {
+              "status": "PASS",
+              "amp": false,
+              "device": "cuda:0",
+              "rtol": 0.0001,
+              "atol": 1e-06,
+              "same_parameter_count_and_state_keys": true,
+              "dropout_rng_preserved": true,
+              "normalization_buffers_unchanged": true,
+              "max_output_abs_error": 0.0,
+              "max_input_gradient_abs_error": 0.0,
+              "max_parameter_gradient_abs_error": 0.0
+            },
+            "model_amp": {
+              "status": "PASS",
+              "amp": true,
+              "device": "cuda:0",
+              "rtol": 0.001,
+              "atol": 1e-05,
+              "same_parameter_count_and_state_keys": true,
+              "dropout_rng_preserved": true,
+              "normalization_buffers_unchanged": true,
+              "max_output_abs_error": 0.0,
+              "max_input_gradient_abs_error": 0.0,
+              "max_parameter_gradient_abs_error": 0.0
+            }
+          },
+          "cloud_allocator_fraction": 1.0,
+          "production_model_source_modified": false,
+          "execution_regions": "MER query blocks including bias; EPA, TEP, encoder1 and final decoder; BatchNorm excluded"
+        },
+        "profile_512_equivalence.json": {
+          "status": "PASS",
+          "mer": {
+            "status": "PASS",
+            "dtype": "float64",
+            "off_center_masters": true,
+            "max_parameter_gradient_abs_error": 0.0
+          },
+          "model_fp32": {
+            "status": "PASS",
+            "amp": false,
+            "device": "cuda:0",
+            "rtol": 0.0001,
+            "atol": 1e-06,
+            "same_parameter_count_and_state_keys": true,
+            "dropout_rng_preserved": true,
+            "normalization_buffers_unchanged": true,
+            "max_output_abs_error": 0.0,
+            "max_input_gradient_abs_error": 0.0,
+            "max_parameter_gradient_abs_error": 0.0
+          },
+          "model_amp": {
+            "status": "PASS",
+            "amp": true,
+            "device": "cuda:0",
+            "rtol": 0.001,
+            "atol": 1e-05,
+            "same_parameter_count_and_state_keys": true,
+            "dropout_rng_preserved": true,
+            "normalization_buffers_unchanged": true,
+            "max_output_abs_error": 0.0,
+            "max_input_gradient_abs_error": 0.0,
+            "max_parameter_gradient_abs_error": 0.0
+          }
+        }
+      }
+    },
+    {
+      "archive": "20261113_081310_7f8b19a4.zip",
+      "archive_sha256": "2dad521d8da9968a8c45ab4536d7f5e5446b76228b9a43a36a9b668037b7a4a1",
+      "reports": {
+        "environment.json": {
+          "torch": "2.14.1+cu130",
+          "cuda": "13.0",
+          "cuda_available": true,
+          "gpus": [
+            {
+              "name": "Tesla T4",
+              "vram_mib": 14912.6875
+            }
+          ],
+          "packages": {
+            "monai": "1.5.2",
+            "einops": "0.8.2",
+            "numpy": "2.4.6",
+            "nibabel": "5.4.2",
+            "scipy": "1.16.3",
+            "PyYAML": "6.0.3"
+          },
+          "source_commit": "e3493dd9f2dac704d2def6225d76f19df3262ec4",
+          "source_repository": "https://github.com/torusama/merit-covid-ct.git",
+          "checkpoint_trial_sha256": "8c2bb3133e96ff2bb5a20e080c30eb446ffe0b62e05608ff5132acb6730b26f8",
+          "checkpoint_trial": true,
+          "real_case_trial_sha256": "d7d9efd33d6e3505db9bdd2e54eaf59a70780ece8a6f16f9fc74fdde603e82a9",
+          "case_id": "volume-covid19-A-0025"
+        },
+        "real_case.json": {
+          "status": "PASS",
+          "scope": "one verified TRAIN case, bounded native optimizer attempts",
+          "requested_attempts": 2,
+          "optimizer_steps": 2,
+          "amp_skipped_steps": 0,
+          "full_training": false,
+          "accuracy_evaluated": false,
+          "checkpoint_saved": false,
+          "production_source_modified": false,
+          "input_checks": [
+            {
+              "master": 30,
+              "selected_slices": [
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35
+              ],
+              "ct_gt_equal_native_source": true,
+              "positive_voxels_per_selected_slice": [
+                16111,
+                15606,
+                15224,
+                15133,
+                16636,
+                14993,
+                12993,
+                11051,
+                10088,
+                9422,
+                10022
+              ],
+              "presence_per_selected_slice": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "ct_range": [
+                -2048.0,
+                1444.0
+              ]
+            },
+            {
+              "master": 31,
+              "selected_slices": [
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36
+              ],
+              "ct_gt_equal_native_source": true,
+              "positive_voxels_per_selected_slice": [
+                15606,
+                15224,
+                15133,
+                16636,
+                14993,
+                12993,
+                11051,
+                10088,
+                9422,
+                10022,
+                9435
+              ],
+              "presence_per_selected_slice": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "ct_range": [
+                -2048.0,
+                1516.0
+              ]
+            }
+          ],
+          "batches": [
+            {
+              "attempt": 1,
+              "master": 30,
+              "seconds": 13.958123673999978,
+              "skipped": false,
+              "gradient_norm_finite": true,
+              "losses": {
+                "total": 1.8376665115356445,
+                "segmentation": 1.7467834949493408,
+                "presence": 0.33535531163215637,
+                "alignment": 0.0648663341999054,
+                "salience": 0.6856191754341125
+              }
+            },
+            {
+              "attempt": 2,
+              "master": 31,
+              "seconds": 13.730988515999968,
+              "skipped": false,
+              "gradient_norm_finite": true,
+              "losses": {
+                "total": 1.7496963739395142,
+                "segmentation": 1.6693601608276367,
+                "presence": 0.3328697681427002,
+                "alignment": 0.05639069899916649,
+                "salience": 0.3647576570510864
+              }
+            }
+          ],
+          "case_id": "volume-covid19-A-0025",
+          "fold": 0,
+          "identity": {
+            "group_source": "volume_id_fallback",
+            "patient_ids_available": false,
+            "identity_note": "Patient identity is unverified. Group/volume independence does not establish patient independence across series."
+          },
+          "source_sha256_before": {
+            "ct": "105b590753619c608e241001aee1ff5c1add4f432103930825d460bf8a2bb8b6",
+            "gt": "bd90a1e4a856269b8e2fcc9da18f6eecbc834750db0ba0806796692bc7d4407c"
+          },
+          "split_sha256_lf": "7b31f9e250e64826f1fff0d9fec4a4aba034252cec7d5123d5f0393ec665e54d",
+          "config": {
+            "data": {
+              "manifest": "/content/merit-source-e3493dd9f2da/data/covid19_20/cases.json",
+              "split_path": "/content/merit-source-e3493dd9f2da/splits/covid19_20_5fold.json"
+            },
+            "preprocess": {
+              "slab_size": 11,
+              "size_hw": [
+                512,
+                512
+              ],
+              "hu_window": null,
+              "intensity_encoding": "native",
+              "assume_mm": false,
+              "sampling_mode": "index",
+              "target_spacing_mm": null,
+              "boundary_policy": "edge",
+              "duplicate_slice_policy": "unique",
+              "intensity_provenance": null
+            },
+            "model": {
+              "in_channels": 1,
+              "out_channels": 2,
+              "img_size": [
+                11,
+                512,
+                512
+              ],
+              "feature_size": 16,
+              "depths": [
+                3,
+                3,
+                3,
+                3
+              ],
+              "num_heads": 4,
+              "norm_name": "instance",
+              "use_tep": true,
+              "use_mer": true,
+              "use_pcg": true,
+              "salience_hidden": 64,
+              "position_dim": 64,
+              "position_hidden": 16,
+              "mer_attention_dim": 64,
+              "gate_hidden": 16,
+              "presence_hidden": 8,
+              "query_chunk_size": 128,
+              "pcg_ramp": 1.0,
+              "position_mode": "index",
+              "position_unit_mm": 1.0
+            },
+            "loss": {
+              "gaussian_sigma": 2.0,
+              "presence_weight": 0.2,
+              "alignment_weight": 0.05,
+              "salience_weight": 0.03,
+              "presence_positive_weight": 1.0,
+              "smooth": 1e-05,
+              "weighting_mode": "index",
+              "sigma_slices": 2.0,
+              "sigma_mm": null,
+              "alignment_pool": "max",
+              "top_k_fraction": 0.05
+            },
+            "training": {
+              "epochs": 100,
+              "batch_size": 1,
+              "num_workers": 0,
+              "learning_rate": 0.0003,
+              "weight_decay": 0.0001,
+              "device": "cuda",
+              "amp": true,
+              "amp_init_scale": 1024.0,
+              "gradient_clip": 1.0,
+              "seed": 42,
+              "warmup_epochs": 30,
+              "patience": 20,
+              "scheduler_patience": 5,
+              "scheduler_factor": 0.5,
+              "threshold": 0.5,
+              "include_hd95": true,
+              "threads": 2,
+              "deterministic": true
+            }
+          },
+          "torch_version": "2.14.1+cu130",
+          "cuda_runtime": "13.0",
+          "hardware": "Tesla T4",
+          "native_shape_xyz": [
+            512,
+            512,
+            61
+          ],
+          "native_size_hw": [
+            512,
+            512
+          ],
+          "cloud_allocator_fraction": 1.0,
+          "geometry": {
+            "original_orientation": [
+              "L",
+              "P",
+              "S"
+            ],
+            "canonical_orientation": [
+              "L",
+              "P",
+              "S"
+            ],
+            "original_shape_xyz": [
+              512,
+              512,
+              61
+            ],
+            "canonical_shape_xyz": [
+              512,
+              512,
+              61
+            ],
+            "original_affine_mm": [
+              [
+                -0.8460000157356262,
+                0.0,
+                0.0,
+                216.3730010986328
+              ],
+              [
+                0.0,
+                -0.8460000157356262,
+                0.0,
+                216.37339782714844
+              ],
+              [
+                0.0,
+                0.0,
+                5.0,
+                -252.5
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "canonical_affine_mm": [
+              [
+                -0.8460000157356262,
+                0.0,
+                0.0,
+                216.3730010986328
+              ],
+              [
+                0.0,
+                -0.8460000157356262,
+                0.0,
+                216.37339782714844
+              ],
+              [
+                0.0,
+                0.0,
+                5.0,
+                -252.5
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "spatial_unit_in_header": "mm",
+            "assume_mm": false,
+            "nifti_scaling": {
+              "slope": 1.0,
+              "intercept": 0.0
+            },
+            "intensity_encoding": "native",
+            "hu_window": null
+          },
+          "master_indices": [
+            30,
+            31
+          ],
+          "input_shape": [
+            1,
+            1,
+            11,
+            512,
+            512
+          ],
+          "xy_interpolation_called": false,
+          "normalization_applied": false,
+          "dataset_and_native_comparison_seconds": 3.908416052000007,
+          "equivalence": {
+            "mer": {
+              "status": "PASS",
+              "dtype": "float64",
+              "off_center_masters": true,
+              "max_parameter_gradient_abs_error": 0.0
+            },
+            "fp32": {
+              "status": "PASS",
+              "amp": false,
+              "device": "cuda",
+              "rtol": 0.0001,
+              "atol": 1e-06,
+              "same_parameter_count_and_state_keys": true,
+              "dropout_rng_preserved": true,
+              "normalization_buffers_unchanged": true,
+              "max_output_abs_error": 0.0,
+              "max_input_gradient_abs_error": 0.0,
+              "max_parameter_gradient_abs_error": 0.0
+            },
+            "amp": {
+              "status": "PASS",
+              "amp": true,
+              "device": "cuda",
+              "rtol": 0.001,
+              "atol": 1e-05,
+              "same_parameter_count_and_state_keys": true,
+              "dropout_rng_preserved": true,
+              "normalization_buffers_unchanged": true,
+              "max_output_abs_error": 0.0,
+              "max_input_gradient_abs_error": 0.0,
+              "max_parameter_gradient_abs_error": 0.0
+            }
+          },
+          "parameter_count": 174043602,
+          "actual_pcg_ramp": 0.0,
+          "parameter_sha256_before": "d323ad079ade4ad3f915190b59a59e37e02b900fab35f3c2211a6b7bdc79358a",
+          "parameter_sha256_after": "93a4873390dcb6383541c4f480de3418b040f5c450441b284bb79bddf77fdb9d",
+          "weights_changed": true,
+          "inference": {
+            "ct_only_guard": "PASS",
+            "master_only": true,
+            "full_volume_reconstructed": false,
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "probability_range": [
+              0.13352179527282715,
+              0.9523035883903503
+            ]
+          },
+          "source_sha256_after": {
+            "ct": "105b590753619c608e241001aee1ff5c1add4f432103930825d460bf8a2bb8b6",
+            "gt": "bd90a1e4a856269b8e2fcc9da18f6eecbc834750db0ba0806796692bc7d4407c"
+          },
+          "source_files_unchanged": true,
+          "peak_allocated_mib": 4649.67919921875,
+          "peak_reserved_mib": 5072.0,
+          "total_pilot_seconds": 54.96065979399998
+        },
+        "case_specification.json": {
+          "case_id": "volume-covid19-A-0025",
+          "group_id": "volume-covid19-A-0025",
+          "fold": 0,
+          "ct_name": "volume-covid19-A-0025_ct.nii.gz",
+          "gt_name": "volume-covid19-A-0025_seg.nii.gz",
+          "shape_xyz": [
+            512,
+            512,
+            61
+          ],
+          "sha256": {
+            "ct": "105b590753619c608e241001aee1ff5c1add4f432103930825d460bf8a2bb8b6",
+            "gt": "bd90a1e4a856269b8e2fcc9da18f6eecbc834750db0ba0806796692bc7d4407c"
+          },
+          "file_sizes": {
+            "ct": 16807949,
+            "gt": 66366
+          },
+          "split_sha256_lf": "7b31f9e250e64826f1fff0d9fec4a4aba034252cec7d5123d5f0393ec665e54d",
+          "manifest_fingerprint": "c1a313cd1e57a8e526108fd413ed052d00afab2b72ac9392595e603a742ffde0"
+        }
+      }
+    }
+  ]
+}

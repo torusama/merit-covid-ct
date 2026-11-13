@@ -79,6 +79,17 @@ def test_one_project_readme_and_all_topic_guides_are_linked():
         assert f"docs/{guide.name}" in readme, guide.name
 
 
+def test_documented_python_command_entry_points_exist():
+    failures = []
+    for path in maintained_markdown():
+        text = path.read_text(encoding="utf-8-sig")
+        # Commands run from the repository root, including inside code fences.
+        for entry in re.findall(r"(?m)^\s*(?:py|python|python3)\s+([\w./-]+\.py)\b", text):
+            if not (ROOT / entry).is_file():
+                failures.append(f"{path.relative_to(ROOT)} -> {entry}")
+    assert not failures, "\n".join(failures)
+
+
 def test_saved_primary_csv_schema_is_fully_documented():
     with (ROOT / "analysis/covid19_20/case_statistics.csv").open(
         encoding="utf-8-sig", newline=""

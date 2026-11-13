@@ -35,7 +35,8 @@ def write_report(path, payload):
 def train_fold(config, fold, output, resume=None):
     datasets, provenance = split_datasets(config, fold)
     settings = config["training"]
-    loader = make_dataloader(datasets["train"], batch_size=settings["batch_size"], shuffle=True,
+    loader = make_dataloader(datasets["train"], batch_size=settings["batch_size"],
+        shuffle=settings["shuffle_mode"] != "sequential", shuffle_mode=settings["shuffle_mode"],
         seed=settings["seed"], num_workers=settings["num_workers"])
     trainer = Trainer(config, loader, datasets["validation"].cases, provenance, output)
     history = trainer.fit(resume=resume)
