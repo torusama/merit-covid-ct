@@ -206,9 +206,19 @@ def test_native_master_inference_two_class_conversion_and_patch_rejection(nifti_
 
 
 @pytest.mark.parametrize("shuffle_mode", ["slice", "volume"])
-def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_path, shuffle_mode):
+@pytest.mark.parametrize("activation_checkpointing", [False, True])
+def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_path, shuffle_mode, activation_checkpointing):
     config = validate_experiment(synthetic_experiment(tmp_path / "data"))
     config["training"]["shuffle_mode"] = shuffle_mode
+    config["training"]["activation_checkpointing"] = activation_checkpointing
+    if activation_checkpointing:
+        # Exercise the primary no-resize path with a native 32-grid fixture.
+        # Pad source fixtures once here; the production reader must not resize.
+        for path in (tmp_path / "data").glob("*.nii.gz"):
+            image = nib.load(path)
+            values = np.pad(image.get_fdata(dtype=np.float32), ((0, 16), (0, 14), (0, 0)))
+            nib.save(nib.Nifti1Image(values, image.affine, image.header.copy()), path)
+        config["preprocess"]["size_hw"] = None
     datasets, info = split_datasets(config, 0)
     def trainer(cfg, path):
         loader = make_dataloader(datasets["train"], batch_size=2, shuffle=True,
@@ -229,6 +239,7 @@ def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_pa
     for key, value in whole.model.state_dict().items():
         torch.testing.assert_close(value, resumed.model.state_dict()[key], rtol=0, atol=0)
     loaded, cp = load_checkpoint_model(tmp_path / "resume" / "last.pt")
+    assert getattr(loaded, "_activation_checkpointing_enabled", False) == activation_checkpointing
     assert loaded.pcg_ramp.item() == resumed.model.pcg_ramp.item()
     report_path = tmp_path / "evaluated.json"
     subprocess.run([sys.executable, "scripts/merit_pipeline.py", "evaluate", "--checkpoint",
@@ -237,6 +248,10 @@ def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_pa
     report = json.loads(report_path.read_text())
     assert len(report["per_case"]) == 2 and report["evaluation_grid"] == "full original NIfTI XYZ"
     assert report["protocol_fingerprint"] == cp["protocol_fingerprint"]
+    drift = deepcopy(config)
+    drift["training"]["activation_checkpointing"] = not activation_checkpointing
+    with pytest.raises(ValueError, match="mismatch"):
+        trainer(drift, tmp_path / "execution_drift").resume(tmp_path / "resume" / "last.pt")
     drift = deepcopy(config)
     drift["loss"]["alignment_pool"] = "top_k_mean"
     with pytest.raises(ValueError, match="mismatch"):

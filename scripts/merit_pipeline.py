@@ -11,6 +11,7 @@ import time
 
 import numpy as np
 import torch
+from merit_covid.engine.activation_checkpointing import configure_model_execution
 
 from merit_covid.data.pipeline.cases import Case, load_cases
 from merit_covid.data.pipeline.config import PreprocessConfig
@@ -23,6 +24,8 @@ from merit_covid.engine.training import (
     Trainer, load_experiment, split_datasets, evaluate_model, load_checkpoint_model, validate_experiment,
     load_development_split,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def write_report(path, payload):
@@ -50,7 +53,7 @@ def benchmark_step(config, device, count):
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.synchronize()
     start = time.perf_counter()
-    model = MERITUNETRPP(**config["model"]).to(device)
+    model = configure_model_execution(MERITUNETRPP(**config["model"]).to(device), config["training"])
     criterion = MERITLoss(**config["loss"])
     image = torch.randn(count, 1, *model.img_size, device=device)
     masters = [model.img_size[0] // 2] * count
@@ -84,7 +87,8 @@ def main():
     split = sub.add_parser("check-split")
     split.add_argument("--config", type=Path, required=True)
     train = sub.add_parser("train")
-    train.add_argument("--config", type=Path, required=True)
+    train.add_argument("--config", type=Path, default=ROOT / "configs/merit_native512.yaml",
+                       help="Experiment YAML; default: native512 with activation checkpointing")
     train.add_argument("--fold", type=int, required=True)
     train.add_argument("--output", type=Path, required=True)
     train.add_argument("--resume", type=Path)
@@ -94,7 +98,7 @@ def main():
     evaluate.add_argument("--device", default="cpu")
     evaluate.add_argument("--output", type=Path, required=True)
     cv = sub.add_parser("cv")
-    cv.add_argument("--config", type=Path, required=True)
+    cv.add_argument("--config", type=Path, default=ROOT / "configs/merit_native512.yaml")
     cv.add_argument("--output", type=Path, required=True)
     external = sub.add_parser("external")
     external.add_argument("--checkpoint", type=Path, required=True)

@@ -24,17 +24,19 @@ from merit_covid.data.pipeline.cases import load_cases
 from merit_covid.data.pipeline.config import PreprocessConfig
 from merit_covid.data.pipeline.dataset import CTSlabDataset
 from merit_covid.data.pipeline.dataloader import make_dataloader
-from merit_covid.data.pipeline.geometry import inspect_pair
+from merit_covid.data.pipeline.geometry import inspect_pair, canonical_shape
 from merit_covid.data.pipeline.metrics import aggregate_results, volume_metrics, validate_threshold
 from merit_covid.data.pipeline.splits import validate_splits
 from merit_covid.models.merit_unetrpp import MERITUNETRPP, MERITLoss
 from .slab_inference import predict_slab_case
+from .activation_checkpointing import configure_model_execution
 
 
 TRAIN_DEFAULTS = dict(epochs=100, batch_size=1, num_workers=0, learning_rate=3e-4,
     weight_decay=1e-4, device="auto", amp=True, amp_init_scale=1024.0, gradient_clip=1.0,
     seed=42, warmup_epochs=30, patience=20, scheduler_patience=5, scheduler_factor=0.5,
-    threshold=0.5, include_hd95=True, threads=2, deterministic=True, shuffle_mode="slice")
+    threshold=0.5, include_hd95=True, threads=2, deterministic=True, shuffle_mode="slice",
+    activation_checkpointing=False)
 
 
 def json_ready(value):
@@ -104,7 +106,7 @@ def validate_experiment(config):
     if not 0 < settings["scheduler_factor"] < 1:
         raise ValueError("Invalid scheduler_factor")
     validate_threshold(settings["threshold"])
-    for key in ("amp", "deterministic", "include_hd95"):
+    for key in ("amp", "deterministic", "include_hd95", "activation_checkpointing"):
         if type(settings[key]) is not bool:
             raise ValueError(f"{key} must be boolean")
     config["training"] = settings
@@ -113,8 +115,9 @@ def validate_experiment(config):
     preprocess = PreprocessConfig(**config["preprocess"])
     config["preprocess"] = asdict(preprocess)
     grid = tuple(config["model"].get("img_size", (11, 128, 128)))
-    if preprocess.slab_size != grid[0] or tuple(preprocess.size_hw or ()) != grid[1:]:
-        raise ValueError("Training requires explicit size_hw/slab_size matching model img_size")
+    if preprocess.slab_size != grid[0] or (preprocess.size_hw is not None
+                                         and tuple(preprocess.size_hw) != grid[1:]):
+        raise ValueError("Training requires size_hw/slab_size matching model img_size; size_hw=null preserves native XY")
     # Sampling, PE and Gaussian weighting are deliberately independent ablation axes.
     criterion = MERITLoss(**config["loss"])
     config["loss"]["gaussian_sigma"] = criterion.gaussian_sigma
@@ -159,6 +162,7 @@ def split_datasets(config, fold):
     if type(fold) is not int or fold not in range(5):
         raise ValueError("fold must be 0..4")
     cases, split, identity, split_hash = load_development_split(config)
+    validate_native_grid(cases, PreprocessConfig(**config["preprocess"]), config["model"]["img_size"])
     part = next(f for f in split["folds"] if f["fold"] == fold)
     datasets = {}
     for role in ("train", "validation", "test"):
@@ -176,9 +180,25 @@ def split_datasets(config, fold):
     return datasets, provenance
 
 
+def validate_native_grid(cases, preprocess, model_grid):
+    """Reject native/model XY mismatch from headers instead of silently resizing."""
+    if preprocess.size_hw is not None:
+        return
+    expected = tuple(model_grid[1:])
+    for case in cases:
+        ct, _ = inspect_pair(case, preprocess, require_mask=False)
+        x, y, _ = canonical_shape(ct)
+        if (y, x) != expected:
+            raise ValueError(f"{case.case_id}: native XY {(y, x)} differs from model grid {expected}; refusing to resize")
+
+
 def protocol_fingerprint(config, provenance, *, version=2):
     payload = deepcopy(config)
     payload["training"].pop("epochs")  # Extending the epoch budget is allowed on resume.
+    # Missing/disabled recomputation keeps historical schema-2 fingerprints
+    # compatible. Enabling it is a frozen protocol change and rejects resume.
+    if version == 2 and payload["training"].get("activation_checkpointing") is False:
+        payload["training"].pop("activation_checkpointing")
     # Version 1 is retained ONLY for loading historical models for inference.
     # It omitted source-data configuration and did not bind resolved GT paths.
     if version not in (1, 2):
@@ -192,6 +212,8 @@ def evaluate_model(model, cases, preprocess, *, threshold=0.5, include_hd95=True
                    batch_size=1, num_workers=0, identity=None):
     """Original CT grid metrics; masks read only AFTER CT-only prediction."""
     rows = []
+    cases = list(cases)
+    validate_native_grid(cases, preprocess, model.img_size)
     was_training = model.training
     model.eval()
     try:
@@ -275,7 +297,10 @@ class Trainer:
         torch.use_deterministic_algorithms(self.settings["deterministic"])
         torch.backends.cudnn.benchmark = False
         self.device = resolve_device(self.settings["device"])
+        validate_native_grid([*train_loader.dataset.cases, *validation_cases],
+                             train_loader.dataset.config, self.config["model"]["img_size"])
         self.model = MERITUNETRPP(**self.config["model"]).to(self.device)
+        configure_model_execution(self.model, self.settings)
         self.criterion = MERITLoss(**self.config["loss"])
         self.preprocess = PreprocessConfig(**self.config["preprocess"])
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.settings["learning_rate"],
@@ -406,5 +431,6 @@ def load_checkpoint_model(path, device="cpu"):
         raise ValueError("Checkpoint protocol metadata is inconsistent")
     torch.set_num_threads(checkpoint["config"]["training"]["threads"])
     model = MERITUNETRPP(**checkpoint["config"]["model"]).to(resolve_device(device))
+    configure_model_execution(model, checkpoint["config"]["training"])
     model.load_state_dict(checkpoint["model"])
     return model.eval(), checkpoint

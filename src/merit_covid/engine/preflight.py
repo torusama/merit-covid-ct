@@ -35,7 +35,10 @@ def diagnostic_config(path, size, device, batch_size=1):
         raise ValueError("Size must be a positive multiple of 32")
     if type(batch_size) is not int or batch_size < 1:
         raise ValueError("Positive batch size required")
-    config["preprocess"]["size_hw"] = [size, size]
+    # Preserve a native config when profiling its declared grid. Other sizes
+    # are explicitly requested diagnostic ablations, not a production default.
+    if config["preprocess"]["size_hw"] is not None or config["model"]["img_size"][1:] != [size, size]:
+        config["preprocess"]["size_hw"] = [size, size]
     config["model"]["img_size"] = [11, size, size]
     config["training"].update(device=device, batch_size=batch_size, num_workers=0, shuffle_mode="sequential")
     if config["preprocess"]["sampling_mode"] != "index" or config["preprocess"]["slab_size"] != 11:
@@ -109,7 +112,8 @@ def check_native_input(config_path, output, *, fold=0, case_id="volume-covid19-A
         from merit_covid.data.pipeline.geometry import reorient_to_lps
         ct, truth = reorient_to_lps(nib.load(case.image)), reorient_to_lps(nib.load(case.mask))
         shape = (ct.shape[1], ct.shape[0])
-        if shape != tuple(preprocess.size_hw or ()) or shape != tuple(config["model"]["img_size"][1:]):
+        if (preprocess.size_hw is not None and shape != tuple(preprocess.size_hw)
+                or shape != tuple(config["model"]["img_size"][1:])):
             raise ValueError("Source native XY does not match the declared grid; refusing to resize")
         before = {"ct": file_hash(case.image), "gt": file_hash(case.mask)}
         dataset = CTSlabDataset([case], preprocess)
@@ -186,6 +190,8 @@ def profile_model(config_path, output, *, size, batch_size, device="cuda", warmu
                           free_vram_before_model_mib=free / 2**20)
             torch.cuda.reset_peak_memory_stats(resolved)
         model = MERITUNETRPP(**config["model"]).to(resolved).train()
+        from .activation_checkpointing import configure_model_execution
+        configure_model_execution(model, settings)
         model.set_epoch(0, warmup_epochs=settings["warmup_epochs"])
         report["parameter_count"] = sum(p.numel() for p in model.parameters())
         criterion = MERITLoss(**config["loss"])
@@ -236,7 +242,7 @@ def profile_model(config_path, output, *, size, batch_size, device="cuda", warmu
     return report
 
 
-def pilot_case(config_path, output, *, fold=0, case_id="volume-covid19-A-0025", size=128, steps=4, device="cuda"):
+def pilot_case(config_path, output, *, fold=0, case_id="volume-covid19-A-0025", size=512, steps=4, device="cuda"):
     """Small real TRAIN-case run through the production Trainer and inference.
 
     No validation/test images, threshold tuning or generalization claims. The

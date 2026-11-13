@@ -41,7 +41,7 @@ def main():
     pilot.add_argument("--config", type=Path, required=True)
     pilot.add_argument("--fold", type=int, default=0)
     pilot.add_argument("--case-id", default="volume-covid19-A-0025")
-    pilot.add_argument("--size", type=int, default=128)
+    pilot.add_argument("--size", type=int, default=512)
     pilot.add_argument("--steps", type=int, default=4)
     pilot.add_argument("--device", default="cuda")
     pilot.add_argument("--output", type=Path, required=True)

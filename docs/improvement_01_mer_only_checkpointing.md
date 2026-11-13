@@ -78,11 +78,12 @@ matches the repository files. JSON and archive SHA-256 are stored in
 | Decision and limitations | Retain all-region checkpointing as the recommended pilot reference; observed 1.59% lower step time is inconclusive with two steps in separate sessions, while allocation rises from 4.54 to 9.00 GiB |
 
 This completes the scoped improvement experiment. MER-only remains an optional
-comparison notebook; no production defaults or model architecture were changed.
-The current runtime repair-and-pilot phase is complete and the team member's
-training/validation results are awaited. Full native training still requires
-production integration of the selected overlay; this report is not evidence
-that a complete training run has succeeded.
+comparison notebook. The experiment itself did not change production defaults.
+In the subsequent trainer integration, the user selected the all-region overlay:
+`merit_native512.yaml` now enables it in the production trainer with native XY
+and no intensity normalization. The model architecture remains unchanged.
+Team training/validation results are awaited; this pilot is not evidence that
+a complete training run has succeeded.
 
 The complete notebook workflow was checked locally with synthetic native 32x32
 NIfTI: the candidate completed an actual GPU update, passed the CT-only guard,
@@ -94,5 +95,6 @@ still do not establish a reliable speedup.
 
 Two steps on one case are an initial comparison, not a reliable cohort-throughput
 or segmentation-quality result. Repeat the same case if timing noise prevents a
-decision. Multi-case testing, production integration, mid-epoch resume and full
-fold training are separate later tasks, outside this note's scope.
+decision. Multi-case testing, mid-epoch resume and full fold training remain
+outside this note's scope; production integration was subsequently implemented
+and is described in [the training guide](merit_pipeline.md).

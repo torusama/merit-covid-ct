@@ -6,7 +6,44 @@ here and into [CHANGELOG.md](../CHANGELOG.md). Stored verification JSON files
 remain historical snapshots: old filenames/counts/environments inside them are
 not claims about the latest checkout.
 
-## 2026-11-13 review and runtime repairs
+## 2026-11-13 production native-512 integration
+
+The user selected native full slices and the validated all-region recomputation
+strategy for the main trainer. `configs/merit_native512.yaml` now sets native
+`size_hw: null` and `training.activation_checkpointing: true`; `train` and `cv`
+default to it. Native/model XY mismatch fails from headers rather than resizing.
+The older 128-grid configs remain explicit research alternatives with the
+known lesion-retention issue; the primary path avoids that transformation.
+
+`engine/activation_checkpointing.py` implements the same MER query-block and
+stateless-region recomputation as the frozen T4 helper. BatchNorm regions stay
+outside recomputation and dropout RNG is preserved. The trainer applies this
+before optimizer construction; loading a checkpoint restores its execution
+setting, and resume rejects changing it. Disabled legacy schema-2 configs keep
+their fingerprint. Frozen cloud notebooks and helper hashes remain unchanged.
+
+Production regressions compare original/frozen-helper outputs, losses, input
+and all parameter gradients, and buffers on compact fixtures. They include
+off-center masters, physical positions and partial query chunks. A native
+512-grid single-pixel GT test forbids resizing and verifies unchanged source
+bytes. Both shuffle modes exercise native compact training, native-volume
+validation, exact epoch-boundary resume and checkpoint-driven CLI evaluation.
+Full native-512 cohort training/validation remains unrun; no quality claim is
+inferred from these tests or the earlier two-step pilots. Resume still saves
+only completed epochs, and the three unknown-unit cases need an explicit policy.
+
+Verification: the full CPU suite passed **397 tests**, with **two CUDA-only
+skips**, five warnings and no failures in 140.21 seconds. The new compact
+production-checkpointing CUDA AMP equivalence test passed separately on the
+local GTX 1650 Max-Q in 11.53 seconds. The production `native-input` command
+also passed on real A-0025 with the updated no-resize config, preserving CT/GT
+source hashes and native pixel values. Local reports are
+`outputs/production_checkpointing_20261113_pytest.xml` and
+`outputs/production_native512_input_20261113.json` (ignored). A portable numeric
+summary is committed in
+[production integration evidence](../analysis/merit_native512/production_integration_20261113.json).
+
+## Earlier 2026-11-13 review and runtime repairs
 
 Handoff update: the user-supplied MER-only report
 `20261113_090150_4f13abdd.zip` passes two native A-0025 updates on Tesla T4.
@@ -17,11 +54,11 @@ to 9219.69 MiB. The observed 1.59% timing reduction across two separate-session
 steps is inconclusive; retain the all-region overlay as the pilot reference.
 See [the completed experiment](improvement_01_mer_only_checkpointing.md).
 The identified runtime repairs and bounded pilots are complete; team-member
-training results are awaited. Production overlay integration and the older
-128-grid resize/auxiliary-label issue remain open, so this does not close all
-known issues or establish full-training readiness.
+training results are awaited. At that snapshot production integration and the
+older 128-grid issue were still open. The subsequent production integration is
+described above; the 128-grid issue remains confined to those explicit configs.
 
-Latest handoff verification: **389 passed, one CUDA-only skipped**, zero failures
+Pre-integration handoff verification: **389 passed, one CUDA-only skipped**, zero failures
 or errors in 108.048 seconds for the full CPU suite. The earlier counts below
 describe intermediate snapshots. The compact CUDA AMP test passed separately
 in the local GPU environment; the CPU suite itself does not validate CUDA.

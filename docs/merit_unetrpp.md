@@ -4,6 +4,13 @@ This is a paper-derived reimplementation, not the authors' source.
 The integrated trainer is described in [merit_pipeline.md](merit_pipeline.md).
 No trained COVID checkpoint or replicated research result is provided.
 
+The architecture defaults and reference table below describe the paper-derived
+128-grid model. The primary training config now declares `[11,512,512]` with
+native XY and all-region activation checkpointing in the trainer. This changes
+grid-dependent learned position/projection shapes (174,043,602 total parameters)
+without removing layers or altering TEP/MER/PCG equations. Model-only constructor
+defaults remain compatible; see the training guide for the production command.
+
 ## Source and task transfer
 
 Local source: `FDSE_PaperMerit_v2+reviewed_2026-1-cut.pdf`, 9 pages, K. D. Lai,

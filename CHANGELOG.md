@@ -6,6 +6,16 @@ analysis/ retain their original snapshot content.
 
 ## 2026-11-13 - MERIT runtime and source-binding repair
 
+- Integrate all-region activation checkpointing into the production trainer,
+  checkpoint loading, optimizer profiler and benchmark. Preserve model/state
+  shapes, dropout RNG and single BatchNorm updates; retain frozen trial helpers.
+- Make native-512 the primary train/CV config with `size_hw: null`, strict native
+  grid checks and explicit recomputation. Keep 128-grid research configs opt-in.
+  Extend regression coverage to native train/validation/epoch-resume, execution
+  policy drift, compact CUDA AMP and unchanged single-pixel native 512 GT.
+- Verify 397 CPU tests passing with two CUDA-only skips; run the compact
+  production CUDA AMP equivalence test separately on the local GPU (PASS), and
+  confirm the new native config against real A-0025 pixels/source hashes (PASS).
 - Record the completed MER-only native A-0025/T4 comparison from the user's
   second account. Two updates pass with identical losses/final parameter hash;
   retain the all-region pilot reference (4.54 versus 9.00 GiB peak allocation)

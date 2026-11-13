@@ -36,6 +36,7 @@ src/merit_covid/
       loss.py, adapter.py          Full-slab loss / binary master-logit adapter
   engine/
     training.py                    Frozen config, trainer, checkpoint, evaluation
+    activation_checkpointing.py    RNG-preserving MER/backbone recomputation
     preflight.py                   Full-step resource profile and bounded CT pilot
     synthetic.py                   Temporary synthetic NIfTI smoke fixtures
     slab_inference.py              MERIT masters -> complete native volume

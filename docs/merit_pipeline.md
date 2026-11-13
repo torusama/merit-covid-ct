@@ -20,19 +20,25 @@ CT (+ GT only for labeled operations)
 Experiment YAML requires exactly `data/preprocess/model/loss/training` sections.
 Relative data paths resolve against the YAML location. Effective model/loss
 defaults are materialized into the frozen config. The model's fixed
-`img_size` must match explicit preprocessing `slab_size/size_hw`.
+`img_size` must match preprocessing `slab_size/size_hw`. `size_hw: null` keeps
+native XY; train/validation headers must then match the fixed model XY grid.
 
 `configs/merit_unetrpp.yaml` is model/loss-only smoke configuration; it is not a
-full experiment. Use `merit_index.yaml` or `merit_physical.yaml` for this CLI.
+full experiment. The primary CLI experiment is `merit_native512.yaml`, also
+the default for `train` and `cv`. The older `merit_index.yaml` and
+`merit_physical.yaml` remain explicit 128-grid research configurations; resize
+can remove small lesions and alter derived presence/salience targets there.
 
-## Full native XY feasibility (route 1)
+## Primary full native XY training (route 1)
 
-`configs/merit_native512.yaml` is a separate full-slice experiment: input is
+`configs/merit_native512.yaml` is the primary full-slice experiment: input is
 `[B,1,11,512,512]`, with the same feature size 16, depths 3/3/3/3 and all three
 MERIT modules enabled. It preserves native intensity and the existing sampling,
-loss, split and unknown-unit policies. Source slices already matching 512x512
-skip XY interpolation in the shared reader. The model still has a fixed grid:
-do not apply this config blindly to a dataset with other native XY dimensions.
+loss, split and unknown-unit policies. `size_hw: null` disables XY interpolation
+and source/model grid mismatch is rejected before training. The config enables
+`training.activation_checkpointing: true`: the production trainer recomputes
+MER query blocks and the validated stateless backbone regions during backward.
+The model architecture, parameter/state shapes and native CT/GT are retained.
 
 The `native-input` diagnostic checks one central slab from a selected TRAIN
 case. It refuses a source/grid mismatch, forbids calls to the XY interpolation
@@ -43,7 +49,7 @@ file SHA-256 before/after. It does not run a model or an optimizer.
 py scripts/merit_preflight.py native-input --config configs/merit_native512.yaml --fold 0 --case-id volume-covid19-A-0025 --output outputs/native512/input.json
 ```
 
-Profile the unmodified full architecture in a separate CUDA process before
+Profile the configured full architecture in a separate CUDA process before
 training. `--memory-fraction` is an optional PyTorch allocator limit relative
 to physical VRAM; 1.0 allows the full physical budget, not extra shared system
 memory. Omit it for the allocator's default behavior. It does not change input
@@ -124,7 +130,9 @@ equivalence claim. These checks also run on the assigned cloud GPU.
 The report ZIP additionally contains `profile_512_equivalence.json` and the
 exact trial helper. A compact validation PASS is not a native-512 training PASS:
 read successful optimizer steps and memory results in `profile_512.json`.
-This experiment is not enabled in the production trainer or model config.
+The validated all-region strategy is now available in the production trainer
+through `training.activation_checkpointing`; the primary native-512 config
+enables it. This historical notebook stays pinned to its original experiment.
 
 ### One uploaded real TRAIN case
 
@@ -232,6 +240,16 @@ disabled, preserving the probability-BCE formula.
 
 ## Trainer and checkpoints
 
+`training.activation_checkpointing` is a strict boolean, default false for
+compatibility and explicitly true in `merit_native512.yaml`. The production
+overlay is applied before optimizer creation. It recomputes MER distance bias
+and attention per query block against all context keys, plus EPA, TEP, encoder1
+and the final decoder. It preserves dropout RNG and excludes mutable BatchNorm
+regions. Evaluation/no-grad executes without recomputation. Parameter/state
+keys do not change. The setting is frozen in checkpoints; changing it on resume
+is rejected. Historical schema-2 configs missing the field retain their disabled
+behavior and fingerprint. The experimental helpers remain frozen for provenance.
+
 `engine.training.Trainer` provides AdamW, CUDA FP16 AMP, gradient clipping,
 seeding, deterministic settings, ReduceLROnPlateau and early stopping.
 It logs individual loss components and skipped AMP optimizer steps.
@@ -287,25 +305,25 @@ Run from the repository root with installed model/test dependencies:
 
 ```powershell
 # Validate the recorded split; no voxel reads or split regeneration.
-py scripts/merit_pipeline.py check-split --config configs/merit_index.yaml
+py scripts/merit_pipeline.py check-split --config configs/merit_native512.yaml
 # Real data inspection; start small.
-py scripts/merit_pipeline.py audit --config configs/merit_index.yaml --headers-only --limit 1 --output outputs/headers.json
-py scripts/merit_pipeline.py audit --config configs/merit_index.yaml --limit 1 --output outputs/voxel_audit.json
+py scripts/merit_pipeline.py audit --config configs/merit_native512.yaml --headers-only --limit 1 --output outputs/headers.json
+py scripts/merit_pipeline.py audit --config configs/merit_native512.yaml --limit 1 --output outputs/voxel_audit.json
 
 # Temporary synthetic train/validate/save/reload/resume.
 py scripts/merit_pipeline.py smoke --device cpu --output outputs/cpu_smoke.json
 py scripts/merit_pipeline.py smoke --device cuda --output outputs/cuda_smoke.json
 
 # Development fold training and epoch-boundary resume.
-py scripts/merit_pipeline.py train --config configs/merit_index.yaml --fold 0 --output outputs/e1/fold0
-py scripts/merit_pipeline.py train --config configs/merit_index.yaml --fold 0 --output outputs/e1/fold0 --resume outputs/e1/fold0/last.pt
+py scripts/merit_pipeline.py train --config configs/merit_native512.yaml --fold 0 --output outputs/e1/fold0
+py scripts/merit_pipeline.py train --config configs/merit_native512.yaml --fold 0 --output outputs/e1/fold0 --resume outputs/e1/fold0/last.pt
 # Checkpoint-based validation and internal test.
 py scripts/merit_pipeline.py evaluate --checkpoint outputs/e1/fold0/best.pt --partition validation --device cuda --output outputs/e1/fold0/validation.json
 py scripts/merit_pipeline.py evaluate --checkpoint outputs/e1/fold0/best.pt --partition test --device cuda --output outputs/e1/fold0/test.json
 # Long-running research experiment; not part of a software smoke check.
-py scripts/merit_pipeline.py cv --config configs/merit_index.yaml --output outputs/e1_cv
+py scripts/merit_pipeline.py cv --config configs/merit_native512.yaml --output outputs/e1_cv
 # Full reference forward/backward, without optimizer state.
-py scripts/merit_pipeline.py benchmark --config configs/merit_index.yaml --device cuda --batch-sizes 1 2 --output outputs/merit_memory.json
+py scripts/merit_pipeline.py benchmark --config configs/merit_native512.yaml --device cuda --batch-sizes 1 --output outputs/merit_memory.json
 ```
 
 Reports use exclusive creation: use new output filenames on repeat runs.
@@ -338,21 +356,23 @@ includes AdamW state, one warmup and two measured complete optimizer steps.
 Synthetic inputs measure resources only; `pilot` tests actual CT intensities.
 
 ```powershell
-# Fold-0 TRAIN voxels only; all-fold split checking uses metadata only.
-# The explicit spatial-mm assumption is recorded, not applied to source files.
-py scripts/merit_preflight.py inspect --config configs/merit_index.yaml --fold 0 --sizes 128 256 --assume-mm --block-depth 8 --output outputs/preflight_new/data
+# One native TRAIN input; all-fold split checking uses metadata only.
+py scripts/merit_preflight.py native-input --config configs/merit_native512.yaml --fold 0 --case-id volume-covid19-A-0025 --output outputs/preflight_new/native_input.json
 
 # Separate processes isolate allocations/OOM; do not run concurrently.
-py scripts/merit_preflight.py profile --config configs/merit_index.yaml --size 128 --batch-size 1 --output outputs/preflight_new/gpu128_b1.json
-py scripts/merit_preflight.py profile --config configs/merit_index.yaml --size 128 --batch-size 2 --output outputs/preflight_new/gpu128_b2.json
-py scripts/merit_preflight.py profile --config configs/merit_index.yaml --size 256 --batch-size 1 --output outputs/preflight_new/gpu256_b1.json
-py scripts/merit_preflight.py profile --config configs/merit_index.yaml --size 256 --batch-size 2 --output outputs/preflight_new/gpu256_b2.json
+py scripts/merit_preflight.py profile --config configs/merit_native512.yaml --size 512 --batch-size 1 --output outputs/preflight_new/gpu512_b1.json
 
 # Actual TRAIN CT: four optimizer attempts, fresh Trainer resume, CT-only
 # inference, complete reconstruction and original-shape/affine mask export.
 # A-0025 is a fold-0 TRAIN case with explicit mm; no unit assumption needed.
-py scripts/merit_preflight.py pilot --config configs/merit_index.yaml --fold 0 --case-id volume-covid19-A-0025 --size 128 --steps 4 --device cuda --output outputs/preflight_new/pilot128
+py scripts/merit_preflight.py pilot --config configs/merit_native512.yaml --fold 0 --case-id volume-covid19-A-0025 --size 512 --steps 4 --device cuda --output outputs/preflight_new/pilot512
 ```
+
+The production pilot needs the complete development manifest/sources for source
+binding and saves a large diagnostic checkpoint; its all-master inference takes
+longer than the two-update notebook. It is not a full-fold or selected checkpoint.
+Optional resize-retention audits can still use `inspect --sizes 128 256` with an
+explicit 128-grid research config; they do not change primary training input.
 
 Use fresh outputs on reruns. Audit moments and histogram cover every native
 scaled CT voxel in the selected TRAIN cases, before interpolation or

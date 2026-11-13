@@ -1,13 +1,13 @@
-# Route 1: full 512x512 slices, no crop/tiling or downsampling on this grid.
-# The reader skips XY interpolation when the source is already 512x512.
-# Verify source geometry with the native-input check before running this config.
-# This is a feasibility experiment, not a validated training recommendation.
+# Primary MERIT training config: native 512x512, no crop/tiling/downsampling.
+# Reject other native XY grids rather than resizing them.
+# All-region activation recomputation follows the validated two-step T4 pilot;
+# full-cohort training and segmentation quality remain to be measured.
 data:
   manifest: ../data/covid19_20/cases.json
   split_path: ../splits/covid19_20_5fold.json
 preprocess:
   slab_size: 11
-  size_hw: [512, 512]
+  size_hw: null
   intensity_encoding: native
   assume_mm: false
   sampling_mode: index
@@ -30,6 +30,7 @@ loss:
   alignment_weight: 0.05
   salience_weight: 0.03
 training:
+  activation_checkpointing: true
   device: cuda
   epochs: 100
   batch_size: 1
