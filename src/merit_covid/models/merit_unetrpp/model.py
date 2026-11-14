@@ -98,7 +98,10 @@ class MERITUNETRPP(UNETRPP):
         dec2 = self.decoder4(dec3, enc2)
         mid = self.decoder3(dec2, enc1)
         if self.mer is not None:
-            mid = self.mer(mid, master, z_offsets_mm, attention_valid)
+            if attention_valid is None:
+                mid = self.mer(mid, master, z_offsets_mm)
+            else:
+                mid = self.mer(mid, master, z_offsets_mm, attention_valid)
         full = self.decoder2(mid, self.encoder1(x))
         raw = self.out1(full)
         logits, presence = (raw, None) if self.pcg is None else self.pcg(full, raw, self.pcg_ramp)

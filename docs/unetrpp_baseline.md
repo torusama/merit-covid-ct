@@ -112,9 +112,9 @@ assert logits.shape == (1,1,32,32,32)
 ```
 
 ```powershell
-py examples/unetrpp_smoke.py --backward
-py examples/unetrpp_smoke.py --config configs/unetrpp_baseline.yaml
-py examples/unetrpp_real_input.py
+py scripts/model_smoke.py --model unetrpp --backward
+py scripts/model_smoke.py --model unetrpp --config configs/unetrpp_baseline.yaml
+py scripts/unetrpp_real_input.py
 py -m pytest tests/test_unetrpp.py tests/test_unetrpp_input.py tests/test_prediction_contract.py -q
 ```
 

@@ -98,9 +98,9 @@ decompress CTs; the implementation does not preload the cohort.
 ## Forward a real patch
 
 ```powershell
-py examples/unetrpp_real_input.py
-py examples/unetrpp_real_input.py --report outputs/real_input_check.json
-py examples/unetrpp_real_input.py --workers 1 --patch-index 15
+py scripts/unetrpp_real_input.py
+py scripts/unetrpp_real_input.py --report outputs/real_input_check.json
+py scripts/unetrpp_real_input.py --workers 1 --patch-index 15
 ```
 
 The example defaults to one A-0025 train patch with the full 42,951,355-parameter

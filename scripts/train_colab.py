@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import torch
-from torch.utils.data import DataLoader, Sampler
+from torch.utils.data import Sampler
 
-from merit_covid.data.pipeline.dataloader import collate_slabs, VolumeBalancedSampler
+from merit_covid.data.pipeline.dataloader import make_dataloader
 from merit_covid.engine.training import Trainer, load_experiment, split_datasets, validate_experiment
 
 
@@ -41,20 +41,19 @@ class CaseGroupedSampler(Sampler):
 
 def train(config_path, fold, output, *, epochs=None, resume=None):
     config = load_experiment(config_path)
+    config["training"]["shuffle_mode"] = "volume"
     if epochs is not None:
         config["training"]["epochs"] = epochs
-        config = validate_experiment(config)
+    config = validate_experiment(config)
     settings = config["training"]
     if settings["num_workers"] != 0:
         raise ValueError("Case-grouped one-volume caching requires num_workers=0")
     datasets, provenance = split_datasets(config, fold)
     provenance["train_order"] = ("volume-balanced sampling with replacement" if settings["samples_per_volume"] else
                                  "seeded case shuffle, then seeded master shuffle within case; every master once")
-    generator = torch.Generator().manual_seed(settings["seed"])
-    loader = DataLoader(datasets["train"], batch_size=settings["batch_size"],
-        sampler=(VolumeBalancedSampler(datasets["train"], settings["samples_per_volume"], generator)
-                 if settings["samples_per_volume"] else CaseGroupedSampler(datasets["train"], generator)), generator=generator,
-        num_workers=0, collate_fn=collate_slabs)
+    loader = make_dataloader(datasets["train"], batch_size=settings["batch_size"],
+        shuffle=True, shuffle_mode="volume", seed=settings["seed"], num_workers=0,
+        samples_per_volume=settings["samples_per_volume"])
     trainer = Trainer(config, loader, datasets["validation"].cases, provenance, output)
     return trainer, trainer.fit(resume=resume)
 

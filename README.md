@@ -9,7 +9,167 @@ Software integration has been tested on synthetic data and selected real CT
 inputs. There is no validation-selected COVID model, completed five-fold experiment or
 external-test performance claim. See [validation and limitations](docs/validation.md).
 
+## Handoff: read this first
+
+The primary training path now uses **native 512x512 with all-region activation
+checkpointing in the production trainer**. Use `configs/merit_native512.yaml`;
+it is also the default for the `train` and `cv` commands. `size_hw: null` forbids
+XY resizing; a source/model grid mismatch fails before training.
+
+Handoff status: the identified runtime repairs, bounded single-case GPU pilots
+and trainer integration are implemented. The team member's full training and
+validation results are still awaited. The older 128-grid configs remain explicit
+research alternatives with the unresolved resize/auxiliary-label issue; they
+are not used by the primary native path. No completed full-cohort run or
+segmentation-quality result is claimed.
+
+Read in this order:
+
+1. This README: current status, runnable entry points and data requirements.
+2. [Architecture](docs/architecture.md): source folders and how they connect.
+3. [Data pipeline](docs/data_pipeline.md): what a batch contains and which
+   transformations are explicitly configured. [Dataset reports](docs/dataset_reports.md)
+   explains the CSV fields and saved split.
+4. [MERIT model](docs/merit_unetrpp.md): TEP, MER, PCG, supervision and paper correspondence.
+5. [MERIT pipeline](docs/merit_pipeline.md): production training/resume/inference commands.
+6. [Validation](docs/validation.md) and [improvement note 01](docs/improvement_01_mer_only_checkpointing.md):
+   measured results, limits and the next single-case experiment.
+
+### Completed work and current boundary
+
+| Area | Implemented and checked | Where to look |
+| --- | --- | --- |
+| Shared data access | Lazy CT/GT loading, geometry checks, slab sampling, saved five-fold selection and native reconstruction | `src/merit_covid/data/pipeline/` |
+| Models | Standalone UNETR++ and paper-derived MERIT with TEP/MER/PCG; core model files are unchanged by the latest runtime review | `src/merit_covid/models/` |
+| Runtime and memory | CT/GT source binding on resume, strict thresholds/finite logits, volume-block shuffle, integrated all-region recomputation | `src/merit_covid/engine/`, `data/pipeline/dataloader.py` under the package |
+| Diagnostics | Split/input/resize audits, isolated optimizer profiles, restored smoke and baseline input scripts | `scripts/merit_preflight.py`, `scripts/model_smoke.py`, `scripts/unetrpp_real_input.py` |
+| Primary native-512 input | No XY resize, native intensity, same model/loss/split; production recomputation follows the two-step T4 pilot | `configs/merit_native512.yaml`, `src/merit_covid/engine/activation_checkpointing.py` |
+| One measured improvement candidate | MER-only native-512 T4 pilot PASS; retain the earlier all-region overlay as reference because memory nearly doubles for an inconclusive timing gain | `tools/merit_mer_only_trial.py`, improvement note 01 |
+
+The latest full CPU suite reports **397 passed, 2 CUDA-only skipped**. The compact
+production-checkpointing CUDA AMP test passed separately in the local GPU
+environment. These checks
+do not establish model accuracy or complete full-cohort training.
+
+## Measured cloud results
+
+These are reports supplied by the user after running the notebooks on Colab,
+not cloud jobs launched from this checkout. The selected JSON reports, runtime
+versions and original ZIP checksums are preserved in
+[portable evidence](analysis/merit_native512/colab_evidence_20261113.json).
+
+| Native-512 experiment on Tesla T4 | Result | Peak PyTorch allocation | Successful optimizer updates |
+| --- | --- | --- | --- |
+| Original execution, full allocator budget | CUDA out of memory in MER forward | 14627.58 MiB before failure | 0 |
+| Checkpointing overlay, synthetic input | PASS | 4650.55 MiB | 2 |
+| Same overlay, real A-0025 CT/GT | PASS | 4649.68 MiB | 2 |
+| MER-only checkpointing, same real A-0025 | PASS | 9219.69 MiB | 2 |
+
+The real steps took 13.958 s and 13.731 s. They preserved source bytes, native
+pixels and `[1,1,11,512,512]` input, produced finite gradients and changed learned
+parameters. One CT-only master prediction also passed; full-volume prediction
+and segmentation quality were not evaluated in this pilot. Two steps are too
+few to establish training throughput or a reliable speed comparison.
+
+The MER-only report from another account used the same GPU model, Torch version,
+input/config and initial parameters. Its mean step time was 13.625 s versus
+13.845 s for the earlier overlay (observed 1.59% lower), with identical losses
+and final parameter hashes. Two steps in different sessions cannot establish
+a speedup. Keep the earlier all-region overlay as the recommended pilot mode:
+4.54 GiB peak allocation versus 9.00 GiB for MER-only. Production training now
+enables the all-region overlay in the native-512 config; the MER-only
+candidate stays optional. See the completed experiment note for details.
+
 ## Quick start
+
+### Test the integrated main trainer on Colab
+
+Open [the integrated-main notebook in Colab](https://colab.research.google.com/github/torusama/merit-covid-ct/blob/main/notebooks/colab_main_integrated.ipynb),
+select **T4 GPU**, then **Run all**. No input upload is required. It pins
+`ac461691450b2046f19b6c61ba7fb7426cb14884`, the published integration commit,
+and imports the production Trainer/checkpointing module from that source.
+
+The first run automatically downloads/caches all 199 original pairs, about
+3.5 GiB, because production source binding requires their real paths/stats.
+Only A-0025 receives two optimizer updates followed by one after save/resume.
+One distinct validation member is checked by headers only; there is no
+validation metric, complete epoch or full-volume inference. No spatial-unit
+assumption is enabled. The notebook verifies native pixels and a CT-only master
+prediction, then downloads a small report ZIP without images or weights.
+The temporary diagnostic checkpoint is removed after verification. Keep about
+2 GiB additional free disk for checkpoint verification, besides the data cache.
+
+The orchestration helper is embedded and hashed; it calls the actual
+`Trainer.train_epoch`, `save_checkpoint` and `resume`. It does not install an
+experimental model overlay or implement a separate optimizer loop. Full native
+T4 results from this integrated notebook are pending the user's run.
+
+### Train from the current source
+
+Install the local environment below and make the development data available.
+Then run from the repository root on a CUDA machine:
+
+```powershell
+py scripts/merit_pipeline.py train --config configs/merit_native512.yaml --fold 0 --output outputs/native512/fold0
+# After an interruption, repeat with the same data/config and saved checkpoint.
+py scripts/merit_pipeline.py train --config configs/merit_native512.yaml --fold 0 --output outputs/native512/fold0 --resume outputs/native512/fold0/last.pt
+```
+
+`train` and `cv` select this config when `--config` is omitted. The three source
+cases with unknown units still require an explicit decision: default behavior
+rejects them, and `--assume-mm` is available only if the team accepts that
+documented assumption. The pipeline does not silently drop these cases.
+
+Checkpoints are saved after each completed epoch and validation, not midway
+through an epoch. Use persistent storage for outputs and allow for long native
+epochs. The production path has compact train/validation/resume regression
+coverage; the complete 512-grid cohort run is for the receiving team to measure.
+
+### Historical overlay pilot: upload only one real case
+
+Open [the real-case notebook in Colab](https://colab.research.google.com/github/torusama/merit-covid-ct/blob/main/notebooks/colab_real_case.ipynb),
+select a GPU runtime, then **Run all**. When prompted, upload either the team's
+`A0025_CT_GT.zip` or these two original files from `data/covid19_20/Train/`:
+
+- `volume-covid19-A-0025_ct.nii.gz`
+- `volume-covid19-A-0025_seg.nii.gz`
+
+The prepared ZIP is local at `outputs/colab_inputs/A0025_CT_GT.zip`; raw images
+and this ZIP are **not committed to GitHub**. Transfer the ZIP separately to the
+next team member, or obtain the original pair from the dataset. The notebook
+checks their exact sizes/hashes and frozen fold-0 TRAIN membership; it does not
+download the whole cohort. The full-cohort downloader is
+`py tools/download_covid19_20.py`, using `MedOtter/COVID-19-20` on Hugging Face.
+
+At completion, download the report ZIP and keep it with the experiment record.
+If browser download does not start, use the Colab Files pane, refresh, find the
+ZIP under `/content/merit-results/`, and select **Download** from its menu.
+If a GPU quota blocks execution, hand over the notebook and input pair; that
+does not count as a failed model experiment or a completed measurement.
+
+| Notebook | Input and purpose | Current evidence |
+| --- | --- | --- |
+| [Integrated main](notebooks/colab_main_integrated.ipynb) | Automatic cohort cache for source binding; bounded actual production Trainer steps/save/resume on A-0025 | Compact CPU/GPU workflow PASS; native-512 T4 run pending |
+| [Real case](notebooks/colab_real_case.ipynb) | Original A-0025 pair; bounded two-update pilot with checkpointing | Native-512 T4 PASS; recommended first run |
+| [Checkpoint trial](notebooks/colab_checkpoint_trial.ipynb) | Synthetic input; numerical checks followed by memory profile | Native-512 T4 PASS |
+| [Original execution](notebooks/colab_connect.ipynb) | Synthetic 128 sanity check followed by unoptimized 512 profile | 128 PASS; 512 T4 OOM recorded |
+| [MER-only candidate](notebooks/colab_mer_only_case.ipynb) | Same A-0025 pair; retain more backbone activations to measure a possible speed improvement | Native-512 T4 PASS; retain earlier overlay as reference |
+
+The four historical overlay/profile notebooks fetch model/source commit
+`e3493dd9f2dac704d2def6225d76f19df3262ec4` and embed their experimental helpers.
+This pin reproduces the measured experiments; it does not fetch the latest
+production runtime repairs on `main`. Do not repin during a baseline comparison.
+Those four pilot notebooks remain two-update experiments; they do not launch the
+current production trainer or a complete fold. For training, use the current
+`main` checkout and the command above. They reuse runtime Torch/CUDA and install
+only missing dependencies. Activation
+checkpointing recomputes intermediate activations during backward; it is
+different from saving a training checkpoint for later resume.
+
+### Local setup
+
+For other cloud modes and Kaggle setup, see the
+[cloud guide](docs/merit_pipeline.md#colab-and-kaggle-quick-start).
 
 Run commands from the repository root. Select a PyTorch build compatible with
 your CPU/GPU before installing the extras.
@@ -57,7 +217,8 @@ preprocessing, thresholds, hyperparameters or checkpoints.
 
 ## Start with MERIT
 
-With the development data already available:
+With the development data already available, use the production CLI described
+below. This is a separate path from the bounded notebook pilot.
 
 Before full training, run the train-only intensity/resize audit, full-optimizer
 GPU profiles and bounded real-CT pilot in the
@@ -65,20 +226,47 @@ GPU profiles and bounded real-CT pilot in the
 pilot checkpoint is not a trained or validation-selected research model.
 
 ```powershell
-py scripts/merit_pipeline.py check-split --config configs/merit_index.yaml
-py scripts/merit_pipeline.py audit --config configs/merit_index.yaml --limit 1 --output outputs/first_audit.json
-py scripts/merit_pipeline.py train --config configs/merit_index.yaml --fold 0 --output outputs/e1/fold0
+py scripts/merit_pipeline.py check-split --config configs/merit_native512.yaml
+py scripts/merit_pipeline.py audit --config configs/merit_native512.yaml --limit 1 --output outputs/first_audit.json
 ```
 
-The checked-in MERIT index config explicitly assumes mm for the three unknown-unit
-cases; review this assumption before a full run. See the
+Choose and review the input policy before issuing the guide's `train` command:
+
+| Configuration | Input policy | Limitation |
+| --- | --- | --- |
+| `merit_index.yaml`, `merit_physical.yaml` | Explicit 128x128 XY resize; index or physical sampling | Small lesions may disappear and derived auxiliary labels may change; this design remains unresolved |
+| `merit_native512.yaml` | Native XY (`size_hw: null`), 512x512 model grid, batch 1, AMP and all-region activation checkpointing | Primary path; other native grids fail explicitly; full-cohort results pending |
+
+Both grids use feature size 16, depths 3/3/3/3 and TEP/MER/PCG. Learned projections
+and positions depend on the input grid: parameter counts are 29,836,242 at 128
+and 174,043,602 at 512. Their checkpoints are not directly shape-compatible.
+
+Full-cohort training will reject the three unknown-unit cases until their units
+are verified or the explicit mm assumption is accepted. See the
 [MERIT pipeline guide](docs/merit_pipeline.md) for resume, validation, CV, physical
 sampling, GPU checks and the explicitly gated external-test command.
 
 The shared reader defaults to native XY size and NIfTI-scaled intensities.
-The MERIT experiment explicitly resizes XY to `128x128`; it never interpolates Z.
+The older MERIT index/physical configs explicitly resize XY to `128x128`; no
+listed MERIT config interpolates Z. The native-512 pilot verifies that no XY
+interpolation, intensity normalization or source-file modification occurs.
 Training supervises true full-slab GT. Inference predicts each master once,
 restores probabilities to native geometry and then evaluates whole volumes.
+
+### Remaining limits and follow-up
+
+- Retain the measured all-region overlay as reference. The MER-only comparison
+  is complete for this two-step pilot; further timing measurements are optional.
+- The production trainer now enables the selected overlay before optimizer
+  construction and restores it from frozen checkpoint config. Native-512 T4
+  evidence still comes from bounded pilots; complete training is not yet measured.
+- Add persistent progress and mid-epoch resume for long cloud sessions. The
+  existing production trainer resumes at epoch boundaries; trial notebooks do
+  not export a resumable trained checkpoint.
+- Check multiple TRAIN cases before a full fold. Full-cohort/five-fold training,
+  validation-selected weights and external evaluation remain unrun.
+- Resolve the three unknown-unit cases explicitly and verify patient identity
+  if patient-level independence is required. No assumption is silently enabled.
 
 ## Repository map
 
@@ -92,7 +280,9 @@ restores probabilities to native geometry and then evaluates whole volumes.
 | `configs/` | Experiment configs and model-only smoke configs |
 | `scripts/` | Experiment and package entry points |
 | `tools/` | Acquisition, data audit/reporting, viewer and upstream verification |
-| `examples/` | Small, explicit usage examples |
+| `tools/merit_main_trial.py` | Bounded integrated Trainer diagnostic with complete real source binding and temporary checkpoint verification |
+| `scripts/model_smoke.py` | Synthetic model forward/backward without optimizer updates |
+| `scripts/unetrpp_real_input.py` | One real native CT patch through the baseline, without training |
 | `tests/` | Synthetic regression and integration checks |
 | `ct_pipeline/` | Required legacy import aliases; not another processing implementation |
 | `docs/` | Topic-oriented reference guides; no duplicate per-folder READMEs |
@@ -114,6 +304,8 @@ input or as segmentation performance.
 | Prepare baseline patches and reconstruct native volumes | [UNETR++ input/output](docs/unetrpp_input.md) |
 | Check measured evidence and remaining research work | [Validation](docs/validation.md) |
 | Read the Vietnamese COVID adaptation review | [MERIT COVID assessment](docs/README_DANH_GIA_MERIT_COVID.md) |
+
+| Continue one scoped speed/memory experiment | [Improvement note 01](docs/improvement_01_mer_only_checkpointing.md) |
 
 [CHANGELOG.md](CHANGELOG.md) records major integration milestones.
 Upstream UNETR++ attribution remains in its packaged `LICENSE`, `NOTICE` and

@@ -68,8 +68,11 @@ is used. Viewer/PNG grayscale scaling is display-only.
 
 `size_hw=None` preserves native XY. Explicit resizing uses bilinear CT with
 `align_corners=False` and nearest-exact binary masks. Z is not interpolated.
-The MERIT experiment's `128x128` grid is an explicit experiment choice, not the
-shared-reader default.
+The older MERIT index/physical configs' `128x128` grid is an explicit experiment
+choice, not the shared-reader default. Primary `merit_native512.yaml` uses
+`size_hw: null`: no resize, and native/model XY mismatch is rejected from
+headers before training. Derived auxiliary targets therefore retain the native
+GT support on this path; this does not repair the older resize ablations.
 
 `lesion_retention` reports completely lost positive slices and 2D 4-connected
 components under the exact nearest-exact pixel-center mapping. Components can
@@ -127,7 +130,10 @@ Initialization reads selected headers only. Each worker caches at most one
 processed volume, releasing it before loading another; cache is not pickled to
 Windows workers. `len(dataset)` counts master slices, not volumes.
 Random slice shuffle can repeatedly decompress CT files; no cohort preloading
-is used to conceal that cost.
+is used to conceal that cost. MERIT experiment configs explicitly use volume
+block shuffling with randomized masters inside each case; see
+[training order and resume](merit_pipeline.md#preprocessing-and-supervision).
+The shared loader keeps global slice shuffling as its compatibility default.
 
 Collation checks compatible fields, stacks tensors, and keeps metadata/nullable
 values separate. Use batch size 1 or shape buckets when native H/W differ.

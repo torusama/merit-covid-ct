@@ -14,6 +14,92 @@ analysis/ retain their original snapshot content.
 - Keep native intensity; HU calibration, patient linkage, normalization and
   clinical performance remain unverified.
 
+## 2026-11-13 - MERIT runtime and source-binding repair
+
+- Add the integrated-main Colab notebook pinned to published integration commit
+  `ac46169`. Automatically cache the real pinned cohort for production source
+  binding; train A-0025 for two bounded updates, verify a temporary checkpoint,
+  resume for one update and check a CT-only master using actual Trainer methods.
+  Export small reports after failures and exclude images/weights. Test compact
+  CPU/GPU workflows; native-512 T4 execution remains pending a user run.
+- Integrate all-region activation checkpointing into the production trainer,
+  checkpoint loading, optimizer profiler and benchmark. Preserve model/state
+  shapes, dropout RNG and single BatchNorm updates; retain frozen trial helpers.
+- Make native-512 the primary train/CV config with `size_hw: null`, strict native
+  grid checks and explicit recomputation. Keep 128-grid research configs opt-in.
+  Extend regression coverage to native train/validation/epoch-resume, execution
+  policy drift, compact CUDA AMP and unchanged single-pixel native 512 GT.
+- Verify 397 CPU tests passing with two CUDA-only skips; run the compact
+  production CUDA AMP equivalence test separately on the local GPU (PASS), and
+  confirm the new native config against real A-0025 pixels/source hashes (PASS).
+- Record the completed MER-only native A-0025/T4 comparison from the user's
+  second account. Two updates pass with identical losses/final parameter hash;
+  retain the all-region pilot reference (4.54 versus 9.00 GiB peak allocation)
+  because the observed 1.59% timing reduction is inconclusive. Mark the current
+  runtime repair-and-pilot phase complete, awaiting team training results,
+  while retaining explicit production integration and 128-grid issue limits.
+- Rewrite the root README for handoff: reading order, source responsibilities,
+  real-case Colab entry, input transfer, pinned-source behavior, measured native
+  results and outstanding production work. Distinguish 128-grid research configs
+  from native-512 pilots and experimental recomputation from saved checkpoints.
+- Preserve selected user-supplied cloud JSON and archive checksums under
+  `analysis/merit_native512/`. Latest full CPU verification: 389 passed and one
+  CUDA-only skip, with no failures or errors.
+- Add one scoped MER-only checkpointing notebook for A-0025. Reuse the previous
+  helpers unchanged, gate the candidate on numerical/buffer checks, and export
+  a comparison with the existing real-case baseline. Test the workflow with
+  compact CPU/GPU fixtures; the subsequent native-512 T4 comparison is recorded
+  in improvement note 01.
+- Add the single-real-case Colab notebook, an input ZIP for local delivery,
+  and a bounded pilot helper. Verify A-0025 source SHA-256 and frozen TRAIN
+  membership, preserve native CT/GT pixels, attempt two optimizer updates and
+  check one CT-only prediction. Keep images/large weights outside report ZIPs.
+- Add an isolated activation-checkpointing trial and a self-contained cloud
+  notebook. Preserve model parameter/state identities, attention equations and
+  data/loss policy; recompute MER query blocks and stateless backbone regions,
+  excluding BatchNorm updates. Gate profiling on output/gradient/buffer checks.
+- Validate the execution overlay on CPU/GPU and complete two local 128-grid
+  optimizer steps with lower peak memory. Leave production model source and
+  trainer defaults unchanged. The user-supplied Colab T4 report subsequently
+  confirms two optimized native-512 synthetic updates with peak PyTorch
+  allocation 4650.55 MiB. The subsequent real A-0025 pilot also passes two native
+  updates with unchanged input files, finite gradients and CT-only inference;
+  this is not full-cohort training or a segmentation-quality result.
+- Replace the machine-specific Drive-based connection notebook with a portable
+  Colab/Kaggle Run-all preflight. Cache pinned public source, reuse installed
+  Torch/CUDA, install only missing dependencies under Torch/NumPy constraints,
+  isolate GPU jobs, and export reports even after OOM. No dataset is required.
+- Check notebook syntax/worker generation, missing-GPU rejection, and cached
+  dependency setup. Execute all notebook cells locally against the pinned
+  model on the GPU: 128 profile passes, 512 reports OOM, ZIP export completes.
+- Add the separate `merit_native512.yaml` route-1 feasibility config and a
+  TRAIN-only `native-input` diagnostic verifying native CT/GT equality without
+  XY interpolation or source-file changes. Keep the 128x128 configs available.
+- Add an explicit CUDA allocator budget option to the isolated optimizer
+  profiler, retaining normal profiling behavior when it is omitted.
+- Native route-1 input checks pass. The full 512x512/batch-1/AMP configuration
+  runs out of memory in encoder EPA forward on the tested GTX 1650 Max-Q 4 GiB,
+  before any optimizer update. The previously skipped compact CUDA AMP test
+  passes in the separate GPU environment; no quality comparison was run.
+
+- Bind checkpoints to resolved CT and GT paths, file size/mtime, manifest and
+  patient-map SHA-256, and the full data configuration. Reject stale sources,
+  redirected GT, incompatible sample order and decreased epoch budgets on resume.
+- Write schema-2 checkpoints. Historical schema-1 models remain readable for
+  CT-only inference; their incomplete source identity cannot authorize resume.
+- Reject invalid or nonfinite master logits before sigmoid, and use the shared
+  strict threshold validator when loading an experiment, before training.
+- Add reproducible volume-block shuffling to the MERIT experiment configs to
+  avoid repeated whole-volume decompression with the one-volume cache. Retain
+  global slice shuffling in the shared API and record sample order in configs.
+- Restore model-only synthetic and real baseline input scripts under scripts/;
+  repair guide commands and check documented Python entry points in tests.
+- Add fault-injection/source-drift regressions and exact epoch-boundary resume
+  coverage for both shuffle modes. The existing 128x128 resize/auxiliary-label
+  policy remains open for design; the separate native-512 feasibility experiment
+  does not alter it. Model equations, intensity handling, canonical splits and
+  raw data are unchanged.
+
 ## 2026-11-08 - Train-only preflight diagnostics
 
 - Add bounded-memory native CT moments, all-voxel percentiles/histogram and

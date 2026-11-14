@@ -42,3 +42,4 @@ training:
   amp: true
   threshold: 0.5
   seed: 42
+  shuffle_mode: volume

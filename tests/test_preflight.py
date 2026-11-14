@@ -136,3 +136,43 @@ def test_profile_reports_allocation_failure_without_claiming_fit(tmp_path, monke
     report = module.profile_model(path, tmp_path / "failure.json", size=32, batch_size=1, device="cpu")
     assert report["status"] == "OOM" and report["optimizer_steps"] == 0
     assert "mean_step_seconds" not in report
+
+
+def test_native_input_check_preserves_tiny_lesion_and_source_bytes(tmp_path):
+    from merit_covid.engine.synthetic import synthetic_experiment
+    from merit_covid.engine.preflight import check_native_input
+    config = synthetic_experiment(tmp_path / "data")
+    path = tmp_path / "experiment.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    _, train, _, _, _ = audit_scope(path)
+    case = train[0]
+    affine = np.diag([-1., -1., 3., 1.])
+    values = np.arange(32 * 32 * 13).reshape(32, 32, 13).astype(np.float32)
+    labels = np.zeros(values.shape, dtype=np.uint8)
+    labels[0, 0, 6] = 1
+    for filename, array in ((case.image, values), (case.mask, labels)):
+        image = nib.Nifti1Image(array, affine)
+        image.header.set_xyzt_units("mm")
+        nib.save(image, filename)
+    result = check_native_input(path, tmp_path / "native.json", case_id=case.case_id)
+    assert result["status"] == "PASS", result
+    assert result["input_shape"] == [1, 11, 32, 32]
+    assert result["presence_by_selected_slice"][5]
+    assert result["positive_voxels_by_selected_slice"][5] == 1
+    assert result["source_sha256_before"] == result["source_sha256_after"]
+    assert result["ct_equals_native_source"] and result["gt_equals_native_source"]
+    assert not result["xy_interpolation_called"] and result["optimizer_steps"] == 0
+
+
+def test_native_input_check_refuses_resize_and_nontraining_case(tmp_path):
+    from merit_covid.engine.synthetic import synthetic_experiment
+    from merit_covid.engine.preflight import check_native_input
+    config = synthetic_experiment(tmp_path / "data")  # Native XY is 18x16, declared grid 32x32.
+    path = tmp_path / "experiment.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    _, train, cases, _, _ = audit_scope(path)
+    mismatch = check_native_input(path, tmp_path / "mismatch.json", case_id=train[0].case_id)
+    assert mismatch["status"] == "FAIL" and "refusing to resize" in mismatch["error"]
+    protected = next(case for case in cases if case not in train)
+    outside = check_native_input(path, tmp_path / "outside.json", case_id=protected.case_id)
+    assert outside["status"] == "FAIL" and "TRAIN partition" in outside["error"]
