@@ -28,6 +28,9 @@ class PreprocessConfig:
     boundary_policy: str = "edge"
     duplicate_slice_policy: str = "unique"
     intensity_provenance: str | None = None
+    zscore_mean: float | None = None
+    zscore_std: float | None = None
+    zscore_fit: dict | None = None
 
     def __post_init__(self) -> None:
         if type(self.slab_size) is not int or self.slab_size not in (1, 3, 5, 11):
@@ -59,8 +62,24 @@ class PreprocessConfig:
                 raise ValueError("size_hw must be two positive integers, or None")
             object.__setattr__(self, "size_hw", tuple(self.size_hw))
 
-        if self.intensity_encoding not in ("native", "auto_hu", "hu", "normalized_0_1"):
+        if self.intensity_encoding not in ("native", "auto_hu", "hu", "normalized_0_1", "train_zscore"):
             raise ValueError("Unknown intensity encoding")
+
+        if self.intensity_encoding == "train_zscore":
+            if (type(self.zscore_mean) not in (int, float) or not np.isfinite(self.zscore_mean)
+                    or type(self.zscore_std) not in (int, float) or not np.isfinite(self.zscore_std)
+                    or self.zscore_std <= 1e-8):
+                raise ValueError("train_zscore requires finite mean and std > 1e-8")
+            fit = self.zscore_fit
+            if (not isinstance(fit, dict) or set(fit) != {"fold", "split_sha256_lf", "case_ids", "method"}
+                    or type(fit["fold"]) is not int or fit["fold"] not in range(5)
+                    or not isinstance(fit["split_sha256_lf"], str) or len(fit["split_sha256_lf"]) != 64
+                    or not isinstance(fit["case_ids"], list) or not fit["case_ids"]
+                    or len(set(fit["case_ids"])) != len(fit["case_ids"])
+                    or fit["method"] != "native_scaled_voxel_population"):
+                raise ValueError("train_zscore requires complete train-fold provenance")
+        elif any(value is not None for value in (self.zscore_mean, self.zscore_std, self.zscore_fit)):
+            raise ValueError("zscore parameters require train_zscore")
 
         if self.hu_window is not None and (
             len(self.hu_window) != 2

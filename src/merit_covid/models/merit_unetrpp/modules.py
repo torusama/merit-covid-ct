@@ -77,6 +77,17 @@ def relative_offsets(master, depth, *, mode="index", z_offsets_mm=None, unit_mm=
     return values / unit_mm
 
 
+def _attention_validity(valid, master, depth):
+    if valid is None:
+        return None
+    valid = torch.as_tensor(valid, device=master.device)
+    if valid.dtype != torch.bool or valid.shape != (len(master), depth):
+        raise ValueError("attention_valid must be bool [B,Z]")
+    if not valid[torch.arange(len(master), device=master.device), master].all():
+        raise ValueError("master must be attention-valid")
+    return valid
+
+
 class TrajectoryEvidencePrototype(nn.Module):
     """Content salience -> master-relative pooling -> per-slice prototype attention."""
 
@@ -105,7 +116,7 @@ class TrajectoryEvidencePrototype(nn.Module):
     def temperature(self):
         return F.softplus(self.tau0) + 0.1
 
-    def forward(self, features, master_index, z_offsets_mm=None):
+    def forward(self, features, master_index, z_offsets_mm=None, attention_valid=None):
         _check_features(features, self.channels)
         batch, channels, depth, height, width = features.shape
         master = master_positions(master_index, batch, depth, features.device)
@@ -115,7 +126,11 @@ class TrajectoryEvidencePrototype(nn.Module):
                                    z_offsets_mm=z_offsets_mm, unit_mm=self.position_unit_mm)
         position = sinusoidal_encoding(offsets, self.position_dim, dtype=slices.dtype)
         scores = self.position_head(torch.cat((salience[..., None].to(slices.dtype), position), -1)).squeeze(-1)
-        weights = (scores.float() / self.temperature.float()).softmax(dim=1).to(slices.dtype)
+        scores = scores.float() / self.temperature.float()
+        valid = _attention_validity(attention_valid, master, depth)
+        if valid is not None:
+            scores = scores.masked_fill(~valid, -torch.inf)
+        weights = scores.softmax(dim=1).to(slices.dtype)
         prototype = (weights[:, :, None, None] * slices).sum(dim=1)
         q = self.query(slices)
         k, v = self.key(prototype), self.value(prototype)
@@ -165,7 +180,7 @@ class MasterEvidenceRouting(nn.Module):
     def distance_scale(self):
         return F.softplus(self.distance_scale_raw)
 
-    def forward(self, features, master_index, z_offsets_mm=None):
+    def forward(self, features, master_index, z_offsets_mm=None, attention_valid=None):
         _check_features(features, self.channels)
         batch, channels, depth, height, width = features.shape
         if depth < 2:
@@ -174,6 +189,8 @@ class MasterEvidenceRouting(nn.Module):
         rows = torch.arange(batch, device=features.device)
         positions = torch.arange(depth, device=features.device).expand(batch, -1)
         context_indices = positions[positions != master[:, None]].reshape(batch, depth - 1)
+        valid = _attention_validity(attention_valid, master, depth)
+        context_valid = None if valid is None else valid[rows[:, None], context_indices]
         slices = features.permute(0, 2, 3, 4, 1).reshape(batch, depth, height * width, channels)
         master_features = slices[rows, master]
         context = slices[rows[:, None], context_indices]
@@ -192,8 +209,17 @@ class MasterEvidenceRouting(nn.Module):
             delta = (coords[start:stop, None] - coords[None]).square().sum(-1)
             distance = (delta / float(height ** 2 + width ** 2)).repeat(1, depth - 1)
             bias = -self.distance_scale * distance
+            if context_valid is not None:
+                token_valid = context_valid.repeat_interleave(height * width, dim=1)
+                # Avoid an all-masked softmax; zero the resulting update below.
+                has_context = token_valid.any(dim=1)
+                safe_valid = token_valid.clone()
+                safe_valid[~has_context, 0] = True
+                bias = bias[None].expand(batch, -1, -1).masked_fill(~safe_valid[:, None], -torch.inf)
             evidence = F.scaled_dot_product_attention(q[:, start:stop], k, v,
                                                       attn_mask=bias, dropout_p=0.0)
+            if context_valid is not None:
+                evidence = evidence * has_context[:, None, None]
             updates.append(evidence)
         evidence = self.output(torch.cat(updates, dim=1))
         gate = self.gate(torch.cat((master_features, evidence), dim=-1))

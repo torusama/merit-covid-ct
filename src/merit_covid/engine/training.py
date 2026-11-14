@@ -25,7 +25,7 @@ from merit_covid.data.pipeline.config import PreprocessConfig
 from merit_covid.data.pipeline.dataset import CTSlabDataset
 from merit_covid.data.pipeline.dataloader import make_dataloader
 from merit_covid.data.pipeline.geometry import inspect_pair
-from merit_covid.data.pipeline.metrics import aggregate_results, volume_metrics
+from merit_covid.data.pipeline.metrics import aggregate_results, volume_metrics, lesion_slice_metrics
 from merit_covid.data.pipeline.splits import validate_splits
 from merit_covid.models.merit_unetrpp import MERITUNETRPP, MERITLoss
 from .slab_inference import predict_slab_case
@@ -34,7 +34,8 @@ from .slab_inference import predict_slab_case
 TRAIN_DEFAULTS = dict(epochs=100, batch_size=1, num_workers=0, learning_rate=3e-4,
     weight_decay=1e-4, device="auto", amp=True, amp_init_scale=1024.0, gradient_clip=1.0,
     seed=42, warmup_epochs=30, patience=20, scheduler_patience=5, scheduler_factor=0.5,
-    threshold=0.5, include_hd95=True, threads=2, deterministic=True)
+    threshold=0.5, include_hd95=True, threads=2, deterministic=True,
+    augmentation_flips=False, samples_per_volume=0)
 
 
 def json_ready(value):
@@ -90,8 +91,9 @@ def validate_experiment(config):
     for key in ("epochs", "batch_size", "threads", "warmup_epochs", "patience", "scheduler_patience"):
         if type(settings[key]) is not int or settings[key] < 1:
             raise ValueError(f"{key} must be a positive integer")
-    if type(settings["num_workers"]) is not int or settings["num_workers"] < 0:
-        raise ValueError("num_workers must be nonnegative")
+    for key in ("num_workers", "samples_per_volume"):
+        if type(settings[key]) is not int or settings[key] < 0:
+            raise ValueError(f"{key} must be nonnegative")
     if type(settings["seed"]) is not int or not 0 <= settings["seed"] < 2**32:
         raise ValueError("seed must be an integer in [0,2**32)")
     for key in ("learning_rate", "gradient_clip", "amp_init_scale"):
@@ -101,7 +103,7 @@ def validate_experiment(config):
         raise ValueError("weight_decay must be nonnegative")
     if not 0 < settings["scheduler_factor"] < 1 or not 0 <= settings["threshold"] <= 1:
         raise ValueError("Invalid scheduler_factor/threshold")
-    for key in ("amp", "deterministic", "include_hd95"):
+    for key in ("amp", "deterministic", "include_hd95", "augmentation_flips"):
         if type(settings[key]) is not bool:
             raise ValueError(f"{key} must be boolean")
     config["training"] = settings
@@ -133,6 +135,10 @@ def split_datasets(config, fold):
         raise ValueError("fold must be 0..4")
     cases, split, identity, split_hash = load_development_split(config)
     part = next(f for f in split["folds"] if f["fold"] == fold)
+    fit = config["preprocess"].get("zscore_fit")
+    if fit is not None and (fit["fold"] != fold or fit["split_sha256_lf"] != split_hash
+                            or set(fit["case_ids"]) != set(part["train"]["case_ids"])):
+        raise ValueError("Z-score fit provenance must match the complete train partition and split")
     datasets = {}
     for role in ("train", "validation", "test"):
         ids = set(part[role]["case_ids"])
@@ -163,11 +169,15 @@ def evaluate_model(model, cases, preprocess, *, threshold=0.5, include_hd95=True
     try:
         for case in cases:
             inspect_pair(case, preprocess, require_mask=True)
-            prediction = predict_slab_case(model, case, preprocess, batch_size=batch_size, num_workers=num_workers)
+            prediction, presence = predict_slab_case(model, case, preprocess, batch_size=batch_size, num_workers=num_workers,
+                                                      return_presence=True)
             truth = nib.load(str(case.mask)).get_fdata(dtype=np.float32, caching="unchanged")
             native = prediction.to_original_xyz()
             metrics = volume_metrics(native, truth, threshold,
                 prediction.metadata["original_affine_mm"], include_hd95)
+            from merit_covid.data.pipeline.geometry import reorient_to_lps
+            canonical_gt = reorient_to_lps(nib.load(str(case.mask))).get_fdata(dtype=np.float32, caching="unchanged").transpose(2, 1, 0)
+            metrics["lesion_slice_detail"] = lesion_slice_metrics(prediction.probability_zyx, canonical_gt, threshold, presence)
             rows.append({"case_id": case.case_id, "group_id": case.group_id, **metrics,
                          "lesion_retention": _retention_for_case(case, preprocess)})
     finally:
@@ -195,6 +205,22 @@ def resolve_device(value):
     return device
 
 
+def augment_slab_flips(batch):
+    """Independent in-plane flips per sample, shared by all slices and labels."""
+    result = dict(batch)
+    keys = ("image_slab", "mask_slab", "valid_region", "master_mask")
+    flags = torch.rand((batch["image_slab"].shape[0], 2)) < 0.5
+    for key in keys:
+        if key not in batch:
+            continue
+        samples = []
+        for item, flip in zip(batch[key], flags):
+            axes = [axis for axis, enabled in zip((-2, -1), flip.tolist()) if enabled]
+            samples.append(torch.flip(item, axes) if axes else item)
+        result[key] = torch.stack(samples)
+    return result
+
+
 class Trainer:
     def __init__(self, config, train_loader, validation_cases, provenance, output_dir):
         self.config = validate_experiment(config)
@@ -210,6 +236,11 @@ class Trainer:
         if json_ready(asdict(train_loader.dataset.config)) != self.config["preprocess"]:
             raise ValueError("Training Dataset preprocessing differs from frozen experiment config")
         train_cases = train_loader.dataset.cases
+        fit = self.config["preprocess"].get("zscore_fit")
+        if fit is not None and (fit["fold"] != provenance.get("fold")
+                or fit["split_sha256_lf"] != provenance.get("split_sha256_lf")
+                or set(fit["case_ids"]) != {case.case_id for case in train_cases}):
+            raise ValueError("Z-score fit provenance must match the complete train partition and split")
         if ({c.case_id for c in train_cases} & {c.case_id for c in self.validation_cases}
                 or {c.group_id for c in train_cases} & {c.group_id for c in self.validation_cases}):
             raise ValueError("Train/validation case or group leakage")
@@ -239,9 +270,11 @@ class Trainer:
         totals, examples, steps, skipped = {}, 0, 0, 0
         for index, batch in enumerate(self.train_loader):
             self.optimizer.zero_grad(set_to_none=True)
+            if self.settings["augmentation_flips"]:
+                batch = augment_slab_flips(batch)
             image = batch["image_slab"].to(self.device)
             with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp_enabled):
-                output = self.model(image, batch["master_index"], batch["z_offsets_mm"])
+                output = self.model(image, batch["master_index"], batch["z_offsets_mm"], batch.get("attention_valid"))
                 losses = self.criterion(output, batch["mask_slab"].to(self.device), batch["master_index"],
                     valid_region=batch["valid_region"].to(self.device), z_offsets_mm=batch["z_offsets_mm"])
             if not all(torch.isfinite(v).all() for v in losses.values()):
@@ -290,7 +323,13 @@ class Trainer:
 
     def resume(self, path):
         checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-        if checkpoint.get("schema_version") != 1 or checkpoint.get("protocol_fingerprint") != self.fingerprint:
+        if checkpoint.get("schema_version") != 1:
+            raise ValueError("Checkpoint config/preprocessing/sampling/split/fold mismatch")
+        # Verify the stored legacy fingerprint before materializing new default-off
+        # options, then compare the fully normalized protocol with this trainer.
+        stored_fingerprint = protocol_fingerprint(checkpoint["config"], checkpoint["provenance"])
+        normalized_fingerprint = protocol_fingerprint(validate_experiment(checkpoint["config"]), checkpoint["provenance"])
+        if checkpoint.get("protocol_fingerprint") != stored_fingerprint or normalized_fingerprint != self.fingerprint:
             raise ValueError("Checkpoint config/preprocessing/sampling/split/fold mismatch")
         if checkpoint.get("environment", {}).get("device_type", self.device.type) != self.device.type:
             raise ValueError("Resume device type changed; exact RNG replay across CPU/CUDA is not guaranteed")

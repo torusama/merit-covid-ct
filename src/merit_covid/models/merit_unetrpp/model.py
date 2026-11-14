@@ -35,7 +35,8 @@ class MERITUNETRPP(UNETRPP):
                  norm_name="instance", use_tep=True, use_mer=True, use_pcg=True,
                  salience_hidden=64, position_dim=64, position_hidden=16,
                  mer_attention_dim=64, gate_hidden=16, presence_hidden=8,
-                 query_chunk_size=128, pcg_ramp=1.0, position_mode="index", position_unit_mm=1.0):
+                 query_chunk_size=128, pcg_ramp=1.0, position_mode="index", position_unit_mm=1.0,
+                 mask_duplicate_context=False):
         for name, value in (("use_tep", use_tep), ("use_mer", use_mer), ("use_pcg", use_pcg)):
             if type(value) is not bool:
                 raise ValueError(f"{name} must be a boolean")
@@ -43,6 +44,9 @@ class MERITUNETRPP(UNETRPP):
             raise ValueError("MERIT uses exactly two channels: background and foreground")
         if position_mode not in ("index", "physical_mm") or not math.isfinite(position_unit_mm) or position_unit_mm <= 0:
             raise ValueError("Invalid position mode/unit")
+        if type(mask_duplicate_context) is not bool:
+            raise ValueError("mask_duplicate_context must be boolean")
+        self.mask_duplicate_context = mask_duplicate_context
         self.position_mode, self.position_unit_mm = position_mode, position_unit_mm
         super().__init__(in_channels, out_channels, img_size=img_size, feature_size=feature_size,
                          num_heads=num_heads, norm_name=norm_name, depths=depths,
@@ -76,9 +80,12 @@ class MERITUNETRPP(UNETRPP):
             raise ValueError("epoch must be nonnegative and warmup_epochs positive")
         self.set_pcg_ramp(min(float(epoch) / warmup_epochs, 1.0))
 
-    def forward(self, x, master_index, z_offsets_mm=None):
+    def forward(self, x, master_index, z_offsets_mm=None, attention_valid=None):
         self.validate_input(x)
         master = master_positions(master_index, x.shape[0], x.shape[2], x.device)
+        if self.mask_duplicate_context and attention_valid is None:
+            raise ValueError("mask_duplicate_context requires attention_valid")
+        attention_valid = attention_valid if self.mask_duplicate_context else None
         relative_offsets(master, x.shape[2], mode=self.position_mode,
                          z_offsets_mm=z_offsets_mm, unit_mm=self.position_unit_mm)
         _, hidden = self.unetr_pp_encoder(x)
@@ -86,12 +93,12 @@ class MERITUNETRPP(UNETRPP):
         bottleneck = self.proj_feat(enc4, self.hidden_size, self.feat_size)
         salience = None
         if self.tep is not None:
-            bottleneck, salience = self.tep(bottleneck, master, z_offsets_mm)
+            bottleneck, salience = self.tep(bottleneck, master, z_offsets_mm, attention_valid)
         dec3 = self.decoder5(bottleneck, enc3)
         dec2 = self.decoder4(dec3, enc2)
         mid = self.decoder3(dec2, enc1)
         if self.mer is not None:
-            mid = self.mer(mid, master, z_offsets_mm)
+            mid = self.mer(mid, master, z_offsets_mm, attention_valid)
         full = self.decoder2(mid, self.encoder1(x))
         raw = self.out1(full)
         logits, presence = (raw, None) if self.pcg is None else self.pcg(full, raw, self.pcg_ramp)

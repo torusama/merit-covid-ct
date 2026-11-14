@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import torch
 from torch.utils.data import DataLoader, Sampler
 
-from merit_covid.data.pipeline.dataloader import collate_slabs
+from merit_covid.data.pipeline.dataloader import collate_slabs, VolumeBalancedSampler
 from merit_covid.engine.training import Trainer, load_experiment, split_datasets, validate_experiment
 
 
@@ -48,10 +48,12 @@ def train(config_path, fold, output, *, epochs=None, resume=None):
     if settings["num_workers"] != 0:
         raise ValueError("Case-grouped one-volume caching requires num_workers=0")
     datasets, provenance = split_datasets(config, fold)
-    provenance["train_order"] = "seeded case shuffle, then seeded master shuffle within case; every master once"
+    provenance["train_order"] = ("volume-balanced sampling with replacement" if settings["samples_per_volume"] else
+                                 "seeded case shuffle, then seeded master shuffle within case; every master once")
     generator = torch.Generator().manual_seed(settings["seed"])
     loader = DataLoader(datasets["train"], batch_size=settings["batch_size"],
-        sampler=CaseGroupedSampler(datasets["train"], generator), generator=generator,
+        sampler=(VolumeBalancedSampler(datasets["train"], settings["samples_per_volume"], generator)
+                 if settings["samples_per_volume"] else CaseGroupedSampler(datasets["train"], generator)), generator=generator,
         num_workers=0, collate_fn=collate_slabs)
     trainer = Trainer(config, loader, datasets["validation"].cases, provenance, output)
     return trainer, trainer.fit(resume=resume)

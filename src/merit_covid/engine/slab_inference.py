@@ -14,7 +14,7 @@ from merit_covid.models.merit_unetrpp import MERITUNETRPPAdapter
 from .prediction import VolumePrediction, binary_logits_to_probabilities
 
 
-def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0):
+def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0, return_presence=False):
     """One prediction for EVERY canonical master, no GT read and no thresholds.
 
     XY probabilities are resized before constructing the native-only unified
@@ -29,10 +29,14 @@ def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0):
     adapter = MERITUNETRPPAdapter(model)
     device = next(model.parameters()).device
     assembly, native_metadata = None, None
+    presence_by_slice = {}
     with torch.inference_mode():
         for batch in loader:
             batch["image_slab"] = batch["image_slab"].to(device)
-            logits = adapter.predict_logits(batch)
+            if return_presence:
+                logits, presence = adapter.predict_with_presence(batch)
+            else:
+                logits, presence = adapter.predict_logits(batch), None
             for i, metadata in enumerate(batch["metadata"]):
                 if batch["case_id"][i] != case.case_id or metadata["case_id"] != case.case_id:
                     raise ValueError("Wrong case during master reconstruction")
@@ -53,6 +57,14 @@ def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0):
                 if tuple(probability.shape[-2:]) != tuple(metadata["native_size_hw"]):
                     probability = F.interpolate(probability, size=metadata["native_size_hw"], mode="bilinear", align_corners=False)
                 assembly.add(int(batch["master_slice_index"][i]), probability[0, 0].cpu().numpy())
+                if presence is not None:
+                    presence_by_slice[int(batch["master_slice_index"][i])] = float(presence[i].cpu())
     if assembly is None:
         raise ValueError("Empty inference dataset")
-    return VolumePrediction(case.case_id, assembly.finish(), native_metadata)
+    prediction = VolumePrediction(case.case_id, assembly.finish(), native_metadata)
+    if return_presence:
+        if presence_by_slice and len(presence_by_slice) != len(assembly.seen):
+            raise ValueError("Incomplete presence predictions")
+        return prediction, (np.array([presence_by_slice[i] for i in range(len(assembly.seen))])
+                            if presence_by_slice else None)
+    return prediction

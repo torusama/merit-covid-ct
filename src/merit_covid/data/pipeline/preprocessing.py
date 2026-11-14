@@ -33,6 +33,12 @@ def normalize_ct(
     """Preserve scaled intensities by default; window only under explicit policy."""
     if config.intensity_encoding == "native":
         return image_xyz
+    if config.intensity_encoding == "train_zscore":
+        result = (image_xyz.astype(np.float64) - config.zscore_mean) / config.zscore_std
+        result = result.astype(np.float32)
+        if not np.isfinite(result).all():
+            raise ValueError(f"{case_id}: z-score produced non-finite values")
+        return result
     if config.intensity_provenance is None:
         warnings.warn(f"{case_id}: {config.intensity_encoding} is an explicit intensity policy, "
                       "not verified HU/normalization provenance; supply intensity_provenance from source evidence",
@@ -184,6 +190,7 @@ def read_arrays(
             "hu_window": list(config.hu_window) if config.hu_window is not None else None,
             "padding": "replicate_boundary",
             "intensity_provenance": config.intensity_provenance,
+            "zscore_fit": config.zscore_fit,
             "lesion_retention": retention,
         }
     )

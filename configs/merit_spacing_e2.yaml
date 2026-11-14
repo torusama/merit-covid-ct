@@ -1,0 +1,51 @@
+# Research template: set explicit spacing parameters from train/validation before use.
+data:
+  manifest: ../data/covid19_20/cases.json
+  split_path: ../splits/covid19_20_5fold.json
+loss:
+  alignment_pool: max
+  alignment_weight: 0.05
+  presence_weight: 0.2
+  salience_weight: 0.03
+  sigma_slices: 2.0
+  weighting_mode: index
+model:
+  depths:
+  - 3
+  - 3
+  - 3
+  - 3
+  feature_size: 16
+  img_size:
+  - 11
+  - 128
+  - 128
+  position_mode: index
+  query_chunk_size: 128
+  use_mer: true
+  use_pcg: true
+  use_tep: true
+  position_unit_mm: 1.0
+preprocess:
+  assume_mm: true
+  boundary_policy: edge
+  duplicate_slice_policy: unique
+  intensity_encoding: native
+  sampling_mode: physical_mm
+  size_hw:
+  - 128
+  - 128
+  slab_size: 11
+  target_spacing_mm: null
+training:
+  amp: true
+  batch_size: 1
+  device: auto
+  epochs: 100
+  gradient_clip: 1.0
+  learning_rate: 0.0003
+  num_workers: 0
+  seed: 42
+  threshold: 0.5
+  warmup_epochs: 30
+  weight_decay: 0.0001

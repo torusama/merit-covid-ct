@@ -100,6 +100,8 @@ def sample_arrays(image_zyx, mask_zyx, master, depth, metadata, *, indices=None,
         "slice_positions_mm": positions,
         "z_offsets_mm": ((positions - positions[depth // 2]) @ direction).astype(np.float32),
         "requested_offsets_mm": requested, "slice_valid": valid,
+        # Attention validity is independent of the loss duplicate policy.
+        "attention_valid": slice_validity(selected, depth // 2, np.ones(depth, dtype=bool), "unique"),
         "valid_region": np.broadcast_to(valid[None, :, None, None], (1, depth, *image_zyx.shape[1:])).copy(),
         "sampling_mode": sampling_mode, "target_spacing_mm": target_spacing_mm,
     }

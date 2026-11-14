@@ -5,7 +5,7 @@ from collections import defaultdict
 
 import nibabel as nib
 import numpy as np
-from scipy.ndimage import binary_erosion, generate_binary_structure
+from scipy.ndimage import binary_erosion, generate_binary_structure, label
 from scipy.spatial import cKDTree
 
 from .config import PreprocessConfig
@@ -36,6 +36,64 @@ def binary_ground_truth(value):
 def validate_threshold(threshold):
     if not np.isfinite(threshold) or not 0 < threshold < 1:
         raise ValueError("Threshold must be strictly between 0 and 1")
+
+
+def presence_calibration(scores, targets, bins=10):
+    """Brier, equal-width ECE and rank AUROC; undefined AUROC is null."""
+    scores, targets = probabilities(scores).reshape(-1), binary_ground_truth(targets).reshape(-1)
+    if not len(scores) or scores.shape != targets.shape or type(bins) is not int or bins < 1:
+        raise ValueError("Presence scores and targets must be nonempty, aligned; bins positive")
+    from scipy.stats import rankdata
+    pos, neg = int(targets.sum()), int((~targets).sum())
+    auc = (float((rankdata(scores)[targets].sum() - pos * (pos + 1) / 2) / (pos * neg))
+           if pos and neg else None)
+    indices = np.minimum((scores * bins).astype(int), bins - 1)
+    rows = []
+    for i in range(bins):
+        selected = indices == i
+        if selected.any():
+            rows.append({"bin": i, "count": int(selected.sum()), "mean_probability": float(scores[selected].mean()),
+                         "positive_fraction": float(targets[selected].mean())})
+    ece = sum(row["count"] * abs(row["mean_probability"] - row["positive_fraction"]) for row in rows) / len(scores)
+    return {"brier": float(np.mean((scores - targets.astype(float)) ** 2)), "ece": float(ece),
+            "auroc": auc, "positive_slices": pos, "negative_slices": neg, "bins": rows}
+
+
+def lesion_slice_metrics(prediction_zyx, truth_zyx, threshold=0.5, presence=None):
+    """Native canonical grid: 6-connected 3D GT components and empty-slice FP.
+
+    A component is detected if any voxel overlaps; voxel size bins are explicit
+    descriptive thresholds, not clinically validated lesion categories.
+    """
+    validate_threshold(threshold)
+    pred, truth = probabilities(prediction_zyx), binary_ground_truth(truth_zyx)
+    if pred.shape != truth.shape or truth.ndim != 3 or not truth.size:
+        raise ValueError("Matching nonempty native ZYX volumes required")
+    pred = pred >= threshold
+    target_slices = truth.any(axis=(1, 2))
+    predicted_slices = pred.any(axis=(1, 2))
+    empty = ~target_slices
+    ids, count = label(truth, structure=generate_binary_structure(3, 1))
+    sizes = np.bincount(ids.ravel(), minlength=count + 1)
+    hits = np.unique(ids[pred & truth])
+    detected = np.zeros(count + 1, dtype=bool)
+    detected[hits] = True
+    strata = {}
+    for name, lower, upper in (("lt_100_voxels", 1, 100), ("100_to_999_voxels", 100, 1000),
+                               ("at_least_1000_voxels", 1000, None)):
+        selected = sizes[1:] >= lower
+        if upper is not None:
+            selected &= sizes[1:] < upper
+        n, found = int(selected.sum()), int(detected[1:][selected].sum())
+        strata[name] = {"gt_components": n, "detected": found, "missed": n-found,
+                        "recall": found/n if n else None}
+    result = {"empty_gt_slices": int(empty.sum()), "empty_slices_with_fp": int((empty & predicted_slices).sum()),
+              "false_negative_positive_slices": int((target_slices & ~predicted_slices).sum()),
+              "gt_components_3d": int(count), "detected_components_3d": int(detected[1:].sum()),
+              "component_size_bins": strata,
+              "component_policy": "6-connected native GT; any voxel overlap counts as detected; bins in native voxels"}
+    result["presence"] = None if presence is None else presence_calibration(presence, target_slices)
+    return result
 
 
 def hd95_mm(pred, truth, affine):

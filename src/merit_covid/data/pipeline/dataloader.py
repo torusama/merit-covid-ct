@@ -12,7 +12,7 @@ import random
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset, default_collate
+from torch.utils.data import DataLoader, Dataset, Sampler, default_collate
 
 from .config import PreprocessConfig
 
@@ -39,25 +39,53 @@ def seed_worker(worker_id: int) -> None:
     random.seed(worker_seed)
 
 
+class VolumeBalancedSampler(Sampler):
+    """Draw a fixed number of masters per volume, with replacement."""
+
+    def __init__(self, dataset, samples_per_volume, generator):
+        if type(samples_per_volume) is not int or samples_per_volume < 1:
+            raise ValueError("samples_per_volume must be a positive integer")
+        if len(dataset.ends) != len(dataset.cases) + 1 or any(a >= b for a, b in zip(dataset.ends, dataset.ends[1:])):
+            raise ValueError("Dataset must have nonempty indexed volumes")
+        self.dataset, self.samples_per_volume, self.generator = dataset, samples_per_volume, generator
+
+    def __len__(self):
+        return len(self.dataset.cases) * self.samples_per_volume
+
+    def __iter__(self):
+        for i in torch.randperm(len(self.dataset.cases), generator=self.generator).tolist():
+            start, end = self.dataset.ends[i:i + 2]
+            for offset in torch.randint(end - start, (self.samples_per_volume,), generator=self.generator).tolist():
+                yield start + offset
+
+
 def make_dataloader(
     dataset: Dataset,
     batch_size: int = 1,
     shuffle: bool = False,
     seed: int = 42,
     num_workers: int = 0,
+    samples_per_volume: int = 0,
 ) -> DataLoader:
     """Build a CPU loader; validation/test preserve master reconstruction order."""
     if getattr(dataset, "partition", None) in ("validation", "test") and shuffle:
         raise ValueError("Validation/test loaders must preserve deterministic slice order")
 
+    if type(samples_per_volume) is not int or samples_per_volume < 0:
+        raise ValueError("samples_per_volume must be a nonnegative integer")
+    if samples_per_volume and getattr(dataset, "partition", None) != "train":
+        raise ValueError("Volume-balanced sampling is train-only")
+    generator = torch.Generator().manual_seed(seed)
+    sampler = VolumeBalancedSampler(dataset, samples_per_volume, generator) if samples_per_volume else None
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=shuffle,
+        shuffle=shuffle if sampler is None else False,
+        sampler=sampler,
         num_workers=num_workers,
         collate_fn=collate_slabs,
         worker_init_fn=seed_worker,
-        generator=torch.Generator().manual_seed(seed),
+        generator=generator,
         pin_memory=False,
     )
 

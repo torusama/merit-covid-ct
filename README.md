@@ -113,6 +113,7 @@ input or as segmentation performance.
 | Inspect the upstream-derived standalone baseline | [UNETR++ baseline](docs/unetrpp_baseline.md) |
 | Prepare baseline patches and reconstruct native volumes | [UNETR++ input/output](docs/unetrpp_input.md) |
 | Check measured evidence and remaining research work | [Validation](docs/validation.md) |
+| Read the Vietnamese COVID adaptation review | [MERIT COVID assessment](docs/README_DANH_GIA_MERIT_COVID.md) |
 
 [CHANGELOG.md](CHANGELOG.md) records major integration milestones.
 Upstream UNETR++ attribution remains in its packaged `LICENSE`, `NOTICE` and

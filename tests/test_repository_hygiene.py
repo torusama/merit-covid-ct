@@ -49,7 +49,11 @@ def test_maintained_prose_and_project_python_are_english():
     unexpected = [
         str(path.relative_to(ROOT))
         for path in paths
-        if VIETNAMESE.search(path.read_text(encoding="utf-8-sig"))
+        # This requested research report is intentionally in Vietnamese;
+        # local third-party virtual environments are not project source.
+        if path != ROOT / "docs/README_DANH_GIA_MERIT_COVID.md"
+        and "site-packages" not in path.parts
+        and VIETNAMESE.search(path.read_text(encoding="utf-8-sig"))
     ]
     assert not unexpected, f"Non-English project prose: {unexpected}"
 

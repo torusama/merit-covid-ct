@@ -16,7 +16,7 @@ class MERITUNETRPPAdapter(nn.Module):
             raise TypeError("MERITUNETRPPAdapter requires a MERITUNETRPP model")
         self.model = model
 
-    def forward(self, batch):
+    def predict_with_presence(self, batch):
         if not isinstance(batch, dict):
             raise ValueError("Expected a collated batch dictionary")
         keys = [key for key in ("image", "image_slab", "image_patch") if key in batch]
@@ -30,10 +30,15 @@ class MERITUNETRPPAdapter(nn.Module):
                 raise ValueError("image/image_patch batches require explicit master_index")
             indices = [image.shape[2] // 2] * image.shape[0]
         master = master_positions(indices, image.shape[0], image.shape[2], image.device)
-        output = self.model(image, master, batch.get("z_offsets_mm"))
+        output = self.model(image, master, batch.get("z_offsets_mm"), batch.get("attention_valid"))
         # sigmoid(fg-bg) == softmax([bg,fg])[fg], retaining all gradients.
         binary_logits = output.logits[:, 1:2] - output.logits[:, :1]
-        return binary_logits[torch.arange(image.shape[0], device=image.device), :, master]
+        rows = torch.arange(image.shape[0], device=image.device)
+        presence = None if output.presence is None else output.presence[rows, master]
+        return binary_logits[rows, :, master], presence
+
+    def forward(self, batch):
+        return self.predict_with_presence(batch)[0]
 
     def predict_logits(self, batch):
         return self(batch)
