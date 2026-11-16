@@ -39,6 +39,34 @@ def seed_worker(worker_id: int) -> None:
     random.seed(worker_seed)
 
 
+def resume_loader_iterator(loader, skipped_batches, expected_generator, restore_rng):
+    """Replay sampler draws without rereading already completed CT slabs.
+
+    The caller restores the epoch-start loader generator first. The new loader
+    consumes the same worker-base-seed draw as the original iterator.
+    """
+    if loader.num_workers != 0 or loader.generator is None:
+        raise ValueError("Exact sampler replay requires num_workers=0 and a generator")
+
+    class RemainingBatches:
+        def __iter__(self):
+            batches = iter(loader.batch_sampler)
+            for _ in range(skipped_batches):
+                next(batches)
+            if not torch.equal(loader.generator.get_state(), expected_generator):
+                raise ValueError("Sampler state cannot be replayed exactly")
+            restore_rng()
+            yield from batches
+
+        def __len__(self):
+            return len(loader) - skipped_batches
+
+    remaining = DataLoader(loader.dataset, batch_sampler=RemainingBatches(),
+                           num_workers=0, collate_fn=loader.collate_fn,
+                           generator=loader.generator, pin_memory=loader.pin_memory)
+    return iter(remaining)
+
+
 class VolumeBalancedSampler(Sampler):
     """Draw a fixed number of masters per volume, with replacement."""
 

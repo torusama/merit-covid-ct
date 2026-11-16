@@ -14,6 +14,7 @@ import os
 import platform
 from pathlib import Path
 import random
+import time
 
 import nibabel as nib
 import numpy as np
@@ -23,7 +24,7 @@ import yaml
 from merit_covid.data.pipeline.cases import load_cases
 from merit_covid.data.pipeline.config import PreprocessConfig
 from merit_covid.data.pipeline.dataset import CTSlabDataset
-from merit_covid.data.pipeline.dataloader import make_dataloader
+from merit_covid.data.pipeline.dataloader import make_dataloader, resume_loader_iterator
 from merit_covid.data.pipeline.geometry import inspect_pair, canonical_shape
 from merit_covid.data.pipeline.metrics import aggregate_results, volume_metrics, lesion_slice_metrics, validate_threshold
 from merit_covid.data.pipeline.splits import validate_splits
@@ -36,7 +37,7 @@ TRAIN_DEFAULTS = dict(epochs=100, batch_size=1, num_workers=0, learning_rate=3e-
     weight_decay=1e-4, device="auto", amp=True, amp_init_scale=1024.0, gradient_clip=1.0,
     seed=42, warmup_epochs=30, patience=20, scheduler_patience=5, scheduler_factor=0.5,
     threshold=0.5, include_hd95=True, threads=2, deterministic=True, shuffle_mode="slice",
-    augmentation_flips=False, samples_per_volume=0, activation_checkpointing=False)
+    augmentation_flips=False, samples_per_volume=0, activation_checkpointing=False, factorized_mer=False)
 
 
 def json_ready(value):
@@ -107,11 +108,13 @@ def validate_experiment(config):
     if not 0 < settings["scheduler_factor"] < 1:
         raise ValueError("Invalid scheduler_factor")
     validate_threshold(settings["threshold"])
-    for key in ("amp", "deterministic", "include_hd95", "augmentation_flips", "activation_checkpointing"):
+    for key in ("amp", "deterministic", "include_hd95", "augmentation_flips", "activation_checkpointing", "factorized_mer"):
         if type(settings[key]) is not bool:
             raise ValueError(f"{key} must be boolean")
     config["training"] = settings
     config["model"] = explicit_parameters(MERITUNETRPP, config["model"])
+    if settings["factorized_mer"] and (not settings["activation_checkpointing"] or not config["model"]["use_mer"]):
+        raise ValueError("factorized_mer requires activation_checkpointing and use_mer")
     config["loss"] = explicit_parameters(MERITLoss, config["loss"])
     preprocess = PreprocessConfig(**config["preprocess"])
     config["preprocess"] = asdict(preprocess)
@@ -204,6 +207,8 @@ def protocol_fingerprint(config, provenance, *, version=2):
     # compatible. Enabling it is a frozen protocol change and rejects resume.
     if version == 2 and payload["training"].get("activation_checkpointing") is False:
         payload["training"].pop("activation_checkpointing")
+    if version == 2 and payload["training"].get("factorized_mer") is False:
+        payload["training"].pop("factorized_mer")
     # Version 1 is retained ONLY for loading historical models for inference.
     # It omitted source-data configuration and did not bind resolved GT paths.
     if version not in (1, 2):
@@ -341,11 +346,37 @@ class Trainer:
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.amp_enabled, init_scale=self.settings["amp_init_scale"])
         self.start_epoch, self.best_metric, self.bad_epochs = 0, -math.inf, 0
 
-    def train_epoch(self, epoch):
+    def train_epoch(self, epoch, *, checkpoint_every=0, deadline=None):
         self.model.train()
         self.model.set_epoch(epoch, warmup_epochs=self.settings["warmup_epochs"])
         totals, examples, steps, skipped = {}, 0, 0, 0
-        for index, batch in enumerate(self.train_loader):
+        progress = getattr(self, "_partial_progress", None)
+        if checkpoint_every or deadline is not None or progress:
+            if self.train_loader.num_workers != 0 or self.train_loader.generator is None:
+                raise ValueError("Mid-epoch resume requires a seeded loader with num_workers=0")
+        generator = self.train_loader.generator
+        epoch_generator = (progress["epoch_generator"] if progress else
+                           generator.get_state().clone() if generator is not None else None)
+        if progress:
+            if progress["epoch"] != epoch or progress["batches"] > len(self.train_loader):
+                raise ValueError("Invalid mid-epoch checkpoint position")
+            saved_rng = (random.getstate(), np.random.get_state(), torch.get_rng_state(),
+                         torch.cuda.get_rng_state_all() if self.device.type == "cuda" else None)
+            expected_generator = generator.get_state().clone()
+            generator.set_state(epoch_generator)
+        start = progress["batches"] if progress else 0
+        if progress:
+            def restore_rng():
+                random.setstate(saved_rng[0]); np.random.set_state(saved_rng[1]); torch.set_rng_state(saved_rng[2])
+                if saved_rng[3] is not None:
+                    torch.cuda.set_rng_state_all(saved_rng[3])
+            iterator = resume_loader_iterator(self.train_loader, start, expected_generator, restore_rng)
+            totals, examples, steps, skipped = (progress["totals"], progress["examples"],
+                                                progress["steps"], progress["skipped"])
+            self._partial_progress = None
+        else:
+            iterator = iter(self.train_loader)
+        for index, batch in enumerate(iterator, start=start):
             self.optimizer.zero_grad(set_to_none=True)
             if self.settings["augmentation_flips"]:
                 batch = augment_slab_flips(batch)
@@ -371,6 +402,15 @@ class Trainer:
                 totals[key] = totals.get(key, 0.0) + float(value.detach()) * len(image)
             if index == 0 or (index + 1) % 10 == 0 or index + 1 == len(self.train_loader):
                 print(f"epoch={epoch} batch={index+1}/{len(self.train_loader)} loss={float(losses['total'].detach()):.6f} ramp={float(self.model.pcg_ramp):.3f}", flush=True)
+            timed_out = deadline is not None and time.monotonic() >= deadline
+            if ((checkpoint_every and (index + 1) % checkpoint_every == 0) or timed_out
+                    or (deadline is not None and index + 1 == len(self.train_loader))):
+                partial = {"epoch": epoch, "batches": index + 1, "epoch_generator": epoch_generator,
+                           "totals": totals.copy(), "examples": examples, "steps": steps, "skipped": skipped}
+                self.save_checkpoint(self.output_dir / "in_progress.pt", epoch, progress=partial)
+                print(f"Saved in-progress checkpoint: epoch={epoch} batch={index+1}", flush=True)
+            if timed_out:
+                return None
         return {**{key: value / examples for key, value in totals.items()},
                 "optimizer_steps": steps, "amp_skipped_steps": skipped, "examples": examples}
 
@@ -380,7 +420,7 @@ class Trainer:
             batch_size=self.settings["batch_size"], num_workers=self.settings["num_workers"],
             identity=self.provenance.get("identity"))
 
-    def save_checkpoint(self, path, epoch):
+    def save_checkpoint(self, path, epoch, *, progress=None):
         payload = {"schema_version": 2, "model": self.model.state_dict(), "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(), "scaler": self.scaler.state_dict(), "epoch": epoch,
             "best_metric": self.best_metric, "bad_epochs": self.bad_epochs, "config": self.config,
@@ -388,6 +428,8 @@ class Trainer:
             "rng": {"python": random.getstate(), "numpy": np.random.get_state(), "torch": torch.get_rng_state(),
                     "cuda": torch.cuda.get_rng_state_all() if self.device.type == "cuda" else None},
             "loader_generator": self.train_loader.generator.get_state() if self.train_loader.generator is not None else None}
+        if progress is not None:
+            payload["in_progress"] = progress
         payload["environment"] = {"python": platform.python_version(), "torch": torch.__version__,
             "resolved_device": str(self.device), "device_type": self.device.type,
             "hardware": torch.cuda.get_device_name(self.device) if self.device.type == "cuda" else platform.processor(),
@@ -399,7 +441,8 @@ class Trainer:
         os.replace(temporary, path)
 
     def resume(self, path):
-        checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+        checkpoint = (path if isinstance(path, dict) else
+                      torch.load(path, map_location="cpu", weights_only=False, mmap=True))
         if checkpoint.get("schema_version") != 2 or "source_identity" not in checkpoint.get("provenance", {}):
             raise ValueError("Checkpoint lacks verified CT/GT source identity; unsafe legacy resume is not supported")
         if checkpoint.get("protocol_fingerprint") != self.fingerprint:
@@ -412,7 +455,8 @@ class Trainer:
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.scheduler.load_state_dict(checkpoint["scheduler"])
         self.scaler.load_state_dict(checkpoint["scaler"])
-        self.start_epoch = checkpoint["epoch"] + 1
+        self._partial_progress = checkpoint.get("in_progress")
+        self.start_epoch = checkpoint["epoch"] if self._partial_progress else checkpoint["epoch"] + 1
         self.best_metric, self.bad_epochs = checkpoint["best_metric"], checkpoint["bad_epochs"]
         random.setstate(checkpoint["rng"]["python"])
         np.random.set_state(checkpoint["rng"]["numpy"])
@@ -422,9 +466,14 @@ class Trainer:
         if self.train_loader.generator is not None and checkpoint["loader_generator"] is not None:
             self.train_loader.generator.set_state(checkpoint["loader_generator"])
 
-    def fit(self, *, resume=None):
+    def fit(self, *, resume=None, checkpoint_every=0, max_seconds=None):
+        if type(checkpoint_every) is not int or checkpoint_every < 0:
+            raise ValueError("checkpoint_every must be a nonnegative integer")
+        if max_seconds is not None and (not math.isfinite(max_seconds) or max_seconds <= 0):
+            raise ValueError("max_seconds must be positive and finite")
+        deadline = None if max_seconds is None else time.monotonic() + max_seconds
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        if resume is None and (self.output_dir / "last.pt").exists():
+        if resume is None and any((self.output_dir / name).exists() for name in ("last.pt", "in_progress.pt")):
             raise FileExistsError("Existing run found; choose a new output directory or --resume")
         if resume is not None:
             self.resume(resume)
@@ -432,7 +481,10 @@ class Trainer:
         for epoch in range(self.start_epoch, self.settings["epochs"]):
             if self.bad_epochs >= self.settings["patience"]:
                 break
-            train = self.train_epoch(epoch)
+            train = self.train_epoch(epoch, checkpoint_every=checkpoint_every, deadline=deadline)
+            if train is None:
+                print("Time budget reached; saved checkpoint for continuing this epoch.", flush=True)
+                break
             validation = self.validate()
             score = validation["macro"]["dice"]["mean"]
             if score is None or not math.isfinite(score):
@@ -446,6 +498,7 @@ class Trainer:
             if improved:
                 self.save_checkpoint(self.output_dir / "best.pt", epoch)
             self.save_checkpoint(self.output_dir / "last.pt", epoch)
+            (self.output_dir / "in_progress.pt").unlink(missing_ok=True)
             with (self.output_dir / "history.jsonl").open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(row, allow_nan=False) + "\n")
             history.append(row)

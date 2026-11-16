@@ -103,7 +103,7 @@ def test_native_512_config_and_one_pixel_lesion_survive_without_resize(tmp_path,
     config = load_experiment(Path(__file__).resolve().parents[1] / "configs/merit_native512.yaml")
     assert config["preprocess"]["size_hw"] is None
     assert config["preprocess"]["intensity_encoding"] == "native"
-    assert config["preprocess"]["assume_mm"] is False
+    assert config["preprocess"]["assume_mm"] is True
     assert config["training"]["activation_checkpointing"] is True
     ct = np.full((512, 512, 2), -1234., dtype=np.float32)
     mask = np.zeros(ct.shape, dtype=np.uint8)

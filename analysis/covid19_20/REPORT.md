@@ -26,7 +26,7 @@ not model predictions.
 | [ct_mask_examples.png](ct_mask_examples.png) | Middle-slice CT, GT and overlay, not AI predictions |
 
 The complete 71-field schema and worked A-0025 example are in
-[the dataset-report guide](../../docs/dataset_reports.md).
+[the dataset-report guide](../../docs/data_pipeline.md#dataset-reports-and-csv-reference).
 
 ## Measured cohort statistics
 

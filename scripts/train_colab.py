@@ -10,6 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))
 
 import torch
 from torch.utils.data import Sampler
@@ -39,7 +40,8 @@ class CaseGroupedSampler(Sampler):
                 yield start + offset
 
 
-def train(config_path, fold, output, *, epochs=None, resume=None):
+def train(config_path, fold, output, *, epochs=None, resume=None, checkpoint_every=0, max_seconds=None,
+          verified_resume_hashes=None):
     config = load_experiment(config_path)
     config["training"]["shuffle_mode"] = "volume"
     if epochs is not None:
@@ -55,7 +57,18 @@ def train(config_path, fold, output, *, epochs=None, resume=None):
         shuffle=True, shuffle_mode="volume", seed=settings["seed"], num_workers=0,
         samples_per_volume=settings["samples_per_volume"])
     trainer = Trainer(config, loader, datasets["validation"].cases, provenance, output)
-    return trainer, trainer.fit(resume=resume)
+    if verified_resume_hashes is not None:
+        if resume is None:
+            raise ValueError("Verified resume hashes require a checkpoint")
+        import json
+        from scripts.kaggle.resume_checkpoint import verify_dataset_content, rebind_verified_timestamps
+        expected = json.loads(Path(verified_resume_hashes).read_text(encoding="utf-8"))
+        all_cases = sorted([c for dataset in datasets.values() for c in dataset.cases], key=lambda c:c.case_id)
+        verify_dataset_content(all_cases, expected)
+        saved = torch.load(resume, map_location="cpu", weights_only=False, mmap=True)
+        resume = rebind_verified_timestamps(saved, trainer.config, trainer.provenance, trainer.fingerprint)
+        print("Checkpoint source identity verified; continuing saved batch position", flush=True)
+    return trainer, trainer.fit(resume=resume, checkpoint_every=checkpoint_every, max_seconds=max_seconds)
 
 
 def main():
@@ -65,10 +78,15 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--epochs", type=int, help="Total epoch budget; can be extended on resume")
     parser.add_argument("--resume", type=Path, help="Trusted checkpoint from this training entry point")
+    parser.add_argument("--checkpoint-every", type=int, default=0, help="Save in-progress state every N batches; 0 disables")
+    parser.add_argument("--max-seconds", type=float, help="Stop safely at a batch boundary after this training time")
+    parser.add_argument("--verified-resume-hashes", type=Path, help="Full content hashes required to rebind Kaggle source timestamps")
     args = parser.parse_args()
     if args.epochs is not None and args.epochs < 1:
         parser.error("--epochs must be positive")
-    train(args.config, args.fold, args.output, epochs=args.epochs, resume=args.resume)
+    train(args.config, args.fold, args.output, epochs=args.epochs, resume=args.resume,
+          checkpoint_every=args.checkpoint_every, max_seconds=args.max_seconds,
+          verified_resume_hashes=args.verified_resume_hashes)
 
 
 if __name__ == "__main__":

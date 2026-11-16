@@ -9,7 +9,7 @@ preprocess:
   slab_size: 11
   size_hw: null
   intensity_encoding: native
-  assume_mm: false
+  assume_mm: true  # Explicit assumption for cases with unknown spatial units; source units remain unverified.
   sampling_mode: index
   boundary_policy: edge
   duplicate_slice_policy: unique

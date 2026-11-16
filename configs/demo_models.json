@@ -1,0 +1,46 @@
+{
+  "models": [
+    {
+      "id": "22596971dc0f3ff7",
+      "label": "Epoch 0",
+      "epoch": 0,
+      "sha256": "22596971dc0f3ff7b6796756a61cf61187ded97472a9bdf6d754766165cd6934",
+      "checkpoint": "outputs/kaggle_review_20261116/epoch0_complete/MERIT/fold-00/checkpoints/last.pt",
+      "history": "outputs/kaggle_review_20261116/epoch0_complete/MERIT/fold-00/checkpoints/history.jsonl",
+      "validation_case_ids": [
+        "volume-covid19-A-0014",
+        "volume-covid19-A-0072",
+        "volume-covid19-A-0077",
+        "volume-covid19-A-0083",
+        "volume-covid19-A-0106",
+        "volume-covid19-A-0112",
+        "volume-covid19-A-0133",
+        "volume-covid19-A-0154",
+        "volume-covid19-A-0165",
+        "volume-covid19-A-0196_0",
+        "volume-covid19-A-0247",
+        "volume-covid19-A-0285",
+        "volume-covid19-A-0314",
+        "volume-covid19-A-0319",
+        "volume-covid19-A-0338",
+        "volume-covid19-A-0347",
+        "volume-covid19-A-0351",
+        "volume-covid19-A-0361",
+        "volume-covid19-A-0372",
+        "volume-covid19-A-0397",
+        "volume-covid19-A-0462",
+        "volume-covid19-A-0464",
+        "volume-covid19-A-0475",
+        "volume-covid19-A-0476",
+        "volume-covid19-A-0576",
+        "volume-covid19-A-0585",
+        "volume-covid19-A-0636",
+        "volume-covid19-A-0643",
+        "volume-covid19-A-0659",
+        "volume-covid19-A-0666",
+        "volume-covid19-A-0694",
+        "volume-covid19-A-0696"
+      ]
+    }
+  ]
+}

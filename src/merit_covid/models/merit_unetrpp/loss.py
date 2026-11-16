@@ -13,12 +13,20 @@ from torch.nn import functional as F
 from .modules import master_positions, relative_offsets
 
 
-def probability_bce(probability, target):
+def probability_bce(probability, target, *, name="probability"):
     """Keep the existing probability BCE, explicitly outside CUDA autocast.
 
     The paper's four-tuple supplies probabilities, not auxiliary raw logits.
     Float casts alone do not disable CUDA's autocast ban on BCELoss.
     """
+    # Check before launching CUDA BCE: its device assertion poisons the CUDA
+    # context and prevents useful diagnostics or a controlled recovery.
+    if not torch.isfinite(probability).all():
+        raise FloatingPointError(f"{name} contains nonfinite values before BCE")
+    if not ((probability >= 0) & (probability <= 1)).all():
+        raise ValueError(f"{name} must be in [0,1] before BCE")
+    if not (torch.isfinite(target) & (target >= 0) & (target <= 1)).all():
+        raise ValueError("BCE target must be finite and in [0,1]")
     with torch.autocast(device_type=probability.device.type, enabled=False):
         return F.binary_cross_entropy(probability.float(), target.float(), reduction="none")
 
@@ -109,7 +117,7 @@ class MERITLoss(nn.Module):
             if presence.shape != (batch, depth):
                 raise ValueError("presence must have shape [B,Z]")
             presence = presence.float()
-            bce = probability_bce(presence, slice_truth)
+            bce = probability_bce(presence, slice_truth, name="presence")
             positive_weight = torch.where(slice_truth.bool(), self.presence_positive_weight, 1.0)
             presence_loss = (bce * positive_weight * weights).sum() / normalizer
             # Explicit implementation choice: max RAW foreground probability
@@ -131,7 +139,7 @@ class MERITLoss(nn.Module):
         if salience is not None:
             if salience.shape != (batch, depth):
                 raise ValueError("salience must have shape [B,Z]")
-            bce = probability_bce(salience, slice_truth)
+            bce = probability_bce(salience, slice_truth, name="salience")
             salience_loss = (bce * active).sum() / active.sum()
         total = (segmentation + self.presence_weight * presence_loss
                  + self.alignment_weight * alignment + self.salience_weight * salience_loss)

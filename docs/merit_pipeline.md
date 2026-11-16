@@ -1,7 +1,7 @@
 # MERIT training, inference and evaluation
 
 This guide owns the runnable MERIT workflow. Model equations/provenance live in
-[merit_unetrpp.md](merit_unetrpp.md); shared data/metric contracts live in
+[the MERIT model section](architecture.md#merit-unetr-model); shared data/metric contracts live in
 [data_pipeline.md](data_pipeline.md). The entry point is
 `scripts/merit_pipeline.py`. No second reader, sampler or evaluator is introduced.
 
@@ -68,124 +68,12 @@ Recorded local feasibility results are in [validation.md](validation.md).
 
 ## Colab and Kaggle quick start
 
-### Integrated production trainer check
-
-Use [colab_main_integrated.ipynb](../notebooks/colab_main_integrated.ipynb), enable
-GPU and Run all. It pins the published main integration commit `ac46169`, reuses
-runtime Torch/CUDA, and automatically caches all 199 original pairs from dataset
-revision `e6ce5e1c01f59b29843e6a969655a42d33a52729` (about 3.5 GiB). Source
-binding uses real cohort paths/stats; missing sources are never fabricated.
-
-Its embedded [orchestration helper](../tools/merit_main_trial.py) imports the
-actual production Trainer. It declares one TRAIN volume (A-0025) and one
-validation header member, performs two native updates, saves/reloads a temporary
-diagnostic checkpoint, performs one more update, and predicts one CT-only master.
-The production constructor, optimizer loop, source checks and checkpoint/resume
-are used directly; there is no experimental model execution patch. No validation
-voxel evaluation or full epoch is performed. Unknown source units retain strict
-handling; availability of other cohort files is not a full voxel/unit audit.
-
-The JSON records source commit/module hashes, selected scope, effective config,
-updates/losses, model/optimizer roundtrip, source integrity and inference guards.
-The temporary roughly 2-GiB checkpoint is removed after verification and cannot
-be mistaken for a complete-epoch research checkpoint. ZIP export whitelists
-JSON/log/Python/text files and excludes all patient images and weights. Data
-preparation or worker failures still produce a small FAIL/OOM report ZIP.
-Compact CPU/GPU workflows are checked locally; native-512 T4 verification of
-this integrated notebook awaits a user run.
-
-### Historical original-execution memory profile
-
-Use [notebooks/colab_connect.ipynb](../notebooks/colab_connect.ipynb).
-
-1. Colab: upload the supplied notebook, select a GPU runtime, then **Run all**.
-   A GitHub launch URL loads the published notebook, not uncommitted local edits.
-2. Kaggle: import the same notebook, enable GPU and Internet, then **Run all**.
-3. Save the generated report ZIP. Colab provides a final download cell; on
-   Kaggle retain `/kaggle/working/merit-results/` with Save Version.
-
-If Colab's browser download does not start, open the left Files panel, refresh,
-expand `merit-results`, and choose Download from the ZIP file's three-dot menu.
-The printed `/content/...` path identifies a runtime file, not a browser URL.
-
-There is no Drive mount, hard-coded personal folder, token, CT download or
-manual source checkout. The public source is fetched once and reused while
-the runtime remains alive. Installed dependencies are checked before pip runs.
-Torch and NumPy are constrained to the runtime's existing versions: setup will
-fail on an incompatible runtime instead of downloading a replacement CUDA/Torch
-stack. Colab/Kaggle still need a GPU assignment and network access; a new VM
-may need to install the small missing project dependencies again.
-
-Defaults run the full 128-grid sanity profile, then the full 512-grid profile,
-both batch 1 with AMP and complete optimizer steps. A failed sanity check stops
-the larger attempt. Each runs in a fresh child process; the notebook kernel
-does not import Torch or reserve a CUDA context. The allocator budget is
-explicitly recorded (default 90% physical VRAM). OOM/other failures remain
-visible in JSON/logs and are included in the ZIP; OOM does not become PASS.
-
-The notebook intentionally pins published source commit
-`e3493dd9f2dac704d2def6225d76f19df3262ec4`. Its model is identical to the local
-route-1 measurement. Unpublished local checkpoint/data-binding/inference repairs
-are not fetched, and the notebook does not use those paths: it is synthetic
-profiling only, with no dataset, checkpoint/resume, full training or evaluation.
-Update the pinned commit deliberately when publishing a new experiment.
-
-These cloud operations are described in the
-[Colab FAQ](https://research.google.com/colaboratory/faq.html) and
-[Kaggle notebook guide](https://www.kaggle.com/docs/notebooks).
-
-### Experimental activation checkpointing
-
-Upload [colab_checkpoint_trial.ipynb](../notebooks/colab_checkpoint_trial.ipynb),
-enable GPU, and Run all. Defaults are 512x512, batch 1, AMP, and the full physical
-allocator budget. No dataset is needed. The standalone helper
-`tools/merit_checkpoint_trial.py` is embedded verbatim, with its SHA-256 recorded,
-so it can be tested against the same pinned public model without publishing
-changes to that model. Core model files remain untouched.
-
-The helper checkpoints complete MER query-block calculations including the
-distance bias; each query still attends all context keys. It also checkpoints
-EPA, TEP, encoder1 and the final decoder. BatchNorm regions are excluded so
-running statistics are not updated a second time during recomputation. RNG
-state is preserved. Parameter objects, state keys and counts are unchanged.
-
-Before profiling, the worker checks float64 MER output/all gradients, compact
-full-model FP32 and AMP outputs/loss/input and parameter gradients, and exact
-normalization-buffer equality. Failure stops profiling. Comparisons use
-explicit recorded numerical tolerances; they are not a universal bitwise
-equivalence claim. These checks also run on the assigned cloud GPU.
-
-The report ZIP additionally contains `profile_512_equivalence.json` and the
-exact trial helper. A compact validation PASS is not a native-512 training PASS:
-read successful optimizer steps and memory results in `profile_512.json`.
-The validated all-region strategy is now available in the production trainer
-through `training.activation_checkpointing`; the primary native-512 config
-enables it. This historical notebook stays pinned to its original experiment.
-
-### One uploaded real TRAIN case
-
-Use [colab_real_case.ipynb](../notebooks/colab_real_case.ipynb): enable GPU, Run all,
-and upload the prepared `A0025_CT_GT.zip` when prompted. The ZIP contains only
-the original A-0025 CT and mask; alternatively upload both original `.nii.gz`
-files. No manual extraction or full-cohort download is required. Verified inputs
-are reused within the same runtime. Wrong hashes, unexpected ZIP members and
-non-TRAIN selections are rejected before training.
-
-Base reader/model/loss and the canonical split come from the pinned public
-commit. `tools/merit_real_case_trial.py` and the checkpoint helper are embedded
-verbatim and hashed in the report, so a GitHub push is not required for the
-experiment. The frozen split bytes and case/group membership are verified;
-the other 198 source files are not replaced with placeholders or claimed as
-audited. Complete-cohort manifest validation and Trainer.fit/resume are outside
-this bounded pilot.
-
-The pilot forbids XY interpolation, compares each selected CT/GT slab with
-native source pixels, retains intensity/unit/sampling policies, and selects
-central consecutive masters without lesion-based selection. It attempts two
-AdamW/AMP updates with the shared MERIT loss and checkpointed model, records
-losses/gradient checks/timing/memory and parameter changes, and runs one CT-only
-master prediction under a GT-read guard. No complete volume or quality metric
-is produced. The report ZIP excludes patient images and large model weights.
+Use the [current Colab attention pilot](../notebooks/colab_mer_attention_pilot.ipynb)
+for bounded tests on selected real cases. Its results are diagnostic and do not
+establish segmentation quality. Follow the [factorized Kaggle guide](merit_pipeline.md#kaggle-fold-0-native-512-with-factorized-mer)
+for the current training package and checkpoint-resume procedure; the
+[original Kaggle guide](merit_pipeline.md#kaggle-training-native-512-fold-0) describes the earlier run.
+Historical cloud measurements and their limitations remain in [validation](validation.md).
 
 ## Sampling and independent physical settings
 
@@ -356,7 +244,7 @@ py scripts/merit_pipeline.py benchmark --config configs/merit_native512.yaml --d
 
 Reports use exclusive creation: use new output filenames on repeat runs.
 Three primary cases lack spatial units. The shared reader rejects unknown units
-by default, while `merit_index.yaml` and `merit_colab_256.yaml` explicitly set
+by default, while `merit_index.yaml`, `merit_native512.yaml` and `merit_colab_256.yaml` explicitly set
 `assume_mm: true`. The CLI's `--assume-mm` can enable the same assumption for
 other configs. This is not source verification or an intensity/HU conversion,
 and the setting must match when resuming.
@@ -430,34 +318,13 @@ GT during inference. Its checkpoint and mask are diagnostic, not clinical.
 `PASS` means the requested software checks completed, not research readiness;
 `OOM`, `FAIL` and unverified provenance must be reviewed separately.
 
-## Colab training notebook
+## Colab training script
 
-`notebooks/train_merit_colab.ipynb` clones the `train/merit-unetrpp-colab`
-branch, mounts the existing primary dataset on Drive, checks the saved split,
-and requires a four-step real-CT 256x256 pilot before its training cell. Publish
-the new branch and changes to GitHub before the notebook clones it. A successful
-synthetic T4 profile alone does not establish that the full real run will fit.
-
-The initial `EPOCHS=1` budget is one complete TRAIN epoch and full validation,
-not a four-step pilot; it may take hours. `RUN_NAME` chooses a new Drive output
-folder. Successful epochs save `last.pt` and validation-selected `best.pt`;
-raise the total `EPOCHS` value to resume from `last.pt`. A recorded code commit,
-config hash, dataset path, fold and sampler policy must match the existing run.
-An interruption before an epoch checkpoint restarts that epoch; changed paths,
-code or config require a new run. No full run is started by creating the file.
-
-The notebook calls `scripts/train_colab.py`, which shuffles case order and then
-master slices within each case, with a shared seeded loader/sampler generator.
-Each master is visited once per epoch. This respects the shared Dataset's
-one-volume cache with `num_workers=0`; randomizing all slices globally can
-otherwise repeatedly decompress entire CT volumes. The ordering policy is saved
-in checkpoint provenance, and epoch-boundary resume is regression-tested.
-
-The 256 config retains native scaled intensity: no HU window or fitted z-score
-has been applied. Decide and implement a normalization policy before claiming a
-formal protocol. The dataset lacks reliable patient IDs, so the saved splits
-remain volume/group-level. Training uses TRAIN, checkpoint selection uses
-validation, and neither the notebook nor trainer uses test to choose settings.
+`scripts/train_colab.py` provides a separate Colab training path using case-local
+sampling. The older 256-grid configuration resizes inputs and needs its own
+protocol assessment; it is not the current native-512 Kaggle workflow. Training
+uses TRAIN and checkpoint selection uses validation; the test partition is not
+used to choose settings.
 
 ## External testing and experiment design
 
@@ -485,3 +352,193 @@ Keep split, seeds, preprocessing, threshold policy and training budget matched
 when isolating one axis. No learned spatial alignment/agreement extension is
 implemented. Full-CV and external benchmark results remain outstanding.
 See [validation](validation.md) for actual software/real-data evidence.
+
+---
+
+## Kaggle fold 0: native 512 with factorized MER
+
+Đây là run mới, dùng `configs/merit_native512_factorized.yaml`. Input vẫn gồm
+11 lát native 512×512 và MER vẫn attention trên toàn bộ context. Lựa chọn
+`factorized_mer: true` thay phép tính bias XY bằng biểu diễn tương đương về mặt
+đại số; FP16 có thể làm khác kết quả do rounding. Config được lưu trong
+checkpoint và fingerprint: không resume trực tiếp từ checkpoint native512 cũ.
+
+Colab T4 với Torch 2.14.1, ba ca TRAIN A-0025/A-0295/A-0387: 12 kiểm tra
+module CPU/CUDA pass; mỗi nhánh có 1 warmup + 6 measured optimizer updates,
+khởi tạo giống nhau. Trung bình bản đối chứng **13,851 s/step**, factorized
+**9,764 s/step**, giảm **29,5% thời gian/step**; peak allocated lần lượt
+4693,60 và 4696,67 MiB. Không skip update; pilot checkpoint và CT-only master
+inference pass. Đây là đo nhỏ trên Colab, không phải benchmark Kaggle, không
+có validation Dice hoặc bằng chứng hội tụ.
+
+Để bảo vệ khác biệt phiên bản GPU/Torch, mỗi phiên Kaggle chạy trước 4 kiểm tra
+output/gradient trên chính GPU của phiên, bao gồm AMP, masked context và
+activation recomputation. Kết quả nằm trong `factorized-gpu-guard.json`; nếu
+FAIL, training không được bắt đầu. Run mới còn chạy một pilot 2 update bằng
+production Trainer và một CT-only full-volume inference trước khi train.
+
+### Files đã chuẩn bị
+
+Thư mục `outputs/kaggle_factorized_fold0_verified/` chứa:
+
+- `kaggle_train.py` và `kernel-metadata.json`: gói private Kaggle.
+- `source_snapshot.zip`: snapshot source đã đóng băng; giữ lại cho resume.
+- `package_provenance.json`: SHA-256 và config của snapshot.
+
+Tạo mới một phiên sau khi xem lại gói, từ PowerShell tại repo root:
+
+```powershell
+.\tools\kaggle-cli\Scripts\kaggle.exe kernels push -p outputs/kaggle_factorized_fold0_verified --accelerator NvidiaTeslaT4
+```
+
+Theo dõi bằng `kernels status vtan2405/merit-factorized-fold0` và `kernels logs
+vtan2405/merit-factorized-fold0 --follow`. Đây là một kernel riêng; không sửa
+hoặc dừng `merit-native512-fold0-recovery` đang tồn tại.
+
+### Thời gian và checkpoint
+
+Config vẫn dùng toàn bộ **8.810 master** mỗi epoch, không downsample hay thay
+sampling. Nếu tốc độ Colab 9,764 s/step giữ nguyên, riêng train cần khoảng
+**23,9 giờ/epoch**; máy Kaggle có thể nhanh/chậm khác và validation còn tốn
+thời gian. Đây không phải 100-epoch study đã hoàn tất. Phải đo trên Kaggle và
+đánh giá native-volume validation trước khi kết luận chất lượng model.
+
+Mỗi phiên dành tối đa 7 giờ cho train, ghi `in_progress.pt` mỗi 100 batch và
+khi chạm deadline. Nếu dừng giữa epoch, `run-status.json` trỏ tới
+`checkpoints/in_progress.pt` kể cả khi `last.pt` của epoch trước tồn tại.
+Đây là file trong output của phiên; chỉ có thể dùng ở phiên tiếp theo sau khi
+Kaggle lưu output. Bắt buộc bảo toàn source snapshot và dữ liệu.
+
+### Resume sau khi Kaggle lưu output
+
+Xem output của phiên, xác nhận có `MERIT/fold-00/checkpoints/in_progress.pt`,
+rồi tạo phiên kế tiếp với chính snapshot đã lưu:
+
+```powershell
+python tools/prepare_kaggle_factorized.py --output outputs/kaggle_factorized_fold0_verified --resume-from vtan2405/merit-factorized-fold0
+.\tools\kaggle-cli\Scripts\kaggle.exe kernels push -p outputs/kaggle_factorized_fold0_verified --accelerator NvidiaTeslaT4
+```
+
+Lần resume kế tiếp dùng `--resume-from` là slug của phiên vừa lưu, và đặt
+`--kernel-id vtan2405/merit-factorized-fold0-resume2` hoặc slug mới khác với
+nguồn. Công cụ đối chiếu SHA-256 snapshot với `source_provenance.json` của
+phiên trước; runner kiểm tra hash nội dung CT/GT trước khi cập nhật timestamp
+nguồn. Không thay config, dữ liệu, sampler hoặc code giữa các phiên resume.
+Đường resume qua Kaggle của config mới chưa được kiểm chứng end-to-end; test
+CPU production đã kiểm tra dừng/tiếp tục giữa epoch và load model inference.
+
+Không tự giảm số lát/epoch rồi xem đây là cùng protocol. `samples_per_volume`
+có thể dùng cho thí nghiệm riêng, nhưng làm thay đổi phân bố mẫu, số update,
+PCG warmup và lịch validation; cần thiết kế và đánh giá trước khi chọn làm
+phương án chính.
+
+---
+
+## Kaggle training: native 512, fold 0
+
+The private run uses the existing `vtan2405/merit-covid19-20` dataset and a
+snapshot of the local source. The three cases with missing spatial units are
+explicitly assumed to be millimetres; this does not verify their source units.
+It runs a two-step real-case pilot before attempting one training epoch.
+
+### Output files
+
+After a successful Kaggle saved run, open its Output tab and look under
+`MERIT/fold-00/`:
+
+- `source_provenance.json`: source archive hash, dataset and split identity.
+- `pilot-report.json`: diagnostic pilot results, not a trained model.
+- `run-status.json`: `epoch_complete`, `paused_at_checkpoint`, or `training_error`.
+- `checkpoints/in_progress.pt`: latest periodic checkpoint for an incomplete epoch.
+- `checkpoints/last.pt`: most recently completed epoch and validation.
+- `checkpoints/best.pt`: best validation checkpoint, when an epoch completes.
+- `checkpoints/history.jsonl`: completed epoch metrics.
+
+The trainer saves `in_progress.pt` every 25 batches and after the final batch.
+Each write uses a temporary file and atomic replacement. The state includes
+model, optimizer, RNG, sampler replay position and partial training totals.
+If the seven-hour training budget expires, the run saves at the next completed
+batch and exits normally so Kaggle can save its output. Validation may take
+additional time. An unexpected machine failure, forced termination, interrupted
+checkpoint write, or Kaggle failing to save the version can still lose output;
+periodic files inside the running machine are not independent cloud backups.
+
+### Continue a paused run
+
+After the run finishes and Kaggle has saved its output, confirm that its Output
+contains `MERIT/fold-00/checkpoints/in_progress.pt`. Prepare the next private
+kernel using that run as an input source, then push it:
+
+```powershell
+python tools/prepare_kaggle_run.py --resume-from vtan2405/merit-native512-fold0
+kaggle kernels push -p outputs/kaggle_native512_fold0 --accelerator NvidiaTeslaT4
+```
+
+The resume job requires exactly one `in_progress.pt` in its attached inputs.
+It verifies the checkpoint's frozen configuration and source identity; it
+fails rather than silently continuing if paths or source metadata change.
+This cross-session Kaggle resume path requires an actual saved-run validation.
+Avoid starting two runs from the same checkpoint concurrently.
+
+`scripts/kaggle/run_training.py` contains the cloud workflow;
+`tools/prepare_kaggle_run.py` packages the current local source and builds the
+Kaggle metadata. The generated upload file and metadata are under
+`outputs/kaggle_native512_fold0/` and are not hand-edited.
+
+## Fast execution continuation: epoch 1 only
+
+The prepared continuation is `outputs/kaggle_fast_epoch1/`, kernel
+`vtan2405/merit-fast-epoch1`. It uses the completed epoch-0 checkpoint from
+`vtan2405/merit-native512-fold0-epoch0-finish` and the verified exact-byte
+checkpoint SHA-256. Its immutable source snapshot is a minimal successor to
+the original source; retain it with `package_provenance.json` for future resume.
+
+The explicit epoch-boundary migration permits only total epochs=2,
+deterministic=false, factorized_mer=true, mer_recomputation=false and query
+chunk size=4096. Learning rate, loss, preprocessing, data identities, partitions,
+sampling, scheduler, scaler and warmup policy are retained. Across Kaggle VMs,
+source timestamps may be rebound only after verifying the full CT/mask content
+hash manifest; other source identity changes fail. The new config, protocol
+fingerprint and migration record are persisted in every new checkpoint.
+
+Before training, the runner verifies exact CUDA-loaded optimizer moments,
+scheduler and scaler. It takes two bounded native training updates at the
+production epoch-1 PCG ramp, checks finite losses/gradients and effective
+updates, then restores the original model, optimizer, scheduler, scaler, RNG
+and loader state. Actual epoch 1 starts from the saved epoch-0 state, not the
+diagnostic updates. Failure of a guard prevents full training.
+
+The production Trainer then runs epoch index 1 with total budget 2 and no
+application time deadline. It saves `in_progress.pt` every 100 batches,
+evaluates the full saved 32-case validation partition, saves `last.pt`, updates
+`best.pt` only if Dice improves, and stops before epoch 2. The prior best
+checkpoint and original epoch-0 history are retained in the new outputs.
+Validation logs show case starts/completions and slice progress. Kaggle's own
+runtime limits still apply; periodic checkpoints remain necessary.
+
+## Interactive local epoch-0 demo
+
+Run `python -m streamlit run scripts/demo_merit.py --server.address 127.0.0.1 --server.port 8501 --server.headless true --browser.gatherUsageStats false`
+and open `http://127.0.0.1:8501`. Install the optional UI dependency with
+`python -m pip install -e ".[unetrpp,demo]"` when preparing another machine.
+The actual completed `last.pt` must remain at the downloaded epoch-0 output path.
+Its SHA-256 is checked before loading; no model is initialized from random weights.
+
+The interface lists all 32 validation cases and their previously recorded full
+volume Dice. It starts at A-0319 as an explicitly identified high-Dice example;
+the validation mean 0.2821 and remaining quality limits are shown in the UI.
+Users can select a master slice, request CT-only native prediction and adjust
+overlay opacity/threshold for display. Ground truth is supplied only to the
+viewer and slice metrics, not to the prediction Dataset. A configurable display
+threshold does not revise the frozen 0.5 validation protocol. Slice Dice must
+not be confused with native-volume Dice or held-out cohort performance.
+
+Local inference uses FP32 on the NVIDIA GPU, the exact trained PCG state,
+full context and factorized MER. The demo keeps query chunk 128 to bound memory
+on the local 4-GB GPU; this is independent of the frozen Kaggle training package.
+Predictions are cached per case/master under `outputs/demo_epoch0/`. The tested
+A-0319 master 26 produced finite 512x512 probabilities in 14.31 seconds after
+20.6-second initial loading on the local GTX 1650. Initial cached-slice Dice
+is 0.790; this selected slice is not representative of the cohort mean.
+The UI's case selector, threshold slider and label visibility were checked
+using Streamlit AppTest, and the running server health endpoint returned OK.

@@ -14,6 +14,7 @@ test = ["pytest>=7"]
 training = ["torch>=2"]
 unetrpp = ["torch>=2.4.1", "monai==1.5.2", "einops==0.8.2"]
 tools = ["Pillow", "opencv-python", "matplotlib", "huggingface_hub", "requests"]
+demo = ["streamlit>=1.52,<2"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

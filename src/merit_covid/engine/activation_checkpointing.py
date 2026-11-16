@@ -12,7 +12,7 @@ from torch.utils.checkpoint import checkpoint
 
 from merit_covid.models.unetrpp.epa import EPA
 from merit_covid.models.merit_unetrpp.modules import (
-    _attention_validity, _check_features, master_positions, relative_offsets, sinusoidal_encoding,
+    _attention_validity, _check_features, _mer_attention, master_positions, relative_offsets, sinusoidal_encoding,
 )
 
 
@@ -50,7 +50,7 @@ def checkpointed_mer(self, features, master_index, z_offsets_mm=None, attention_
             safe_valid = token_valid.clone()
             safe_valid[~has_context, 0] = True
             bias = bias[None].expand(batch, -1, -1).masked_fill(~safe_valid[:, None], -torch.inf)
-        result = F.scaled_dot_product_attention(query, keys, values, attn_mask=bias, dropout_p=0.0)
+        result = _mer_attention(query, keys, values, bias)
         return result if context_valid is None else result * has_context[:, None, None]
 
     updates = []
@@ -113,4 +113,12 @@ def configure_model_execution(model, training):
     """Apply the frozen execution setting to a fresh model, leaving weights intact."""
     if training.get("activation_checkpointing", False):
         enable_activation_checkpointing(model)
+    if training.get("factorized_mer", False):
+        if not training.get("activation_checkpointing", False):
+            raise ValueError("factorized_mer requires activation_checkpointing")
+        from .factorized_attention import enable_factorized_mer
+        enable_factorized_mer(model)
+    if training.get("amp", False):
+        from .numerical_safety import enable_safe_amp_convolutions
+        enable_safe_amp_convolutions(model)
     return model

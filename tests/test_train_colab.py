@@ -56,3 +56,59 @@ def test_grouped_training_resume_matches_uninterrupted(tmp_path):
                              resume=tmp_path / "resumed/last.pt")
     assert len(history) == 1 and resumed.start_epoch == 1
     assert all(torch.equal(expected[k], v) for k, v in resumed.model.state_dict().items())
+
+
+def test_mid_epoch_checkpoint_replays_sampler_and_matches_full_run(tmp_path):
+    config = synthetic_experiment(tmp_path / "data", device="cpu")
+    config["training"].update(batch_size=1, augmentation_flips=True)
+    path = tmp_path / "experiment.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    whole, _ = train(path, 0, tmp_path / "whole", epochs=1)
+    expected = {k: v.detach().clone() for k, v in whole.model.state_dict().items()}
+    del whole
+    _, history = train(path, 0, tmp_path / "resume", epochs=1,
+                       checkpoint_every=1, max_seconds=0.000001)
+    checkpoint = tmp_path / "resume" / "in_progress.pt"
+    assert not history and checkpoint.is_file()
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    assert payload["in_progress"]["batches"] == 1
+    # Kaggle remounts can change timestamps without changing source bytes.
+    import gzip, hashlib, json, os
+    records = json.loads((tmp_path / "data/cases.json").read_text())
+    hashes = {r['id']: {key:hashlib.sha256(gzip.open(tmp_path/'data'/r[key],'rb').read()).hexdigest()
+                         for key in ('image','mask')} for r in records}
+    hashes_path = tmp_path/'hashes.json'
+    hashes_path.write_text(json.dumps(hashes))
+    source = tmp_path/'data'/records[0]['image']
+    stat = source.stat()
+    os.utime(source, ns=(stat.st_atime_ns, stat.st_mtime_ns+1000000000))
+    resumed, history = train(path, 0, tmp_path / "resume", epochs=1, resume=checkpoint,
+                             checkpoint_every=2, verified_resume_hashes=hashes_path)
+    assert len(history) == 1 and not checkpoint.exists()
+    assert all(torch.equal(expected[k], v) for k, v in resumed.model.state_dict().items())
+
+
+def test_sampler_replay_does_not_reload_completed_samples():
+    from torch.utils.data import DataLoader, Dataset
+    from merit_covid.data.pipeline.dataloader import resume_loader_iterator
+    class RecordedDataset(Dataset):
+        def __init__(self): self.reads = []
+        def __len__(self): return 17
+        def __getitem__(self, index):
+            self.reads.append(index)
+            return index
+    ds = RecordedDataset()
+    generator = torch.Generator().manual_seed(42)
+    loader = DataLoader(ds, batch_size=2, shuffle=True, generator=generator)
+    epoch_state = generator.get_state().clone()
+    iterator = iter(loader)
+    for _ in range(3): next(iterator)
+    checkpoint_state = generator.get_state().clone()
+    expected = torch.cat(list(iterator))
+    final_state = generator.get_state().clone()
+    ds.reads.clear()
+    generator.set_state(epoch_state)
+    actual = torch.cat(list(resume_loader_iterator(loader,3,checkpoint_state,lambda:None)))
+    assert torch.equal(actual,expected)
+    assert ds.reads == expected.tolist()
+    assert torch.equal(generator.get_state(),final_state)

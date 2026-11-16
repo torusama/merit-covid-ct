@@ -49,9 +49,9 @@ def test_maintained_prose_and_project_python_are_english():
     unexpected = [
         str(path.relative_to(ROOT))
         for path in paths
-        # This requested research report is intentionally in Vietnamese;
+        # These consolidated guides preserve user-requested Vietnamese reports;
         # local third-party virtual environments are not project source.
-        if path != ROOT / "docs/README_DANH_GIA_MERIT_COVID.md"
+        if path not in {ROOT / "docs/merit_pipeline.md", ROOT / "docs/validation.md"}
         and "site-packages" not in path.parts
         and VIETNAMESE.search(path.read_text(encoding="utf-8-sig"))
     ]
@@ -100,7 +100,7 @@ def test_saved_primary_csv_schema_is_fully_documented():
     ) as handle:
         fields = csv.DictReader(handle).fieldnames
     assert len(fields) == 71
-    guide = (ROOT / "docs/dataset_reports.md").read_text(encoding="utf-8")
+    guide = (ROOT / "docs/data_pipeline.md").read_text(encoding="utf-8")
     assert all(f"`{field}`" in guide for field in fields)
 
 

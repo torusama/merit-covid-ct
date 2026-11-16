@@ -88,6 +88,25 @@ def _attention_validity(valid, master, depth):
     return valid
 
 
+def _mer_attention(query, keys, values, bias):
+    """Keep one global softmax while allowing fused CUDA SDPA kernels.
+
+    CUDA fused kernels need [B,heads,Q,C], even for a single head, and
+    memory-efficient attention needs bias in the query dtype. The cast keeps
+    autograd connected to the learned distance scale. CPU retains the original
+    math layout so the frozen CPU reference remains bitwise reproducible.
+    Backend selection stays with PyTorch for devices/dtypes without fused SDPA.
+    """
+    if query.device.type == "cuda":
+        mask = bias.to(dtype=query.dtype)
+        if mask.ndim == 3:
+            mask = mask.unsqueeze(1)
+        return F.scaled_dot_product_attention(
+            query.unsqueeze(1), keys.unsqueeze(1), values.unsqueeze(1),
+            attn_mask=mask, dropout_p=0.0).squeeze(1)
+    return F.scaled_dot_product_attention(query, keys, values, attn_mask=bias, dropout_p=0.0)
+
+
 class TrajectoryEvidencePrototype(nn.Module):
     """Content salience -> master-relative pooling -> per-slice prototype attention."""
 
@@ -216,8 +235,7 @@ class MasterEvidenceRouting(nn.Module):
                 safe_valid = token_valid.clone()
                 safe_valid[~has_context, 0] = True
                 bias = bias[None].expand(batch, -1, -1).masked_fill(~safe_valid[:, None], -torch.inf)
-            evidence = F.scaled_dot_product_attention(q[:, start:stop], k, v,
-                                                      attn_mask=bias, dropout_p=0.0)
+            evidence = _mer_attention(q[:, start:stop], k, v, bias)
             if context_valid is not None:
                 evidence = evidence * has_context[:, None, None]
             updates.append(evidence)
