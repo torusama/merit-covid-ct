@@ -37,7 +37,8 @@ TRAIN_DEFAULTS = dict(epochs=100, batch_size=1, num_workers=0, learning_rate=3e-
     weight_decay=1e-4, device="auto", amp=True, amp_init_scale=1024.0, gradient_clip=1.0,
     seed=42, warmup_epochs=30, patience=20, scheduler_patience=5, scheduler_factor=0.5,
     threshold=0.5, include_hd95=True, threads=2, deterministic=True, shuffle_mode="slice",
-    augmentation_flips=False, samples_per_volume=0, activation_checkpointing=False, factorized_mer=False)
+    augmentation_flips=False, samples_per_volume=0, activation_checkpointing=False, factorized_mer=False,
+    freeze_batchnorm_stats=False)
 
 
 def json_ready(value):
@@ -108,7 +109,8 @@ def validate_experiment(config):
     if not 0 < settings["scheduler_factor"] < 1:
         raise ValueError("Invalid scheduler_factor")
     validate_threshold(settings["threshold"])
-    for key in ("amp", "deterministic", "include_hd95", "augmentation_flips", "activation_checkpointing", "factorized_mer"):
+    for key in ("amp", "deterministic", "include_hd95", "augmentation_flips", "activation_checkpointing", "factorized_mer",
+                "freeze_batchnorm_stats"):
         if type(settings[key]) is not bool:
             raise ValueError(f"{key} must be boolean")
     config["training"] = settings
@@ -209,6 +211,8 @@ def protocol_fingerprint(config, provenance, *, version=2):
         payload["training"].pop("activation_checkpointing")
     if version == 2 and payload["training"].get("factorized_mer") is False:
         payload["training"].pop("factorized_mer")
+    if version == 2 and payload["training"].get("freeze_batchnorm_stats") is False:
+        payload["training"].pop("freeze_batchnorm_stats")
     # Version 1 is retained ONLY for loading historical models for inference.
     # It omitted source-data configuration and did not bind resolved GT paths.
     if version not in (1, 2):

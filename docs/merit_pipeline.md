@@ -132,6 +132,25 @@ loader API default. `sequential` disables shuffling for bounded diagnostics.
 Validation/test always remain sequential. Loader RNG state includes volume
 and within-volume permutations for exact epoch-boundary resume.
 
+### Continuing with fixed BatchNorm statistics
+
+`training.freeze_batchnorm_stats: true` preserves saved BatchNorm running means,
+variances and batch counters during training. Affine weights still learn, and
+dropout remains in training mode. The policy is reapplied before every model
+forward, including after evaluation calls `model.train()` again.
+
+The separate `configs/merit_native512_frozen_bn.yaml` repair configuration keeps
+native 512 input and factorized MER, with LR `3e-5`. It is intended for a branch
+from trained statistics. The short controlled audit found that freezing statistics
+partly preserved the diagnostic positive-slice scores; full-cohort improvement
+has not been established. See the [investigation report](../reports/epoch1_quality_investigation_20261116.md).
+
+This setting is saved in checkpoints and included in their protocol fingerprint.
+Switching it on for an existing run requires an explicit audited migration;
+ordinary resume rejects that protocol change. Leaving it disabled preserves
+legacy checkpoint fingerprints and existing behavior. Model loading restores
+the policy from the saved configuration.
+
 ## Model and loss
 
 ```python

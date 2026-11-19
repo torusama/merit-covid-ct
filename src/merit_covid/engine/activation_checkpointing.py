@@ -111,6 +111,9 @@ def enable_activation_checkpointing(model):
 
 def configure_model_execution(model, training):
     """Apply the frozen execution setting to a fresh model, leaving weights intact."""
+    if training.get("freeze_batchnorm_stats", False):
+        from .normalization import enable_frozen_batchnorm_stats
+        enable_frozen_batchnorm_stats(model)
     if training.get("activation_checkpointing", False):
         enable_activation_checkpointing(model)
     if training.get("factorized_mer", False):

@@ -1,0 +1,46 @@
+# Repair branch for continuation from trained running statistics.
+# Freezing BN partly preserved the fixed probes; full-cohort quality is unverified.
+# This is a new protocol: switching a legacy checkpoint needs an audited migration.
+data:
+  manifest: ../data/covid19_20/cases.json
+  split_path: ../splits/covid19_20_5fold.json
+preprocess:
+  slab_size: 11
+  size_hw: null
+  intensity_encoding: native
+  assume_mm: true
+  sampling_mode: index
+  boundary_policy: edge
+  duplicate_slice_policy: unique
+model:
+  img_size: [11, 512, 512]
+  feature_size: 16
+  depths: [3, 3, 3, 3]
+  use_tep: true
+  use_mer: true
+  use_pcg: true
+  position_mode: index
+  query_chunk_size: 4096
+loss:
+  weighting_mode: index
+  sigma_slices: 2.0
+  alignment_pool: max
+  presence_weight: 0.2
+  alignment_weight: 0.05
+  salience_weight: 0.03
+training:
+  activation_checkpointing: true
+  factorized_mer: true
+  freeze_batchnorm_stats: true
+  device: cuda
+  epochs: 2
+  batch_size: 1
+  num_workers: 0
+  learning_rate: 0.00003
+  weight_decay: 0.0001
+  gradient_clip: 1.0
+  warmup_epochs: 30
+  amp: true
+  threshold: 0.5
+  seed: 42
+  shuffle_mode: volume
