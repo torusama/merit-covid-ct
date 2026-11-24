@@ -1,0 +1,424 @@
+{
+  "status": "B3B_SOFTWARE_TESTS_PASS_REAL_INPUT_CUDA_PENDING",
+  "date": "2026-11-24",
+  "branch": "train/merit-unetrpp-colab",
+  "head_before": "bb48650cb418147cfac48d6b110c0b3ba1798dd2",
+  "head_after": "bb48650cb418147cfac48d6b110c0b3ba1798dd2",
+  "upstream_at_start": "origin/train/merit-unetrpp-colab",
+  "ahead_behind_at_start": [
+    0,
+    0
+  ],
+  "commit_or_push_performed": false,
+  "modified_existing_files": [
+    "README.md",
+    "scripts/merit_pipeline.py",
+    "scripts/train_colab.py",
+    "src/merit_covid/data/pipeline/cases.py",
+    "src/merit_covid/data/pipeline/dataloader.py",
+    "src/merit_covid/engine/training.py",
+    "src/merit_covid/engine/slab_inference.py"
+  ],
+  "new_code_config_guide_files": [
+    "B3B_TILING128_HANDOFF.md",
+    "configs/merit_tiling128_v3_fold0.yaml",
+    "src/merit_covid/data/pipeline/tiled.py",
+    "src/merit_covid/engine/tiled_inference.py",
+    "src/merit_covid/engine/tiled_smoke.py",
+    "tests/test_tiled_pipeline.py"
+  ],
+  "source_preservation": {
+    "model_files_unchanged": 18,
+    "native512_config_unchanged": true,
+    "loss_architecture_unchanged": true,
+    "preexisting_demo_files_unchanged": [
+      "docs/merit_pipeline.md",
+      "scripts/demo_merit.py",
+      "tools/merit_demo.py",
+      "reports/demo_epoch0_fix_20261121.md",
+      "tests/test_demo_errors.py"
+    ],
+    "baseline_files_hashed": 302
+  },
+  "test_runs": {
+    "b3b_final.xml": {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 43,
+      "seconds": 44.903,
+      "failures_detail": [],
+      "skip_reasons": {}
+    },
+    "regression.xml": {
+      "tests": 601,
+      "failures": 12,
+      "errors": 1,
+      "skipped": 50,
+      "passed": 538,
+      "seconds": 178.122,
+      "failures_detail": [
+        {
+          "test": "::tests.test_colab_alignment_pair",
+          "kind": "error",
+          "message": "collection failure"
+        },
+        {
+          "test": "tests.test_attention_pilot_notebook::test_portable_notebook_embeds_current_source_and_only_three_data_identities",
+          "kind": "failure",
+          "message": "assert b'\"\"\"Bounded ...xit(main())\\n' == b'\"\"\"Bounded ...t(main())\\r\\n'\n  \n  At index 75 diff: b'\\n' != b'\\r'\n  Use -v to get more diff"
+        },
+        {
+          "test": "tests.test_frozen_batchnorm::test_full_trainer_restores_policy_and_matches_mid_epoch_resume",
+          "kind": "failure",
+          "message": "PermissionError: [WinError 5] Access is denied: 'C:\\\\1_HDD\\\\paper\\\\merit-covid-ct-train-demo\\\\outputs\\\\b3b_20261124\\\\pytest_regression_01\\\\test_full_trainer_restores_pol0\\\\resume\\\\in_progress.pt'"
+        },
+        {
+          "test": "tests.test_main_trial::test_actual_trainer_steps_checkpoint_resume_and_ct_only_prediction",
+          "kind": "failure",
+          "message": "AssertionError: {'status': 'FAIL', 'scope': 'integrated Trainer, one TRAIN case, bounded steps and diagnostic resume', 'full_training': False, 'validation_evaluated': False, ...}\nassert 'FAIL' == 'PASS'\n  \n  - PASS\n  + FAIL"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[False-slice]",
+          "kind": "failure",
+          "message": "subprocess.CalledProcessError: Command '['C:\\\\1_HDD\\\\paper\\\\merit-covid-ct\\\\.venv\\\\Scripts\\\\python.exe', 'scripts/merit_pipeline.py', 'evaluate', '--checkpoint', 'C:\\\\1_HDD\\\\paper\\\\merit-covid-ct-train-demo\\\\outputs\\\\b3b_20261124\\\\pytest_regression_01\\\\test_resume_matches_uninterrup0\\\\resume\\\\last.pt', '--partition', 'test', '--device', 'cpu', '--output', 'C:\\\\1_HDD\\\\paper\\\\merit-covid-ct-train-demo\\\\outputs\\\\b3b_20261124\\\\pytest_regression_01\\\\test_resume_matches_uninterrup0\\\\evaluated.json']' ...\n[truncated; full report in element text]"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[False-volume]",
+          "kind": "failure",
+          "message": "subprocess.CalledProcessError: Command '['C:\\\\1_HDD\\\\paper\\\\merit-covid-ct\\\\.venv\\\\Scripts\\\\python.exe', 'scripts/merit_pipeline.py', 'evaluate', '--checkpoint', 'C:\\\\1_HDD\\\\paper\\\\merit-covid-ct-train-demo\\\\outputs\\\\b3b_20261124\\\\pytest_regression_01\\\\test_resume_matches_uninterrup1\\\\resume\\\\last.pt', '--partition', 'test', '--device', 'cpu', '--output', 'C:\\\\1_HDD\\\\paper\\\\merit-covid-ct-train-demo\\\\outputs\\\\b3b_20261124\\\\pytest_regression_01\\\\test_resume_matches_uninterrup1\\\\evaluated.json']' ...\n[truncated; full report in element text]"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-slice]",
+          "kind": "failure",
+          "message": "ValueError: c0: mask labels must be exactly 0/1; found [0.         1.00000006]"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-volume]",
+          "kind": "failure",
+          "message": "ValueError: c1: mask labels must be exactly 0/1; found [0.         1.00000006]"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_physical_cli_requires_explicit_spacing_and_records_split",
+          "kind": "failure",
+          "message": "subprocess.CalledProcessError: Command '['C:\\\\1_HDD\\\\paper\\\\merit-covid-ct\\\\.venv\\\\Scripts\\\\python.exe', 'scripts/merit_pipeline.py', 'check-split', '--config', 'C:\\\\1_HDD\\\\paper\\\\merit-covid-ct-train-demo\\\\outputs\\\\b3b_20261124\\\\pytest_regression_01\\\\test_physical_cli_requires_exp0\\\\physical.yaml', '--target-spacing-mm', '1.5']' returned non-zero exit status 1."
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_maintained_prose_and_project_python_are_english",
+          "kind": "failure",
+          "message": "AssertionError: Non-English project prose: ['analysis\\\\b3a_delivery_20261124\\\\b3a_decision.md', 'analysis\\\\b3a_delivery_20261124\\\\B3A_PROTOCOL.md', 'analysis\\\\b3a_delivery_20261124\\\\B3A_README.md', 'analysis\\\\preprocessing\\\\CHANGE_SUMMARY.md', 'analysis\\\\preprocessing\\\\TEST_REPORT.md', 'analysis\\\\preprocessing_team_handoff_20261121\\\\CPU_TEST_REPORT.md', 'analysis\\\\preprocessing_team_handoff_20261121\\\\HANDOFF_FOR_TEAMMATE.md', 'analysis\\\\tiling128_b2_20261124\\\\B2_REPORT.md', 'docs\\\\B2_TILING128_Q...\n[+1 more line; full report in element text]"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_local_markdown_targets_and_anchors_exist",
+          "kind": "failure",
+          "message": "AssertionError: docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/preprocessing_team_handoff_final_20261121/PREPROCESSING_V3_TEAM_HANDOFF_FINAL.zip\n  docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/data_qc_step1_20261120/DATA_QC_STEP1.md\n  docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/sentinel_fov_fold0_20261120/SENTINEL_FOV_FINDINGS.md\n  docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/step2b_native_zscore_20261120/STEP_2B_REPORT.md\n[+4 more lines; full report in element text]"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_one_project_readme_and_all_topic_guides_are_linked",
+          "kind": "failure",
+          "message": "AssertionError: B2_TILING128_QC.md\nassert 'docs/B2_TILING128_QC.md' in '# Preprocessing V3 / B2 / B3A on the train branch\\n\\nRead [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first fo...egration milestones.\\nUpstream UNETR++ attribution remains in its packaged `LICENSE`, `NOTICE` and\\n`upstream.json`.\\n'"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_documented_python_command_entry_points_exist",
+          "kind": "failure",
+          "message": "AssertionError: analysis\\preprocessing_team_handoff_20261121\\HANDOFF_FOR_TEAMMATE.md -> verify_bundle.py\nassert not ['analysis\\\\preprocessing_team_handoff_20261121\\\\HANDOFF_FOR_TEAMMATE.md -> verify_bundle.py']"
+        }
+      ],
+      "skip_reasons": {
+        "collection skipped": 1,
+        "Execute against the frozen deployment test_source": 3,
+        "Run this suite inside outputs/kaggle_fast_epoch1/test_source, the frozen deployment source": 10,
+        "Execute inside the frozen pilot test_source": 4,
+        "CUDA not available": 3,
+        "CUDA required": 20,
+        "AMP requires CUDA": 2,
+        "CUDA AMP required": 7
+      }
+    },
+    "cli_final.xml": {
+      "tests": 6,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 4,
+      "seconds": 38.404,
+      "failures_detail": [
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-slice]",
+          "kind": "failure",
+          "message": "ValueError: c0: mask labels must be exactly 0/1; found [0.         1.00000006]"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-volume]",
+          "kind": "failure",
+          "message": "ValueError: c1: mask labels must be exactly 0/1; found [0.         1.00000006]"
+        }
+      ],
+      "skip_reasons": {}
+    },
+    "baseline.xml": {
+      "tests": 12,
+      "failures": 7,
+      "errors": 1,
+      "skipped": 0,
+      "passed": 4,
+      "seconds": 11.735,
+      "failures_detail": [
+        {
+          "test": "::tests.test_colab_alignment_pair",
+          "kind": "error",
+          "message": "collection failure"
+        },
+        {
+          "test": "tests.test_attention_pilot_notebook::test_portable_notebook_embeds_current_source_and_only_three_data_identities",
+          "kind": "failure",
+          "message": "assert b'\"\"\"Bounded ...xit(main())\\n' == b'\"\"\"Bounded ...t(main())\\r\\n'\n  \n  At index 75 diff: b'\\n' != b'\\r'\n  Use -v to get more diff"
+        },
+        {
+          "test": "tests.test_frozen_batchnorm::test_full_trainer_restores_policy_and_matches_mid_epoch_resume",
+          "kind": "failure",
+          "message": "PermissionError: [WinError 5] Access is denied: 'C:\\\\1_HDD\\\\paper\\\\merit-train-publish\\\\outputs\\\\b3b_baseline_proof_01\\\\test_full_trainer_restores_pol0\\\\resume\\\\in_progress.pt'"
+        },
+        {
+          "test": "tests.test_main_trial::test_actual_trainer_steps_checkpoint_resume_and_ct_only_prediction",
+          "kind": "failure",
+          "message": "AssertionError: {'status': 'FAIL', 'scope': 'integrated Trainer, one TRAIN case, bounded steps and diagnostic resume', 'full_training': False, 'validation_evaluated': False, ...}\nassert 'FAIL' == 'PASS'\n  \n  - PASS\n  + FAIL"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_maintained_prose_and_project_python_are_english",
+          "kind": "failure",
+          "message": "AssertionError: Non-English project prose: ['analysis\\\\b3a_delivery_20261124\\\\b3a_decision.md', 'analysis\\\\b3a_delivery_20261124\\\\B3A_PROTOCOL.md', 'analysis\\\\b3a_delivery_20261124\\\\B3A_README.md', 'analysis\\\\preprocessing\\\\CHANGE_SUMMARY.md', 'analysis\\\\preprocessing\\\\TEST_REPORT.md', 'analysis\\\\preprocessing_team_handoff_20261121\\\\CPU_TEST_REPORT.md', 'analysis\\\\preprocessing_team_handoff_20261121\\\\HANDOFF_FOR_TEAMMATE.md', 'analysis\\\\tiling128_b2_20261124\\\\B2_REPORT.md', 'docs\\\\B2_TILING128_Q...\n[+1 more line; full report in element text]"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_local_markdown_targets_and_anchors_exist",
+          "kind": "failure",
+          "message": "AssertionError: docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/preprocessing_team_handoff_final_20261121/PREPROCESSING_V3_TEAM_HANDOFF_FINAL.zip\n  docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/data_qc_step1_20261120/DATA_QC_STEP1.md\n  docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/sentinel_fov_fold0_20261120/SENTINEL_FOV_FINDINGS.md\n  docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -> ../outputs/step2b_native_zscore_20261120/STEP_2B_REPORT.md\n[+4 more lines; full report in element text]"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_one_project_readme_and_all_topic_guides_are_linked",
+          "kind": "failure",
+          "message": "AssertionError: B2_TILING128_QC.md\nassert 'docs/B2_TILING128_QC.md' in '# Preprocessing V3 / B2 / B3A on the train branch\\n\\nRead [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first fo...egration milestones.\\nUpstream UNETR++ attribution remains in its packaged `LICENSE`, `NOTICE` and\\n`upstream.json`.\\n'"
+        },
+        {
+          "test": "tests.test_repository_hygiene::test_documented_python_command_entry_points_exist",
+          "kind": "failure",
+          "message": "AssertionError: analysis\\preprocessing_team_handoff_20261121\\HANDOFF_FOR_TEAMMATE.md -> verify_bundle.py\nassert not ['analysis\\\\preprocessing_team_handoff_20261121\\\\HANDOFF_FOR_TEAMMATE.md -> verify_bundle.py']"
+        }
+      ],
+      "skip_reasons": {}
+    },
+    "baseline_native_labels.xml": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 7.14,
+      "failures_detail": [
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-slice]",
+          "kind": "failure",
+          "message": "ValueError: c0: mask labels must be exactly 0/1; found [0.         1.00000006]"
+        },
+        {
+          "test": "tests.test_merit_pipeline::test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-volume]",
+          "kind": "failure",
+          "message": "ValueError: c1: mask labels must be exactly 0/1; found [0.         1.00000006]"
+        }
+      ],
+      "skip_reasons": {}
+    },
+    "forward_resume.xml": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1,
+      "seconds": 23.63,
+      "failures_detail": [],
+      "skip_reasons": {}
+    },
+    "cli_real.xml": {
+      "tests": 1,
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 40.809,
+      "failures_detail": [],
+      "skip_reasons": {}
+    }
+  },
+  "production_model_synthetic_cpu_smoke": {
+    "status": "PASS",
+    "case_id": "synthetic-000",
+    "tile_id": 0,
+    "master_z": 0,
+    "input_shape": [
+      1,
+      1,
+      11,
+      128,
+      128
+    ],
+    "mask_shape": [
+      1,
+      1,
+      11,
+      128,
+      128
+    ],
+    "logit_shape": [
+      1,
+      2,
+      11,
+      128,
+      128
+    ],
+    "losses": {
+      "total": 2.477971315383911,
+      "segmentation": 2.3897955417633057,
+      "presence": 0.32085660099983215,
+      "alignment": 0.07533527165651321,
+      "salience": 0.6745894551277161
+    },
+    "finite_gradients": true,
+    "device": "cpu",
+    "optimizer_updates": 0,
+    "real_training": false,
+    "preprocessing": "pass-through precomputed V3",
+    "gpu_benchmark": false,
+    "synthetic_data_only": true,
+    "real_kaggle_data": false,
+    "production_model_configuration": {
+      "in_channels": 1,
+      "out_channels": 2,
+      "img_size": [
+        11,
+        128,
+        128
+      ],
+      "feature_size": 16,
+      "depths": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "num_heads": 4,
+      "norm_name": "instance",
+      "use_tep": true,
+      "use_mer": true,
+      "use_pcg": true,
+      "salience_hidden": 64,
+      "position_dim": 64,
+      "position_hidden": 16,
+      "mer_attention_dim": 64,
+      "gate_hidden": 16,
+      "presence_hidden": 8,
+      "query_chunk_size": 128,
+      "pcg_ramp": 1.0,
+      "position_mode": "index",
+      "position_unit_mm": 1.0,
+      "mask_duplicate_context": false
+    },
+    "compact_model": false,
+    "cohort_counts_override": "Synthetic software fixture only; production count validation is tested separately",
+    "seconds": 5.4287810000005265
+  },
+  "validations": {
+    "dataset_dataloader": "PASS synthetic slabs Z1/3/13, exact CT/GT and world coordinates, workers 0/2",
+    "original_volume_split": "PASS synthetic identity + negative guards; real Kaggle split not read locally",
+    "strict_production_count_parser": "PASS synthetic metadata ONLY: 199/3184/3184/13705/219280; placeholder voxel files are not a real cohort audit",
+    "probability_stitch_and_original_grid": "PASS synthetic; no interpolation, no threshold before stitch",
+    "full_volume_metrics": "PASS synthetic Dice=IoU=1 and HD95=0 with an oracle CT-only stub; not learned clinical quality",
+    "model_forward_loss_backward": "PASS actual production grid128 feature16/depths3 on synthetic data, all modules enabled",
+    "training_checkpoint_resume": "PASS compact synthetic fixture, 2 optimizer updates per execution; model/optimizer/scheduler/scaler/RNG/loader state restored",
+    "formal_training": "NOT_RUN",
+    "cross_validation": "NOT_RUN; blocked for fold0 precomputed input",
+    "gpu_benchmark": "NOT_RUN",
+    "cuda_amp": "NOT_RUN: no CUDA in local PyTorch CPU environment",
+    "real_tile_A0003": "NOT_RUN: exported Kaggle tile dataset unavailable locally",
+    "real_full199_preflight": "NOT_RUN: dataset is a remote Notebook Output, not downloaded/re-exported",
+    "whole_slice_presence_calibration": "UNSUPPORTED",
+    "real_cli_process_smoke": "PASS: actual CLI main in child process; one synthetic optimizer update then full evaluation of 2 synthetic validation volumes. Test driver overrides cohort counters only, never model/pipeline implementation; production counts stay strict."
+  },
+  "real_data": {
+    "local_tiling_dataset_found": false,
+    "full_v3_source_present": true,
+    "full_v3_recropped": false,
+    "raw_download_performed": false,
+    "user_reported_counts": {
+      "cases": 199,
+      "ct_tiles": 3184,
+      "gt_tiles": 3184,
+      "master_slices": 13705,
+      "tile_masters": 219280
+    },
+    "user_reported_counts_independently_verified": false,
+    "required_input": "TILING128_V3_FOLD0_NIFTI Notebook Output",
+    "fold_scope": "FOLD0_ONLY"
+  },
+  "regression_status": "NOT_ALL_GREEN; see raw per-run outcomes, not a fabricated merged total",
+  "regression_notes": [
+    "Full regression first run: 538 pass, 12 fail, 50 skip, 1 collection error. It predates the CLI checkout-import fix.",
+    "CLI was importing another editable worktree. Fixed by placing current checkout src/root first on sys.path.",
+    "Targeted rerun after CLI fix: 4 pass, 2 fail. The two failures are native synthetic padded-GT autoscaling to 1.00000006, reproduced in the base checkout.",
+    "Seven other failures plus the collection error were independently reproduced in the unchanged base bb48650 checkout.",
+    "Baseline categories: notebook CRLF snapshot mismatch, Windows mmap resume unlink, native fixture nonbinary labels, preexisting documentation language/link/entry checks, missing tools.order_optimization_pilot at collection.",
+    "Native512 implementation, strict binary-mask validation, old notebook snapshots and legacy resume behavior were not modified to hide these failures.",
+    "No full-suite green claim; no actual 199-volume training or validation quality run."
+  ],
+  "remaining_limits": [
+    "Run full read-only --hash-files --voxels preflight on mounted real tiles before training.",
+    "Run one io-smoke with exact production config on recipient CUDA hardware.",
+    "Same source/mount/path/timestamps are required for resume; changing mount needs a separately verified rebinding protocol, not implemented.",
+    "Compressed tile reads may be slow under original volume shuffle with one tile cache; no performance claim.",
+    "Whole-slice presence/calibration and raw external Zenodo protocol are intentionally unsupported for this tile adapter.",
+    "Existing repository regression failures remain documented separately from passing B3B tests."
+  ],
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.15.0+cpu",
+    "numpy": "2.5.4",
+    "nibabel": "5.4.2",
+    "cuda_available": false
+  },
+  "time_policy": "Each test-run XML records actual wall duration; do not sum overlapping/repeated runs as unique elapsed project time.",
+  "files_sha256": {
+    "README.md": "f8e73ae1edf1e2d1c5d4cd0389b550686e4cbc9e3a647612b1c01e8dbb6b37b0",
+    "scripts/merit_pipeline.py": "377d39bb3c302b5ebd47f7ee7ca04160ca8d693a6277856d27f6b6ddd12471ea",
+    "scripts/train_colab.py": "0c38a9fa13c172b8769338fb6f517c86c2d41b71ec409224852f60399899c3c3",
+    "src/merit_covid/data/pipeline/cases.py": "c1013726e6212f7d11cfe9592b4012edc3d1fb426dc347cb49dcc07d0ae421a3",
+    "src/merit_covid/data/pipeline/dataloader.py": "98c217aa86cf9e550fb9449916ace71d4515a2a93a864772983e9f50a40fcbef",
+    "src/merit_covid/engine/training.py": "539346597fb2c968b9d994a8bfa8593ea175bb19663e096c97be29c567222f7c",
+    "src/merit_covid/engine/slab_inference.py": "52c8975cf8eab06e1f6170e5440ee961ae4355ab536ab09c3a901009972f8340",
+    "B3B_TILING128_HANDOFF.md": "ec137a5180c2165fd8b7806510004dc36d219c1b9d6f4abdcdeafc2a434b14ba",
+    "configs/merit_tiling128_v3_fold0.yaml": "0d76a14713ac59a6d5357e7e1d8b10b9f6e32d4996af77dd1166e73cb88b689f",
+    "src/merit_covid/data/pipeline/tiled.py": "b39e1f418076eef49934a24f31eec6c7d7cd6d13f09aa9108179530c3f7db1aa",
+    "src/merit_covid/engine/tiled_inference.py": "8755ebce75948ee0fd5edc429b8524da9b65420d4247c2654d0d69cf899899da",
+    "src/merit_covid/engine/tiled_smoke.py": "817270b2eb962faad65260b86a2194b607705d0a9e6291e9987e4ee606031cc0",
+    "tests/test_tiled_pipeline.py": "e95ec1c59f20a98f0974d388b8cae4eb3ef684cc86006fc4f81031cd9adcd309",
+    "analysis/b3b_tiling128_20261124/EXPORTER_SCHEMA_REFERENCE.json": "c21f57e8e2d4b84c06c8cb4ad2798140d55947ca485518c26734067f9e71460b"
+  },
+  "evidence_directory": "analysis/b3b_tiling128_20261124",
+  "b3b_distinct_tests_passed": 44,
+  "b3b_synthetic_optimizer_updates_during_development": {
+    "compact_resume_test_executions": 3,
+    "updates_each": 2,
+    "cli_smoke_updates": 1,
+    "total_tiled_updates": 7,
+    "official_training_updates": 0,
+    "production_model_smoke_updates": 0
+  },
+  "schema_reference": {
+    "schema_reference": "Actual exporter embedded in user-provided Kaggle export notebook",
+    "notebook": "KAGGLE_NOTEBOOK_XUAT_DATASET_V3_DA_CHUAN_HOA_VA_CAT_TILING128_FOLD0.ipynb",
+    "exporter_sha256": "835dbaebf6676720630f7287addc162c589ebc17fada7ed7dc652a80155382e1",
+    "exporter_bytes": 17717,
+    "schema": "merit_v3_fold0_tiling128_nifti_v1"
+  },
+  "artifact": "outputs/b3b_20261124/B3B_TILING128_HANDOFF_20261124.zip",
+  "publication_note": "User authorized publishing B3B to train/merit-unetrpp-colab on 2026-11-24. head_after and commit_or_push_performed describe the completed pre-publication test session, not current remote state. Only handoff publication wording changed after tests; executable code is unchanged."
+}

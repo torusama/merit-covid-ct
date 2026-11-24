@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "case_id": "synthetic-000",
+  "tile_id": 0,
+  "master_z": 0,
+  "input_shape": [
+    1,
+    1,
+    11,
+    128,
+    128
+  ],
+  "mask_shape": [
+    1,
+    1,
+    11,
+    128,
+    128
+  ],
+  "logit_shape": [
+    1,
+    2,
+    11,
+    128,
+    128
+  ],
+  "losses": {
+    "total": 2.477971315383911,
+    "segmentation": 2.3897955417633057,
+    "presence": 0.32085660099983215,
+    "alignment": 0.07533527165651321,
+    "salience": 0.6745894551277161
+  },
+  "finite_gradients": true,
+  "device": "cpu",
+  "optimizer_updates": 0,
+  "real_training": false,
+  "preprocessing": "pass-through precomputed V3",
+  "gpu_benchmark": false,
+  "synthetic_data_only": true,
+  "real_kaggle_data": false,
+  "production_model_configuration": {
+    "in_channels": 1,
+    "out_channels": 2,
+    "img_size": [
+      11,
+      128,
+      128
+    ],
+    "feature_size": 16,
+    "depths": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "num_heads": 4,
+    "norm_name": "instance",
+    "use_tep": true,
+    "use_mer": true,
+    "use_pcg": true,
+    "salience_hidden": 64,
+    "position_dim": 64,
+    "position_hidden": 16,
+    "mer_attention_dim": 64,
+    "gate_hidden": 16,
+    "presence_hidden": 8,
+    "query_chunk_size": 128,
+    "pcg_ramp": 1.0,
+    "position_mode": "index",
+    "position_unit_mm": 1.0,
+    "mask_duplicate_context": false
+  },
+  "compact_model": false,
+  "cohort_counts_override": "Synthetic software fixture only; production count validation is tested separately",
+  "seconds": 5.4287810000005265
+}

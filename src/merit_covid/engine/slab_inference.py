@@ -20,6 +20,11 @@ def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0, r
     XY probabilities are resized before constructing the native-only unified
     contract. The original SliceReconstructor checks duplicates/missing slices.
     """
+    from merit_covid.data.pipeline.tiled import TiledCase
+    if isinstance(case, TiledCase):
+        from .tiled_inference import predict_tiled_case
+        prediction = predict_tiled_case(model, case, preprocess, batch_size=batch_size, num_workers=num_workers)
+        return (prediction, None) if return_presence else prediction
     if model.training:
         raise ValueError("Call model.eval() before inference")
     if preprocess.slab_size != model.img_size[0] or (preprocess.size_hw is not None and tuple(preprocess.size_hw) != model.img_size[1:]):

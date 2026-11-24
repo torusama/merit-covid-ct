@@ -204,3 +204,24 @@ def build_fold_loaders(
         )
 
     return FoldDataLoaders(fold=fold, **loaders)
+
+
+def build_tiled_fold_loaders(tile_root, fold=0, *, preprocess=None, batch_size=1,
+                             shuffle_train=True, seed=42, num_workers=0,
+                             shuffle_mode="volume", samples_per_volume=0):
+    """Explicit opt-in for the exported V3 fold0 tiles; native API stays intact."""
+    from .tiled import TileBundle, TiledCTSlabDataset, require_fold0
+    require_fold0(fold)
+    config = preprocess or PreprocessConfig()
+    bundle = TileBundle(tile_root, assume_mm=config.assume_mm)
+    part = next(f for f in bundle.split["folds"] if f["fold"] == 0)
+    loaders = {}
+    for role in ("train", "validation", "test"):
+        ids = set(part[role]["case_ids"])
+        dataset = TiledCTSlabDataset([c for c in bundle.cases if c.case_id in ids], config)
+        dataset.partition = role
+        loaders[role] = make_dataloader(dataset, batch_size=batch_size,
+            shuffle=shuffle_train if role == "train" else False, seed=seed, num_workers=num_workers,
+            shuffle_mode=shuffle_mode if role == "train" else "sequential",
+            samples_per_volume=samples_per_volume if role == "train" else 0)
+    return FoldDataLoaders(fold=0, **loaders)

@@ -21,8 +21,12 @@ def identifier(value, field: str) -> str:
     return value
 
 
-def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=True):
-    """Paths are relative to the manifest. A volume ID is never a patient ID."""
+def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=True, check_files=True):
+    """Paths are relative to the manifest. A volume ID is never a patient ID.
+
+    check_files=False is for logical identity/split validation of the exported
+    tile bundle's copied source manifest only, not a readable native Dataset.
+    """
     manifest = Path(manifest).resolve()
     records = json.loads(manifest.read_text(encoding="utf-8-sig"))
     if manifest.parent.name.lower() == "zenodo20":
@@ -64,7 +68,7 @@ def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=T
         pair = []
         for key in ("image", "mask"):
             path = (manifest.parent / identifier(record[key], key)).resolve()
-            if (key == "image" or check_masks) and not path.is_file():
+            if check_files and (key == "image" or check_masks) and not path.is_file():
                 raise FileNotFoundError(f"{case_id}: missing {key}: {path}")
             if path in paths:
                 raise ValueError(f"Reused CT/mask path in manifest: {path}")

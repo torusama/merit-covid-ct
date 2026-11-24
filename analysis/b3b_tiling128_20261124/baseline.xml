@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="7" skipped="0" tests="12" time="11.735" timestamp="2026-11-24T14:35:38.740019+07:00" hostname="MSI"><testcase classname="" name="tests.test_colab_alignment_pair" time="0.000"><error message="collection failure">ImportError while importing test module 'C:\1_HDD\paper\merit-train-publish\tests\test_colab_alignment_pair.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests\test_colab_alignment_pair.py:23: in &lt;module&gt;
+    from tools.order_optimization_pilot import state_hash
+E   ModuleNotFoundError: No module named 'tools.order_optimization_pilot'</error></testcase><testcase classname="tests.test_attention_pilot_notebook" name="test_portable_notebook_embeds_current_source_and_only_three_data_identities" time="0.044"><failure message="assert b'&quot;&quot;&quot;Bounded ...xit(main())\n' == b'&quot;&quot;&quot;Bounded ...t(main())\r\n'&#10;  &#10;  At index 75 diff: b'\n' != b'\r'&#10;  Use -v to get more diff">def test_portable_notebook_embeds_current_source_and_only_three_data_identities():
+        cells = code_cells()
+        for index, source in enumerate(cells):
+            compile(source, f"cell_{index}", "exec")
+        tree = ast.parse(cells[0])
+        values = {n.targets[0].id: ast.literal_eval(n.value) for n in tree.body[:6]}
+        raw = base64.b64decode(values["SOURCE_BUNDLE_B64"])
+        assert hashlib.sha256(raw).hexdigest() == values["SOURCE_SHA256"]
+        assert len(values["CASE_SPECS"]) == 3
+        assert [s["case_id"][-4:] for s in values["CASE_SPECS"]] == ["0025", "0295", "0387"]
+        assert sum(sum(s["file_sizes"].values()) for s in values["CASE_SPECS"]) == 47947366
+        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+            assert not any(name.endswith((".nii", ".nii.gz", ".pt")) for name in archive.namelist())
+            for name in ("tools/merit_attention_pilot.py", "src/merit_covid/models/merit_unetrpp/modules.py",
+                         "src/merit_covid/engine/activation_checkpointing.py", "tests/test_mer_attention_execution.py"):
+&gt;               assert archive.read(name) == (ROOT / name).read_bytes()
+E               assert b'"""Bounded ...xit(main())\n' == b'"""Bounded ...t(main())\r\n'
+E                 
+E                 At index 75 diff: b'\n' != b'\r'
+E                 Use -v to get more diff
+
+tests\test_attention_pilot_notebook.py:38: AssertionError</failure></testcase><testcase classname="tests.test_frozen_batchnorm" name="test_full_trainer_restores_policy_and_matches_mid_epoch_resume" time="6.239"><failure message="PermissionError: [WinError 5] Access is denied: 'C:\\1_HDD\\paper\\merit-train-publish\\outputs\\b3b_baseline_proof_01\\test_full_trainer_restores_pol0\\resume\\in_progress.pt'">tmp_path = WindowsPath('C:/1_HDD/paper/merit-train-publish/outputs/b3b_baseline_proof_01/test_full_trainer_restores_pol0')
+
+    def test_full_trainer_restores_policy_and_matches_mid_epoch_resume(tmp_path):
+        config = synthetic_experiment(tmp_path/'data', device='cpu')
+        config['training'].update(batch_size=1, activation_checkpointing=True,
+                                  factorized_mer=True, freeze_batchnorm_stats=True)
+        path = tmp_path/'experiment.yaml'; path.write_text(yaml.safe_dump(config))
+        full, _ = train(path, 0, tmp_path/'full', epochs=1)
+        expected = {name:value.clone() for name,value in full.model.state_dict().items()}
+        frozen = bn_buffers(full.model)
+        assert frozen and all(value.item() == 0 for name,value in frozen.items() if name.endswith('num_batches_tracked'))
+        del full
+        _, history = train(path, 0, tmp_path/'resume', epochs=1, checkpoint_every=1, max_seconds=1e-8)
+        assert not history
+&gt;       resumed, history = train(path, 0, tmp_path/'resume', epochs=1,
+                                 resume=tmp_path/'resume/in_progress.pt')
+
+tests\test_frozen_batchnorm.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts\train_colab.py:71: in train
+    return trainer, trainer.fit(resume=resume, checkpoint_every=checkpoint_every, max_seconds=max_seconds)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\engine\training.py:534: in fit
+    (self.output_dir / "in_progress.pt").unlink(missing_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/1_HDD/paper/merit-train-publish/outputs/b3b_baseline_proof_01/test_full_trainer_restores_pol0/resume/in_progress.pt')
+missing_ok = True
+
+    def unlink(self, missing_ok=False):
+        """
+        Remove this file or link.
+        If the path is a directory, use rmdir() instead.
+        """
+        try:
+&gt;           os.unlink(self)
+E           PermissionError: [WinError 5] Access is denied: 'C:\\1_HDD\\paper\\merit-train-publish\\outputs\\b3b_baseline_proof_01\\test_full_trainer_restores_pol0\\resume\\in_progress.pt'
+
+C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py:746: PermissionError</failure></testcase><testcase classname="tests.test_main_trial" name="test_actual_trainer_steps_checkpoint_resume_and_ct_only_prediction" time="0.146"><failure message="AssertionError: {'status': 'FAIL', 'scope': 'integrated Trainer, one TRAIN case, bounded steps and diagnostic resume', 'full_training': False, 'validation_evaluated': False, ...}&#10;assert 'FAIL' == 'PASS'&#10;  &#10;  - PASS&#10;  + FAIL">tmp_path = WindowsPath('C:/1_HDD/paper/merit-train-publish/outputs/b3b_baseline_proof_01/test_actual_trainer_steps_chec0')
+
+    def test_actual_trainer_steps_checkpoint_resume_and_ct_only_prediction(tmp_path):
+        path, config, spec = fixture_case(tmp_path)
+        result = run_trial(path, config["data"]["manifest"], spec, tmp_path / "report.json",
+                           tmp_path / "scratch", steps=2, device="cpu", expected_cases=10)
+&gt;       assert result["status"] == "PASS", result
+E       AssertionError: {'status': 'FAIL', 'scope': 'integrated Trainer, one TRAIN case, bounded steps and diagnostic resume', 'full_training': False, 'validation_evaluated': False, ...}
+E       assert 'FAIL' == 'PASS'
+E         
+E         - PASS
+E         + FAIL
+
+tests\test_main_trial.py:42: AssertionError</failure></testcase><testcase classname="tests.test_repository_hygiene" name="test_maintained_prose_and_project_python_are_english" time="0.094"><failure message="AssertionError: Non-English project prose: ['analysis\\b3a_delivery_20261124\\b3a_decision.md', 'analysis\\b3a_delivery_20261124\\B3A_PROTOCOL.md', 'analysis\\b3a_delivery_20261124\\B3A_README.md', 'analysis\\preprocessing\\CHANGE_SUMMARY.md', 'analysis\\preprocessing\\TEST_REPORT.md', 'analysis\\preprocessing_team_handoff_20261121\\CPU_TEST_REPORT.md', 'analysis\\preprocessing_team_handoff_20261121\\HANDOFF_FOR_TEAMMATE.md', 'analysis\\tiling128_b2_20261124\\B2_REPORT.md', 'docs\\B2_TILING128_Q...&#10;[+1 more line; full report in element text]">def test_maintained_prose_and_project_python_are_english():
+        paths = maintained_markdown()
+        for directory in ("src", "scripts", "tools", "examples", "tests", "ct_pipeline"):
+            paths.extend((ROOT / directory).rglob("*.py"))
+        paths.extend((ROOT / "configs").glob("*.yaml"))
+        unexpected = [
+            str(path.relative_to(ROOT))
+            for path in paths
+            # These consolidated guides preserve user-requested Vietnamese reports;
+            # local third-party virtual environments are not project source.
+            if path not in {ROOT / "docs/merit_pipeline.md", ROOT / "docs/validation.md"}
+            and "site-packages" not in path.parts
+            and VIETNAMESE.search(path.read_text(encoding="utf-8-sig"))
+        ]
+&gt;       assert not unexpected, f"Non-English project prose: {unexpected}"
+E       AssertionError: Non-English project prose: ['analysis\\b3a_delivery_20261124\\b3a_decision.md', 'analysis\\b3a_delivery_20261124\\B3A_PROTOCOL.md', 'analysis\\b3a_delivery_20261124\\B3A_README.md', 'analysis\\preprocessing\\CHANGE_SUMMARY.md', 'analysis\\preprocessing\\TEST_REPORT.md', 'analysis\\preprocessing_team_handoff_20261121\\CPU_TEST_REPORT.md', 'analysis\\preprocessing_team_handoff_20261121\\HANDOFF_FOR_TEAMMATE.md', 'analysis\\tiling128_b2_20261124\\B2_REPORT.md', 'docs\\B2_TILING128_QC.md', 'docs\\PREPROCESSING_HANDOFF.md', 'docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md', 'tools\\b3a_reports.py', 'tools\\colab_alignment_pair.py', 'tools\\prepare_attention_notebook.py', 'tools\\prepare_b3a_notebook.py', 'tools\\prepare_colab_alignment_notebook.py', 'tests\\test_attention_pilot_notebook.py', 'tests\\test_colab_alignment_pair.py']
+E       assert not ['analysis\\b3a_delivery_20261124\\b3a_decision.md', 'analysis\\b3a_delivery_20261124\\B3A_PROTOCOL.md', 'analysis\\b3...', 'analysis\\preprocessing\\TEST_REPORT.md', 'analysis\\preprocessing_team_handoff_20261121\\CPU_TEST_REPORT.md', ...]
+
+tests\test_repository_hygiene.py:58: AssertionError</failure></testcase><testcase classname="tests.test_repository_hygiene" name="test_local_markdown_targets_and_anchors_exist" time="0.056"><failure message="AssertionError: docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/preprocessing_team_handoff_final_20261121/PREPROCESSING_V3_TEAM_HANDOFF_FINAL.zip&#10;  docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/data_qc_step1_20261120/DATA_QC_STEP1.md&#10;  docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/sentinel_fov_fold0_20261120/SENTINEL_FOV_FINDINGS.md&#10;  docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/step2b_native_zscore_20261120/STEP_2B_REPORT.md&#10;[+4 more lines; full report in element text]">def test_local_markdown_targets_and_anchors_exist():
+        failures = []
+        for path in maintained_markdown():
+            text = path.read_text(encoding="utf-8-sig")
+            for link in re.findall(r"!?\[[^\]\n]*\]\(([^)\n]+)\)", text):
+                url = urlsplit(link.strip("&lt;&gt;"))
+                if url.scheme or url.netloc:
+                    continue
+                target = (path.parent / unquote(url.path)).resolve() if url.path else path
+                if not target.exists():
+                    failures.append(f"{path.relative_to(ROOT)} -&gt; {link}")
+                elif url.fragment and target.suffix.lower() == ".md":
+                    if unquote(url.fragment) not in markdown_anchors(target.read_text(encoding="utf-8-sig")):
+                        failures.append(f"{path.relative_to(ROOT)} -&gt; missing anchor {link}")
+&gt;       assert not failures, "\n".join(failures)
+E       AssertionError: docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/preprocessing_team_handoff_final_20261121/PREPROCESSING_V3_TEAM_HANDOFF_FINAL.zip
+E         docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/data_qc_step1_20261120/DATA_QC_STEP1.md
+E         docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/sentinel_fov_fold0_20261120/SENTINEL_FOV_FINDINGS.md
+E         docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/step2b_native_zscore_20261120/STEP_2B_REPORT.md
+E         docs\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/preprocessing_team_handoff_final_20261121/BUNDLE_RECEIPT.json
+E         docs\validation.md -&gt; ../outputs/merit_preflight_fold0/REPORT.md
+E         docs\validation.md -&gt; ../outputs/merit_preflight_fold0/REPORT.md
+E       assert not ['docs\\TONG_KET_TIEN_XU_LY_DU_LIEU.md -&gt; ../outputs/preprocessing_team_handoff_final_20261121/PREPROCESSING_V3_TEAM_H..._handoff_final_20261121/BUNDLE_RECEIPT.json', 'docs\\validation.md -&gt; ../outputs/merit_preflight_fold0/REPORT.md', ...]
+
+tests\test_repository_hygiene.py:75: AssertionError</failure></testcase><testcase classname="tests.test_repository_hygiene" name="test_one_project_readme_and_all_topic_guides_are_linked" time="0.007"><failure message="AssertionError: B2_TILING128_QC.md&#10;assert 'docs/B2_TILING128_QC.md' in '# Preprocessing V3 / B2 / B3A on the train branch\n\nRead [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first fo...egration milestones.\nUpstream UNETR++ attribution remains in its packaged `LICENSE`, `NOTICE` and\n`upstream.json`.\n'">def test_one_project_readme_and_all_topic_guides_are_linked():
+        paths = maintained_markdown()
+        assert [p.relative_to(ROOT).as_posix() for p in paths if p.name.lower() == "readme.md"] == ["README.md"]
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for guide in (ROOT / "docs").glob("*.md"):
+&gt;           assert f"docs/{guide.name}" in readme, guide.name
+E           AssertionError: B2_TILING128_QC.md
+E           assert 'docs/B2_TILING128_QC.md' in '# Preprocessing V3 / B2 / B3A on the train branch\n\nRead [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first fo...egration milestones.\nUpstream UNETR++ attribution remains in its packaged `LICENSE`, `NOTICE` and\n`upstream.json`.\n'
+
+tests\test_repository_hygiene.py:83: AssertionError</failure></testcase><testcase classname="tests.test_repository_hygiene" name="test_documented_python_command_entry_points_exist" time="0.015"><failure message="AssertionError: analysis\preprocessing_team_handoff_20261121\HANDOFF_FOR_TEAMMATE.md -&gt; verify_bundle.py&#10;assert not ['analysis\\preprocessing_team_handoff_20261121\\HANDOFF_FOR_TEAMMATE.md -&gt; verify_bundle.py']">def test_documented_python_command_entry_points_exist():
+        failures = []
+        for path in maintained_markdown():
+            text = path.read_text(encoding="utf-8-sig")
+            # Commands run from the repository root, including inside code fences.
+            for entry in re.findall(r"(?m)^\s*(?:py|python|python3)\s+([\w./-]+\.py)\b", text):
+                if not (ROOT / entry).is_file():
+                    failures.append(f"{path.relative_to(ROOT)} -&gt; {entry}")
+&gt;       assert not failures, "\n".join(failures)
+E       AssertionError: analysis\preprocessing_team_handoff_20261121\HANDOFF_FOR_TEAMMATE.md -&gt; verify_bundle.py
+E       assert not ['analysis\\preprocessing_team_handoff_20261121\\HANDOFF_FOR_TEAMMATE.md -&gt; verify_bundle.py']
+
+tests\test_repository_hygiene.py:94: AssertionError</failure></testcase><testcase classname="tests.test_repository_hygiene" name="test_saved_primary_csv_schema_is_fully_documented" time="0.014" /><testcase classname="tests.test_repository_hygiene" name="test_pytest_has_one_configuration_source" time="0.001" /><testcase classname="tests.test_repository_hygiene" name="test_report_generator_uses_english_and_supplied_statistics" time="0.015" /><testcase classname="tests.test_repository_hygiene" name="test_stored_report_matches_english_generator_without_reauditing_data" time="0.013" /></testsuite></testsuites>

@@ -6,8 +6,15 @@ from dataclasses import asdict
 import hashlib
 import json
 from pathlib import Path
+import sys
 from tempfile import TemporaryDirectory
 import time
+
+# Execute this checkout, even when a shared environment has another worktree
+# installed in editable mode. This also supports direct `python scripts/...`.
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))
 
 import numpy as np
 import torch
@@ -93,6 +100,10 @@ def main():
     train.add_argument("--fold", type=int, required=True)
     train.add_argument("--output", type=Path, required=True)
     train.add_argument("--resume", type=Path)
+    train.add_argument("--checkpoint-every", type=int, default=0,
+                       help="Mid-epoch checkpoint interval; exact resume requires num_workers=0")
+    train.add_argument("--max-seconds", type=float,
+                       help="Stop at a batch boundary and save in_progress.pt")
     evaluate = sub.add_parser("evaluate")
     evaluate.add_argument("--checkpoint", type=Path, required=True)
     evaluate.add_argument("--partition", choices=("validation", "test"), required=True)
@@ -101,6 +112,18 @@ def main():
     cv = sub.add_parser("cv")
     cv.add_argument("--config", type=Path, default=ROOT / "configs/merit_native512.yaml")
     cv.add_argument("--output", type=Path, required=True)
+    cv.add_argument("--all-folds", action="store_true", help="Native CV only; V3 fold0 tiles reject CV because of leakage")
+    preflight = sub.add_parser("preflight", help="Read-only Tiling128 manifest/header/optional byte QC")
+    preflight.add_argument("--config", type=Path, required=True)
+    preflight.add_argument("--output", type=Path, required=True)
+    preflight.add_argument("--hash-files", action="store_true")
+    preflight.add_argument("--voxels", action="store_true")
+    preflight.add_argument("--case-id", action="append", help="Explicit subset; report distinguishes partial QC")
+    io_smoke = sub.add_parser("io-smoke", help="ONE tile forward/loss/backward; no optimizer updates")
+    io_smoke.add_argument("--config", type=Path, required=True)
+    io_smoke.add_argument("--output", type=Path, required=True)
+    io_smoke.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+    io_smoke.add_argument("--case-id", default="volume-covid19-A-0003")
     external = sub.add_parser("external")
     external.add_argument("--checkpoint", type=Path, required=True)
     external.add_argument("--manifest", type=Path, required=True)
@@ -115,7 +138,8 @@ def main():
     bench.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     bench.add_argument("--batch-sizes", type=int, nargs="+", default=[1, 2])
     bench.add_argument("--output", type=Path, required=True)
-    for command_parser in (audit, split, train, cv, bench):
+    for command_parser in (audit, split, train, cv, bench, preflight, io_smoke):
+        command_parser.add_argument("--tile-root", type=Path, help="Existing exported TILING128_V3_FOLD0_NIFTI root")
         command_parser.add_argument("--target-spacing-mm", type=float,
             help="Explicit d for physical sampler; must be chosen on train/validation")
         command_parser.add_argument("--position-mode", choices=("index", "physical_mm"))
@@ -126,9 +150,34 @@ def main():
     def experiment():
         return load_experiment(args.config, target_spacing_mm=args.target_spacing_mm,
             position_mode=args.position_mode, weighting_mode=args.weighting_mode,
-            sigma_mm=args.sigma_mm, assume_mm=args.assume_mm)
+            sigma_mm=args.sigma_mm, assume_mm=args.assume_mm, tile_root=args.tile_root)
     if args.command == "train":
-        train_fold(experiment(), args.fold, args.output, args.resume)
+        config = experiment()
+        if args.checkpoint_every or args.max_seconds is not None:
+            datasets, provenance = split_datasets(config, args.fold)
+            settings = config["training"]
+            loader = make_dataloader(datasets["train"], batch_size=settings["batch_size"],
+                shuffle=settings["shuffle_mode"] != "sequential", shuffle_mode=settings["shuffle_mode"],
+                seed=settings["seed"], num_workers=settings["num_workers"], samples_per_volume=settings["samples_per_volume"])
+            trainer = Trainer(config, loader, datasets["validation"].cases, provenance, args.output)
+            trainer.fit(resume=args.resume, checkpoint_every=args.checkpoint_every, max_seconds=args.max_seconds)
+        else:
+            train_fold(config, args.fold, args.output, args.resume)
+    elif args.command in ("preflight", "io-smoke"):
+        from merit_covid.data.pipeline.tiled import TileBundle, MODE
+        config = experiment()
+        if config["data"].get("mode") != MODE:
+            raise ValueError("This command requires the separate Tiling128 config")
+        bundle = TileBundle(config["data"]["tile_root"], assume_mm=config["preprocess"]["assume_mm"])
+        if args.command == "preflight":
+            report = bundle.preflight(hash_files=args.hash_files, voxels=args.voxels, case_ids=args.case_id)
+            report.update(tile_manifest_sha256=bundle.manifest_sha256,
+                cohort_original_volumes=len(bundle.cases), cohort_tile_masters=bundle.manifest["tile_masters"],
+                full_cohort_qc=args.case_id is None, identity=bundle.identity)
+        else:
+            from merit_covid.engine.tiled_smoke import tile_forward_backward
+            report = tile_forward_backward(config, bundle, args.case_id, args.device)
+        write_report(args.output, {**report, "config": config})
     elif args.command in ("audit", "check-split"):
         config = experiment()
         cases, split_payload, identity, split_hash = load_development_split(config)
@@ -137,10 +186,15 @@ def main():
                       "fold_counts": [{"fold": f["fold"], **{role: len(f[role]["case_ids"]) for role in ("train", "validation", "test")}}
                                       for f in split_payload["folds"]]}
         if args.command == "check-split":
+            if config["data"].get("mode") == "tiling128_v3_fold0":
+                provenance["usable_folds"] = [0]
+                provenance["fold_scope"] = "FOLD0_ONLY (other split definitions are metadata, not runnable V3 folds)"
             print(json.dumps(provenance, indent=2))
             return
         if args.limit is not None and args.limit < 1:
             parser.error("--limit must be positive")
+        if config["data"].get("mode") == "tiling128_v3_fold0":
+            raise ValueError("Use preflight --config <tiling config> for tiled data; native audit expects full-volume source files")
         rows = []
         for case in cases[:args.limit]:
             from merit_covid.data.pipeline.geometry import inspect_pair, affine_mm
@@ -174,6 +228,8 @@ def main():
                                   "protocol_fingerprint": cp["protocol_fingerprint"], "provenance": provenance, "config": cp["config"]})
     elif args.command == "external":
         model, cp = load_checkpoint_model(args.checkpoint, args.device)
+        if cp["config"]["data"].get("mode") == "tiling128_v3_fold0":
+            raise ValueError("Tiling128 checkpoint requires a validated tiled external protocol; raw Zenodo external path is not supported")
         records = load_manifest(args.manifest, dataset="zenodo20")
         if any(c.dataset != "zenodo20" for c in records) or len(records) != 20:
             raise ValueError("External evaluation requires exactly 20 Zenodo20 cases")
@@ -191,6 +247,8 @@ def main():
             "checkpoint_sha256": hashlib.sha256(args.checkpoint.read_bytes()).hexdigest(), "config": cp["config"]})
     elif args.command == "cv":
         config = experiment()
+        if config["data"].get("mode") == "tiling128_v3_fold0":
+            raise ValueError("FOLD0_ONLY: cannot run cross-validation on precomputed V3 fitted from fold0 TRAIN (leakage)")
         reports = []
         for fold in range(5):
             directory = args.output / f"fold{fold}"

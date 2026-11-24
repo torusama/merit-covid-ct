@@ -1,5 +1,11 @@
 # Preprocessing V3 / B2 / B3A on the train branch
 
+For the separate **B3B V3 fold-0 Tiling128 input/output path**, start with
+[B3B_TILING128_HANDOFF.md](B3B_TILING128_HANDOFF.md) and
+[B3B_TILING128_TEST_REPORT.json](B3B_TILING128_TEST_REPORT.json).
+This adds precomputed-tile loading, original-volume probability stitching and
+evaluation; it does not establish segmentation quality or GPU training results.
+
 Read [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first for the Vietnamese scope, evidence and review questions. This update contains data-processing changes only; compare with train base eacbfdc. MERIT architecture/loss, frozen BatchNorm support and Native512 baseline are preserved.
 
 ---

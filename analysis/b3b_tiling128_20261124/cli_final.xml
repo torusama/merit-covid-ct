@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="38.404" timestamp="2026-11-24T14:36:47.615094+07:00" hostname="MSI"><testcase classname="tests.test_merit_pipeline" name="test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[False-slice]" time="13.105" /><testcase classname="tests.test_merit_pipeline" name="test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[False-volume]" time="11.226" /><testcase classname="tests.test_merit_pipeline" name="test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-slice]" time="0.234"><failure message="ValueError: c0: mask labels must be exactly 0/1; found [0.         1.00000006]">tmp_path = WindowsPath('C:/1_HDD/paper/merit-covid-ct-train-demo/outputs/b3b_20261124/pytest_cli_final_01/test_resume_matches_uninterrup2')
+shuffle_mode = 'slice', activation_checkpointing = True
+
+    @pytest.mark.parametrize("shuffle_mode", ["slice", "volume"])
+    @pytest.mark.parametrize("activation_checkpointing", [False, True])
+    def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_path, shuffle_mode, activation_checkpointing):
+        config = validate_experiment(synthetic_experiment(tmp_path / "data"))
+        config["training"]["shuffle_mode"] = shuffle_mode
+        config["training"]["activation_checkpointing"] = activation_checkpointing
+        if activation_checkpointing:
+            # Exercise the primary no-resize path with a native 32-grid fixture.
+            # Pad source fixtures once here; the production reader must not resize.
+            for path in (tmp_path / "data").glob("*.nii.gz"):
+                image = nib.load(path)
+                values = np.pad(image.get_fdata(dtype=np.float32), ((0, 16), (0, 14), (0, 0)))
+                nib.save(nib.Nifti1Image(values, image.affine, image.header.copy()), path)
+            config["preprocess"]["size_hw"] = None
+        datasets, info = split_datasets(config, 0)
+        def trainer(cfg, path):
+            loader = make_dataloader(datasets["train"], batch_size=2, shuffle=True,
+                                     shuffle_mode=shuffle_mode, seed=cfg["training"]["seed"])
+            return Trainer(cfg, loader, datasets["validation"].cases, info, path)
+        short = trainer(config, tmp_path / "resume")
+        original = {name: p.detach().clone() for name, p in short.model.named_parameters()}
+&gt;       history = short.fit()
+                  ^^^^^^^^^^^
+
+tests\test_merit_pipeline.py:229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\merit_covid\engine\training.py:582: in fit
+    train = self.train_epoch(epoch, checkpoint_every=checkpoint_every, deadline=deadline)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\engine\training.py:473: in train_epoch
+    for index, batch in enumerate(iterator, start=start):
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\merit-covid-ct\.venv\Lib\site-packages\torch\utils\data\dataloader.py:725: in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+..\merit-covid-ct\.venv\Lib\site-packages\torch\utils\data\dataloader.py:785: in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\merit-covid-ct\.venv\Lib\site-packages\torch\utils\data\_utils\fetch.py:54: in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\dataset.py:138: in __getitem__
+    image_zyx, mask_zyx, metadata = self._load_case(case_index)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\dataset.py:123: in _load_case
+    self._cached = (read_volume(self.cases[case_index], self.config) if self.require_mask else
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\preprocessing.py:234: in read_volume
+    image, mask, metadata = read_arrays(case, config, require_mask=require_mask)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\preprocessing.py:170: in read_arrays
+    validate_voxels(image_xyz, mask_xyz, case.case_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+image_xyz = array([[[0.6369617 , 0.26978672],
+        [0.04097353, 0.01652764],
+        [0.8132702 , 0.91275555],
+        ...,
+   ... , 0.        ],
+        [0.        , 0.        ],
+        [0.        , 0.        ]]], shape=(32, 32, 2), dtype=float32)
+mask_xyz = array([[[0., 0.],
+        [0., 0.],
+        [0., 0.],
+        ...,
+        [0., 0.],
+        [0., 0.],
+        [0., 0....    [0., 0.],
+        [0., 0.],
+        ...,
+        [0., 0.],
+        [0., 0.],
+        [0., 0.]]], shape=(32, 32, 2))
+case_id = 'c0'
+
+    def validate_voxels(image_xyz: np.ndarray, mask_xyz: np.ndarray | None, case_id: str) -&gt; None:
+        """Validate full scaled CT/mask arrays before windowing or resizing."""
+        if not np.isfinite(image_xyz).all() or (mask_xyz is not None and not np.isfinite(mask_xyz).all()):
+            raise ValueError(f"{case_id}: CT/mask contains NaN or Inf")
+        if mask_xyz is not None and not np.isin(mask_xyz, [0, 1]).all():
+&gt;           raise ValueError(
+                f"{case_id}: mask labels must be exactly 0/1; "
+                f"found {np.unique(mask_xyz)}"
+            )
+E           ValueError: c0: mask labels must be exactly 0/1; found [0.         1.00000006]
+
+src\merit_covid\data\pipeline\preprocessing.py:22: ValueError</failure></testcase><testcase classname="tests.test_merit_pipeline" name="test_resume_matches_uninterrupted_training_and_rejects_protocol_drift[True-volume]" time="0.250"><failure message="ValueError: c1: mask labels must be exactly 0/1; found [0.         1.00000006]">tmp_path = WindowsPath('C:/1_HDD/paper/merit-covid-ct-train-demo/outputs/b3b_20261124/pytest_cli_final_01/test_resume_matches_uninterrup3')
+shuffle_mode = 'volume', activation_checkpointing = True
+
+    @pytest.mark.parametrize("shuffle_mode", ["slice", "volume"])
+    @pytest.mark.parametrize("activation_checkpointing", [False, True])
+    def test_resume_matches_uninterrupted_training_and_rejects_protocol_drift(tmp_path, shuffle_mode, activation_checkpointing):
+        config = validate_experiment(synthetic_experiment(tmp_path / "data"))
+        config["training"]["shuffle_mode"] = shuffle_mode
+        config["training"]["activation_checkpointing"] = activation_checkpointing
+        if activation_checkpointing:
+            # Exercise the primary no-resize path with a native 32-grid fixture.
+            # Pad source fixtures once here; the production reader must not resize.
+            for path in (tmp_path / "data").glob("*.nii.gz"):
+                image = nib.load(path)
+                values = np.pad(image.get_fdata(dtype=np.float32), ((0, 16), (0, 14), (0, 0)))
+                nib.save(nib.Nifti1Image(values, image.affine, image.header.copy()), path)
+            config["preprocess"]["size_hw"] = None
+        datasets, info = split_datasets(config, 0)
+        def trainer(cfg, path):
+            loader = make_dataloader(datasets["train"], batch_size=2, shuffle=True,
+                                     shuffle_mode=shuffle_mode, seed=cfg["training"]["seed"])
+            return Trainer(cfg, loader, datasets["validation"].cases, info, path)
+        short = trainer(config, tmp_path / "resume")
+        original = {name: p.detach().clone() for name, p in short.model.named_parameters()}
+&gt;       history = short.fit()
+                  ^^^^^^^^^^^
+
+tests\test_merit_pipeline.py:229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\merit_covid\engine\training.py:582: in fit
+    train = self.train_epoch(epoch, checkpoint_every=checkpoint_every, deadline=deadline)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\engine\training.py:473: in train_epoch
+    for index, batch in enumerate(iterator, start=start):
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\merit-covid-ct\.venv\Lib\site-packages\torch\utils\data\dataloader.py:725: in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+..\merit-covid-ct\.venv\Lib\site-packages\torch\utils\data\dataloader.py:785: in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\merit-covid-ct\.venv\Lib\site-packages\torch\utils\data\_utils\fetch.py:54: in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\dataset.py:138: in __getitem__
+    image_zyx, mask_zyx, metadata = self._load_case(case_index)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\dataset.py:123: in _load_case
+    self._cached = (read_volume(self.cases[case_index], self.config) if self.require_mask else
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\preprocessing.py:234: in read_volume
+    image, mask, metadata = read_arrays(case, config, require_mask=require_mask)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\data\pipeline\preprocessing.py:170: in read_arrays
+    validate_voxels(image_xyz, mask_xyz, case.case_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+image_xyz = array([[[0.5118216 , 0.9504637 ],
+        [0.14415962, 0.94864947],
+        [0.31183144, 0.42332646],
+        ...,
+   ... , 0.        ],
+        [0.        , 0.        ],
+        [0.        , 0.        ]]], shape=(32, 32, 2), dtype=float32)
+mask_xyz = array([[[0., 0.],
+        [0., 0.],
+        [0., 0.],
+        ...,
+        [0., 0.],
+        [0., 0.],
+        [0., 0....    [0., 0.],
+        [0., 0.],
+        ...,
+        [0., 0.],
+        [0., 0.],
+        [0., 0.]]], shape=(32, 32, 2))
+case_id = 'c1'
+
+    def validate_voxels(image_xyz: np.ndarray, mask_xyz: np.ndarray | None, case_id: str) -&gt; None:
+        """Validate full scaled CT/mask arrays before windowing or resizing."""
+        if not np.isfinite(image_xyz).all() or (mask_xyz is not None and not np.isfinite(mask_xyz).all()):
+            raise ValueError(f"{case_id}: CT/mask contains NaN or Inf")
+        if mask_xyz is not None and not np.isin(mask_xyz, [0, 1]).all():
+&gt;           raise ValueError(
+                f"{case_id}: mask labels must be exactly 0/1; "
+                f"found {np.unique(mask_xyz)}"
+            )
+E           ValueError: c1: mask labels must be exactly 0/1; found [0.         1.00000006]
+
+src\merit_covid\data\pipeline\preprocessing.py:22: ValueError</failure></testcase><testcase classname="tests.test_merit_pipeline" name="test_physical_cli_requires_explicit_spacing_and_records_split" time="5.290" /><testcase classname="tests.test_tiled_pipeline" name="test_cli_preflight_check_split_cv_guard_train_and_evaluate_routes" time="3.653" /></testsuite></testsuites>

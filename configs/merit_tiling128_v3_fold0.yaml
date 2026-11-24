@@ -1,0 +1,43 @@
+# Separate V3 precomputed fold0 protocol. Set MERIT_TILE_ROOT or --tile-root.
+# Images have ALREADY been normalized and cropped; never apply V3 twice.
+data:
+  mode: tiling128_v3_fold0
+  tile_root: ${MERIT_TILE_ROOT}
+preprocess:
+  slab_size: 11
+  size_hw: null
+  intensity_encoding: native
+  assume_mm: true
+  sampling_mode: index
+  boundary_policy: edge
+  duplicate_slice_policy: unique
+model:
+  img_size: [11, 128, 128]
+  feature_size: 16
+  depths: [3, 3, 3, 3]
+  use_tep: true
+  use_mer: true
+  use_pcg: true
+  position_mode: index
+  query_chunk_size: 128
+loss:
+  weighting_mode: index
+  sigma_slices: 2.0
+  alignment_pool: max
+  presence_weight: 0.2
+  alignment_weight: 0.05
+  salience_weight: 0.03
+training:
+  activation_checkpointing: true
+  device: cuda
+  epochs: 100
+  batch_size: 1
+  num_workers: 0
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  gradient_clip: 1.0
+  warmup_epochs: 30
+  amp: true
+  threshold: 0.5
+  seed: 42
+  shuffle_mode: volume

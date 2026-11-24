@@ -1,0 +1,7 @@
+{
+  "schema_reference": "Actual exporter embedded in user-provided Kaggle export notebook",
+  "notebook": "KAGGLE_NOTEBOOK_XUAT_DATASET_V3_DA_CHUAN_HOA_VA_CAT_TILING128_FOLD0.ipynb",
+  "exporter_sha256": "835dbaebf6676720630f7287addc162c589ebc17fada7ed7dc652a80155382e1",
+  "exporter_bytes": 17717,
+  "schema": "merit_v3_fold0_tiling128_nifti_v1"
+}

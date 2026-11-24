@@ -43,6 +43,8 @@ class CaseGroupedSampler(Sampler):
 def train(config_path, fold, output, *, epochs=None, resume=None, checkpoint_every=0, max_seconds=None,
           verified_resume_hashes=None):
     config = load_experiment(config_path)
+    if verified_resume_hashes is not None and config["data"].get("mode") == "tiling128_v3_fold0":
+        raise ValueError("Legacy raw-volume timestamp rebinding cannot verify all sixteen tiles; use a matching Tiling128 checkpoint without --verified-resume-hashes")
     config["training"]["shuffle_mode"] = "volume"
     if epochs is not None:
         config["training"]["epochs"] = epochs

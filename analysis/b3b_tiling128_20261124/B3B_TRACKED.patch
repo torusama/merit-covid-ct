@@ -1,0 +1,449 @@
+diff --git a/README.md b/README.md
+index 9fbb814..ab5775a 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,11 @@
+ # Preprocessing V3 / B2 / B3A on the train branch
+ 
++For the separate **B3B V3 fold-0 Tiling128 input/output path**, start with
++[B3B_TILING128_HANDOFF.md](B3B_TILING128_HANDOFF.md) and
++[B3B_TILING128_TEST_REPORT.json](B3B_TILING128_TEST_REPORT.json).
++This adds precomputed-tile loading, original-volume probability stitching and
++evaluation; it does not establish segmentation quality or GPU training results.
++
+ Read [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first for the Vietnamese scope, evidence and review questions. This update contains data-processing changes only; compare with train base eacbfdc. MERIT architecture/loss, frozen BatchNorm support and Native512 baseline are preserved.
+ 
+ ---
+diff --git a/scripts/merit_pipeline.py b/scripts/merit_pipeline.py
+index c3458dd..2fa42d5 100644
+--- a/scripts/merit_pipeline.py
++++ b/scripts/merit_pipeline.py
+@@ -6,9 +6,16 @@ from dataclasses import asdict
+ import hashlib
+ import json
+ from pathlib import Path
++import sys
+ from tempfile import TemporaryDirectory
+ import time
+ 
++# Execute this checkout, even when a shared environment has another worktree
++# installed in editable mode. This also supports direct `python scripts/...`.
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / "src"))
++sys.path.insert(0, str(ROOT))
++
+ import numpy as np
+ import torch
+ from merit_covid.engine.activation_checkpointing import configure_model_execution
+@@ -93,6 +100,10 @@ def main():
+     train.add_argument("--fold", type=int, required=True)
+     train.add_argument("--output", type=Path, required=True)
+     train.add_argument("--resume", type=Path)
++    train.add_argument("--checkpoint-every", type=int, default=0,
++                       help="Mid-epoch checkpoint interval; exact resume requires num_workers=0")
++    train.add_argument("--max-seconds", type=float,
++                       help="Stop at a batch boundary and save in_progress.pt")
+     evaluate = sub.add_parser("evaluate")
+     evaluate.add_argument("--checkpoint", type=Path, required=True)
+     evaluate.add_argument("--partition", choices=("validation", "test"), required=True)
+@@ -101,6 +112,18 @@ def main():
+     cv = sub.add_parser("cv")
+     cv.add_argument("--config", type=Path, default=ROOT / "configs/merit_native512.yaml")
+     cv.add_argument("--output", type=Path, required=True)
++    cv.add_argument("--all-folds", action="store_true", help="Native CV only; V3 fold0 tiles reject CV because of leakage")
++    preflight = sub.add_parser("preflight", help="Read-only Tiling128 manifest/header/optional byte QC")
++    preflight.add_argument("--config", type=Path, required=True)
++    preflight.add_argument("--output", type=Path, required=True)
++    preflight.add_argument("--hash-files", action="store_true")
++    preflight.add_argument("--voxels", action="store_true")
++    preflight.add_argument("--case-id", action="append", help="Explicit subset; report distinguishes partial QC")
++    io_smoke = sub.add_parser("io-smoke", help="ONE tile forward/loss/backward; no optimizer updates")
++    io_smoke.add_argument("--config", type=Path, required=True)
++    io_smoke.add_argument("--output", type=Path, required=True)
++    io_smoke.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
++    io_smoke.add_argument("--case-id", default="volume-covid19-A-0003")
+     external = sub.add_parser("external")
+     external.add_argument("--checkpoint", type=Path, required=True)
+     external.add_argument("--manifest", type=Path, required=True)
+@@ -115,7 +138,8 @@ def main():
+     bench.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+     bench.add_argument("--batch-sizes", type=int, nargs="+", default=[1, 2])
+     bench.add_argument("--output", type=Path, required=True)
+-    for command_parser in (audit, split, train, cv, bench):
++    for command_parser in (audit, split, train, cv, bench, preflight, io_smoke):
++        command_parser.add_argument("--tile-root", type=Path, help="Existing exported TILING128_V3_FOLD0_NIFTI root")
+         command_parser.add_argument("--target-spacing-mm", type=float,
+             help="Explicit d for physical sampler; must be chosen on train/validation")
+         command_parser.add_argument("--position-mode", choices=("index", "physical_mm"))
+@@ -126,9 +150,34 @@ def main():
+     def experiment():
+         return load_experiment(args.config, target_spacing_mm=args.target_spacing_mm,
+             position_mode=args.position_mode, weighting_mode=args.weighting_mode,
+-            sigma_mm=args.sigma_mm, assume_mm=args.assume_mm)
++            sigma_mm=args.sigma_mm, assume_mm=args.assume_mm, tile_root=args.tile_root)
+     if args.command == "train":
+-        train_fold(experiment(), args.fold, args.output, args.resume)
++        config = experiment()
++        if args.checkpoint_every or args.max_seconds is not None:
++            datasets, provenance = split_datasets(config, args.fold)
++            settings = config["training"]
++            loader = make_dataloader(datasets["train"], batch_size=settings["batch_size"],
++                shuffle=settings["shuffle_mode"] != "sequential", shuffle_mode=settings["shuffle_mode"],
++                seed=settings["seed"], num_workers=settings["num_workers"], samples_per_volume=settings["samples_per_volume"])
++            trainer = Trainer(config, loader, datasets["validation"].cases, provenance, args.output)
++            trainer.fit(resume=args.resume, checkpoint_every=args.checkpoint_every, max_seconds=args.max_seconds)
++        else:
++            train_fold(config, args.fold, args.output, args.resume)
++    elif args.command in ("preflight", "io-smoke"):
++        from merit_covid.data.pipeline.tiled import TileBundle, MODE
++        config = experiment()
++        if config["data"].get("mode") != MODE:
++            raise ValueError("This command requires the separate Tiling128 config")
++        bundle = TileBundle(config["data"]["tile_root"], assume_mm=config["preprocess"]["assume_mm"])
++        if args.command == "preflight":
++            report = bundle.preflight(hash_files=args.hash_files, voxels=args.voxels, case_ids=args.case_id)
++            report.update(tile_manifest_sha256=bundle.manifest_sha256,
++                cohort_original_volumes=len(bundle.cases), cohort_tile_masters=bundle.manifest["tile_masters"],
++                full_cohort_qc=args.case_id is None, identity=bundle.identity)
++        else:
++            from merit_covid.engine.tiled_smoke import tile_forward_backward
++            report = tile_forward_backward(config, bundle, args.case_id, args.device)
++        write_report(args.output, {**report, "config": config})
+     elif args.command in ("audit", "check-split"):
+         config = experiment()
+         cases, split_payload, identity, split_hash = load_development_split(config)
+@@ -137,10 +186,15 @@ def main():
+                       "fold_counts": [{"fold": f["fold"], **{role: len(f[role]["case_ids"]) for role in ("train", "validation", "test")}}
+                                       for f in split_payload["folds"]]}
+         if args.command == "check-split":
++            if config["data"].get("mode") == "tiling128_v3_fold0":
++                provenance["usable_folds"] = [0]
++                provenance["fold_scope"] = "FOLD0_ONLY (other split definitions are metadata, not runnable V3 folds)"
+             print(json.dumps(provenance, indent=2))
+             return
+         if args.limit is not None and args.limit < 1:
+             parser.error("--limit must be positive")
++        if config["data"].get("mode") == "tiling128_v3_fold0":
++            raise ValueError("Use preflight --config <tiling config> for tiled data; native audit expects full-volume source files")
+         rows = []
+         for case in cases[:args.limit]:
+             from merit_covid.data.pipeline.geometry import inspect_pair, affine_mm
+@@ -174,6 +228,8 @@ def main():
+                                   "protocol_fingerprint": cp["protocol_fingerprint"], "provenance": provenance, "config": cp["config"]})
+     elif args.command == "external":
+         model, cp = load_checkpoint_model(args.checkpoint, args.device)
++        if cp["config"]["data"].get("mode") == "tiling128_v3_fold0":
++            raise ValueError("Tiling128 checkpoint requires a validated tiled external protocol; raw Zenodo external path is not supported")
+         records = load_manifest(args.manifest, dataset="zenodo20")
+         if any(c.dataset != "zenodo20" for c in records) or len(records) != 20:
+             raise ValueError("External evaluation requires exactly 20 Zenodo20 cases")
+@@ -191,6 +247,8 @@ def main():
+             "checkpoint_sha256": hashlib.sha256(args.checkpoint.read_bytes()).hexdigest(), "config": cp["config"]})
+     elif args.command == "cv":
+         config = experiment()
++        if config["data"].get("mode") == "tiling128_v3_fold0":
++            raise ValueError("FOLD0_ONLY: cannot run cross-validation on precomputed V3 fitted from fold0 TRAIN (leakage)")
+         reports = []
+         for fold in range(5):
+             directory = args.output / f"fold{fold}"
+diff --git a/scripts/train_colab.py b/scripts/train_colab.py
+index 85bff78..f18f64e 100644
+--- a/scripts/train_colab.py
++++ b/scripts/train_colab.py
+@@ -43,6 +43,8 @@ class CaseGroupedSampler(Sampler):
+ def train(config_path, fold, output, *, epochs=None, resume=None, checkpoint_every=0, max_seconds=None,
+           verified_resume_hashes=None):
+     config = load_experiment(config_path)
++    if verified_resume_hashes is not None and config["data"].get("mode") == "tiling128_v3_fold0":
++        raise ValueError("Legacy raw-volume timestamp rebinding cannot verify all sixteen tiles; use a matching Tiling128 checkpoint without --verified-resume-hashes")
+     config["training"]["shuffle_mode"] = "volume"
+     if epochs is not None:
+         config["training"]["epochs"] = epochs
+diff --git a/src/merit_covid/data/pipeline/cases.py b/src/merit_covid/data/pipeline/cases.py
+index bf1ec02..45a719a 100644
+--- a/src/merit_covid/data/pipeline/cases.py
++++ b/src/merit_covid/data/pipeline/cases.py
+@@ -21,8 +21,12 @@ def identifier(value, field: str) -> str:
+     return value
+ 
+ 
+-def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=True):
+-    """Paths are relative to the manifest. A volume ID is never a patient ID."""
++def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=True, check_files=True):
++    """Paths are relative to the manifest. A volume ID is never a patient ID.
++
++    check_files=False is for logical identity/split validation of the exported
++    tile bundle's copied source manifest only, not a readable native Dataset.
++    """
+     manifest = Path(manifest).resolve()
+     records = json.loads(manifest.read_text(encoding="utf-8-sig"))
+     if manifest.parent.name.lower() == "zenodo20":
+@@ -64,7 +68,7 @@ def load_cases(manifest, expected_count=None, patient_map=None, *, check_masks=T
+         pair = []
+         for key in ("image", "mask"):
+             path = (manifest.parent / identifier(record[key], key)).resolve()
+-            if (key == "image" or check_masks) and not path.is_file():
++            if check_files and (key == "image" or check_masks) and not path.is_file():
+                 raise FileNotFoundError(f"{case_id}: missing {key}: {path}")
+             if path in paths:
+                 raise ValueError(f"Reused CT/mask path in manifest: {path}")
+diff --git a/src/merit_covid/data/pipeline/dataloader.py b/src/merit_covid/data/pipeline/dataloader.py
+index 9d2a1a4..5ee5b73 100644
+--- a/src/merit_covid/data/pipeline/dataloader.py
++++ b/src/merit_covid/data/pipeline/dataloader.py
+@@ -204,3 +204,24 @@ def build_fold_loaders(
+         )
+ 
+     return FoldDataLoaders(fold=fold, **loaders)
++
++
++def build_tiled_fold_loaders(tile_root, fold=0, *, preprocess=None, batch_size=1,
++                             shuffle_train=True, seed=42, num_workers=0,
++                             shuffle_mode="volume", samples_per_volume=0):
++    """Explicit opt-in for the exported V3 fold0 tiles; native API stays intact."""
++    from .tiled import TileBundle, TiledCTSlabDataset, require_fold0
++    require_fold0(fold)
++    config = preprocess or PreprocessConfig()
++    bundle = TileBundle(tile_root, assume_mm=config.assume_mm)
++    part = next(f for f in bundle.split["folds"] if f["fold"] == 0)
++    loaders = {}
++    for role in ("train", "validation", "test"):
++        ids = set(part[role]["case_ids"])
++        dataset = TiledCTSlabDataset([c for c in bundle.cases if c.case_id in ids], config)
++        dataset.partition = role
++        loaders[role] = make_dataloader(dataset, batch_size=batch_size,
++            shuffle=shuffle_train if role == "train" else False, seed=seed, num_workers=num_workers,
++            shuffle_mode=shuffle_mode if role == "train" else "sequential",
++            samples_per_volume=samples_per_volume if role == "train" else 0)
++    return FoldDataLoaders(fold=0, **loaders)
+diff --git a/src/merit_covid/engine/slab_inference.py b/src/merit_covid/engine/slab_inference.py
+index 1046a1f..0086a89 100644
+--- a/src/merit_covid/engine/slab_inference.py
++++ b/src/merit_covid/engine/slab_inference.py
+@@ -20,6 +20,11 @@ def predict_slab_case(model, case, preprocess, *, batch_size=1, num_workers=0, r
+     XY probabilities are resized before constructing the native-only unified
+     contract. The original SliceReconstructor checks duplicates/missing slices.
+     """
++    from merit_covid.data.pipeline.tiled import TiledCase
++    if isinstance(case, TiledCase):
++        from .tiled_inference import predict_tiled_case
++        prediction = predict_tiled_case(model, case, preprocess, batch_size=batch_size, num_workers=num_workers)
++        return (prediction, None) if return_presence else prediction
+     if model.training:
+         raise ValueError("Call model.eval() before inference")
+     if preprocess.slab_size != model.img_size[0] or (preprocess.size_hw is not None and tuple(preprocess.size_hw) != model.img_size[1:]):
+diff --git a/src/merit_covid/engine/training.py b/src/merit_covid/engine/training.py
+index f24d4ae..fdc9ecc 100644
+--- a/src/merit_covid/engine/training.py
++++ b/src/merit_covid/engine/training.py
+@@ -58,11 +58,24 @@ def explicit_parameters(cls, supplied):
+ 
+ 
+ def load_experiment(path, *, target_spacing_mm=None, position_mode=None, weighting_mode=None,
+-                    sigma_mm=None, assume_mm=False):
++                    sigma_mm=None, assume_mm=False, tile_root=None):
+     path = Path(path).resolve()
+     config = yaml.safe_load(path.read_text(encoding="utf-8"))
+     if not isinstance(config, dict) or set(config) != {"data", "preprocess", "model", "loss", "training"}:
+         raise ValueError("Experiment requires data/preprocess/model/loss/training mappings")
++    if config["data"].get("mode") == "tiling128_v3_fold0":
++        supplied = tile_root if tile_root is not None else config["data"].get("tile_root")
++        if not isinstance(supplied, (str, os.PathLike)):
++            raise ValueError("Set tile_root or MERIT_TILE_ROOT to the exported TILING128_V3_FOLD0_NIFTI root")
++        expanded = os.path.expandvars(str(supplied))
++        if "$" in expanded or "%" in expanded:
++            raise ValueError("Unresolved tile_root environment variable; set MERIT_TILE_ROOT or pass --tile-root")
++        root = (path.parent / expanded).resolve()
++        config["data"]["tile_root"] = str(root)
++        config["data"].setdefault("manifest", str(root / "source_metadata/cases.json"))
++        config["data"].setdefault("split_path", str(root / "source_metadata/splits_covid19_20_5fold.json"))
++    elif tile_root is not None:
++        raise ValueError("--tile-root requires the separate tiling128_v3_fold0 configuration")
+     for key in ("manifest", "split_path", "patient_map"):
+         if config["data"].get(key) is not None:
+             config["data"][key] = str((path.parent / config["data"][key]).resolve())
+@@ -100,8 +113,17 @@ def validate_experiment(config):
+         raise ValueError("Unexpected experiment fields")
+     if not all(isinstance(config[k], dict) for k in config):
+         raise ValueError("Experiment sections must be mappings")
+-    if set(config["data"]) - {"manifest", "split_path", "patient_map"} or not {"manifest", "split_path"} <= set(config["data"]):
++    tiled = config["data"].get("mode") == "tiling128_v3_fold0"
++    data_keys = {"manifest", "split_path", "mode", "tile_root"} if tiled else {"manifest", "split_path", "patient_map"}
++    if set(config["data"]) - data_keys or not {"manifest", "split_path"} <= set(config["data"]):
+         raise ValueError("data needs manifest/split_path and optional patient_map")
++    if tiled:
++        if not config["data"].get("tile_root"):
++            raise ValueError("Tiling128 needs an explicit tile_root")
++        root = Path(config["data"]["tile_root"]).resolve()
++        for key, name in (("manifest", "cases.json"), ("split_path", "splits_covid19_20_5fold.json")):
++            if Path(config["data"][key]).resolve() != root / "source_metadata" / name:
++                raise ValueError("Tiling128 config must use the original metadata/split inside tile_root")
+     unknown = set(config["training"]) - set(TRAIN_DEFAULTS)
+     if unknown:
+         raise ValueError(f"Unknown training settings: {unknown}")
+@@ -139,6 +161,11 @@ def validate_experiment(config):
+         validate_fit_binding(preprocess.zscore_fit, config['data']['manifest'], config['data']['split_path'])
+     config["preprocess"] = asdict(preprocess)
+     grid = tuple(config["model"].get("img_size", (11, 128, 128)))
++    if tiled:
++        from merit_covid.data.pipeline.tiled import validate_tile_policy
++        validate_tile_policy(preprocess)
++        if grid != (11, 128, 128):
++            raise ValueError("Precomputed Tiling128 model input must be [11,128,128]; no resize")
+     if preprocess.intensity_encoding == 'train_fovaware_clipped_zscore_v1' and grid != (11,512,512):
+         raise ValueError('V3 model input must remain 11x512x512')
+     if preprocess.slab_size != grid[0] or (preprocess.size_hw is not None
+@@ -153,6 +180,10 @@ def validate_experiment(config):
+ 
+ def load_development_split(config):
+     data = config["data"]
++    if data.get("mode") == "tiling128_v3_fold0":
++        from merit_covid.data.pipeline.tiled import TileBundle
++        bundle = TileBundle(data["tile_root"], assume_mm=config["preprocess"]["assume_mm"])
++        return bundle.cases, bundle.split, bundle.identity, bundle.split_sha256_lf
+     cases, identity = load_cases(data["manifest"], patient_map=data.get("patient_map"))
+     raw = Path(data["split_path"]).read_bytes()
+     split = json.loads(raw.decode("utf-8-sig"))
+@@ -166,6 +197,9 @@ def source_identity(config, cases):
+     Stats detect normal in-place edits, not adversarial byte replacement with
+     forged size/mtime. Pin the upstream data revision separately for that case.
+     """
++    if config["data"].get("mode") == "tiling128_v3_fold0":
++        from merit_covid.data.pipeline.tiled import TileBundle
++        return TileBundle(config["data"]["tile_root"], assume_mm=config["preprocess"]["assume_mm"]).source_identity()
+     def source(path):
+         path = Path(path).resolve()
+         stat = path.stat()
+@@ -185,6 +219,10 @@ def source_identity(config, cases):
+ 
+ 
+ def split_datasets(config, fold):
++    tiled = config["data"].get("mode") == "tiling128_v3_fold0"
++    if tiled:
++        from merit_covid.data.pipeline.tiled import TiledCTSlabDataset, require_fold0
++        require_fold0(fold)
+     if type(fold) is not int or fold not in range(5):
+         raise ValueError("fold must be 0..4")
+     cases, split, identity, split_hash = load_development_split(config)
+@@ -200,25 +238,39 @@ def split_datasets(config, fold):
+     datasets = {}
+     for role in ("train", "validation", "test"):
+         ids = set(part[role]["case_ids"])
+-        datasets[role] = CTSlabDataset([c for c in cases if c.case_id in ids],
+-                                     PreprocessConfig(**config["preprocess"]))
++        dataset_cls = TiledCTSlabDataset if tiled else CTSlabDataset
++        datasets[role] = dataset_cls([c for c in cases if c.case_id in ids],
++                                    PreprocessConfig(**config["preprocess"]))
+         datasets[role].partition = role
+     provenance = {"fold": fold, "split_fingerprint": split["manifest_fingerprint"],
+         "split_sha256_lf": split_hash,
+         "identity": identity, "partitions": part,
+         "all_case_ids": [c.case_id for c in cases], "all_group_ids": sorted({c.group_id for c in cases})}
+-    provenance["all_image_paths"] = sorted(str(c.image.resolve()) for c in cases)
+-    provenance["all_mask_paths"] = sorted(str(c.mask.resolve()) for c in cases)
++    provenance["all_image_paths"] = _case_paths(cases, "ct")
++    provenance["all_mask_paths"] = _case_paths(cases, "gt")
+     provenance["source_identity"] = source_identity(config, cases)
+     return datasets, provenance
+ 
+ 
++def _case_paths(cases, role):
++    from merit_covid.data.pipeline.tiled import TiledCase
++    return sorted(str(path.resolve()) for c in cases for path in
++                  ([c.path(i, role) for i in range(16)] if isinstance(c, TiledCase)
++                   else [c.image if role == "ct" else c.mask]))
++
++
+ def validate_native_grid(cases, preprocess, model_grid):
+     """Reject native/model XY mismatch from headers instead of silently resizing."""
+     if preprocess.size_hw is not None:
+         return
+     expected = tuple(model_grid[1:])
+     for case in cases:
++        from merit_covid.data.pipeline.tiled import TiledCase, validate_tile_policy
++        if isinstance(case, TiledCase):
++            validate_tile_policy(preprocess)
++            if tuple(model_grid) != (11, 128, 128):
++                raise ValueError("TiledCase requires model grid [11,128,128], not Native512")
++            continue
+         ct, _ = inspect_pair(case, preprocess, require_mask=False)
+         x, y, _ = canonical_shape(ct)
+         if (y, x) != expected:
+@@ -250,6 +302,11 @@ def evaluate_model(model, cases, preprocess, *, threshold=0.5, include_hd95=True
+     """Original CT grid metrics; masks read only AFTER CT-only prediction."""
+     rows = []
+     cases = list(cases)
++    from merit_covid.data.pipeline.tiled import TiledCase
++    if any(isinstance(c, TiledCase) for c in cases):
++        from .tiled_inference import evaluate_tiled_model
++        return evaluate_tiled_model(model, cases, preprocess, threshold=threshold, include_hd95=include_hd95,
++                                    batch_size=batch_size, num_workers=num_workers, identity=identity)
+     validate_native_grid(cases, preprocess, model.img_size)
+     was_training = model.training
+     model.eval()
+@@ -326,7 +383,7 @@ class Trainer:
+         if self.provenance.get("source_identity", binding) != binding:
+             raise ValueError("Dataset/manifest changed after split indexing")
+         self.provenance["source_identity"] = binding
+-        self.provenance["all_mask_paths"] = sorted(str(c.mask.resolve()) for c in sources)
++        self.provenance["all_mask_paths"] = _case_paths(sources, "gt")
+         by_id = {c.case_id: c for c in sources}
+         for case in [*train_loader.dataset.cases, *validation_cases]:
+             expected = by_id.get(case.case_id)
+@@ -334,6 +391,17 @@ class Trainer:
+                     or Path(case.image).resolve() != expected.image.resolve()
+                     or case.mask is None or Path(case.mask).resolve() != expected.mask.resolve()):
+                 raise ValueError("Training/validation source differs from the current manifest")
++        if self.config["data"].get("mode") == "tiling128_v3_fold0":
++            from merit_covid.data.pipeline.tiled import TiledCTSlabDataset, require_fold0
++            require_fold0(provenance.get("fold"))
++            if not isinstance(train_loader.dataset, TiledCTSlabDataset):
++                raise ValueError("Tiling128 config requires TiledCTSlabDataset, not a native or resized Dataset")
++            for case in [*train_loader.dataset.cases, *validation_cases]:
++                if case.record != by_id[case.case_id].record or case.metadata != by_id[case.case_id].metadata:
++                    raise ValueError("Tile Dataset records/geometry differ from current case manifests")
++            for role, actual in (("train", train_loader.dataset.cases), ("validation", validation_cases)):
++                if {c.case_id for c in actual} != set(provenance["partitions"][role]["case_ids"]):
++                    raise ValueError("Tiling128 Trainer must retain the complete original fold0 partition")
+         self.fingerprint = protocol_fingerprint(self.config, self.provenance)
+         self.output_dir = Path(output_dir)
+         self.train_loader, self.validation_cases = train_loader, list(validation_cases)
+@@ -475,11 +543,12 @@ class Trainer:
+ 
+     def resume(self, path):
+         checkpoint = (path if isinstance(path, dict) else
+-                      torch.load(path, map_location="cpu", weights_only=False, mmap=True))
++                      torch.load(path, map_location="cpu", weights_only=False,
++                                 mmap=self.config["data"].get("mode") != "tiling128_v3_fold0"))
+         if checkpoint.get("schema_version") != 2 or "source_identity" not in checkpoint.get("provenance", {}):
+             raise ValueError("Checkpoint lacks verified CT/GT source identity; unsafe legacy resume is not supported")
+         if checkpoint.get("protocol_fingerprint") != self.fingerprint:
+-            raise ValueError("Checkpoint config/preprocessing/sampling/split/fold mismatch")
++            raise ValueError("Checkpoint config/preprocessing/sampling/split/fold mismatch; Native512 and Tiling128 are separate protocols (no partial load)")
+         if self.settings["epochs"] < checkpoint["config"]["training"]["epochs"]:
+             raise ValueError("Resume may extend, but cannot reduce, the saved epoch budget")
+         if checkpoint.get("environment", {}).get("device_type", self.device.type) != self.device.type:
+@@ -506,6 +575,9 @@ class Trainer:
+             raise ValueError("max_seconds must be positive and finite")
+         deadline = None if max_seconds is None else time.monotonic() + max_seconds
+         self.output_dir.mkdir(parents=True, exist_ok=True)
++        if (self.config["data"].get("mode") == "tiling128_v3_fold0" and resume is None
++                and any((self.output_dir / name).exists() for name in ("best.pt", "history.jsonl"))):
++            raise FileExistsError("Existing tiled run found; choose a new directory or resume its matching checkpoint")
+         if resume is None and any((self.output_dir / name).exists() for name in ("last.pt", "in_progress.pt")):
+             raise FileExistsError("Existing run found; choose a new output directory or --resume")
+         if resume is not None:
+@@ -547,6 +619,13 @@ def load_checkpoint_model(path, device="cpu"):
+         raise ValueError("Unsupported checkpoint schema")
+     if protocol_fingerprint(checkpoint["config"], checkpoint["provenance"], version=version) != checkpoint["protocol_fingerprint"]:
+         raise ValueError("Checkpoint protocol metadata is inconsistent")
++    if checkpoint["config"]["data"].get("mode") == "tiling128_v3_fold0":
++        from merit_covid.data.pipeline.tiled import implementation_identity, require_fold0
++        require_fold0(checkpoint["provenance"]["fold"])
++        validate_experiment(checkpoint["config"])
++        expected = checkpoint["provenance"].get("source_identity", {}).get("implementation_sha256")
++        if expected != implementation_identity():
++            raise ValueError("Tiling128 checkpoint executable model/loss/pipeline source differs from this checkout")
+     torch.set_num_threads(checkpoint["config"]["training"]["threads"])
+     model = MERITUNETRPP(**checkpoint["config"]["model"]).to(resolve_device(device))
+     configure_model_execution(model, checkpoint["config"]["training"])
