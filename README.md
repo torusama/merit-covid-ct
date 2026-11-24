@@ -1,3 +1,9 @@
+# Preprocessing V3 / B2 / B3A on the train branch
+
+Read [REVIEW_PREPROCESSING.md](REVIEW_PREPROCESSING.md) first for the Vietnamese scope, evidence and review questions. This update contains data-processing changes only; compare with train base eacbfdc. MERIT architecture/loss, frozen BatchNorm support and Native512 baseline are preserved.
+
+---
+
 # MERIT-UNETR++ for COVID-19 CT segmentation
 
 Binary infection segmentation on chest CT: `0 = background`, `1 = lesion`.

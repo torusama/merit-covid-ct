@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="10.450" timestamp="2026-11-24T13:44:20.308990+07:00" hostname="MSI"><testcase classname="tests.test_frozen_batchnorm" name="test_full_trainer_restores_policy_and_matches_mid_epoch_resume" time="6.076"><failure message="PermissionError: [WinError 5] Access is denied: 'C:\\1_HDD\\paper\\merit-covid-ct-train-demo\\outputs\\publish_base_resume_check_20261124\\test_full_trainer_restores_pol0\\resume\\in_progress.pt'">tmp_path = WindowsPath('C:/1_HDD/paper/merit-covid-ct-train-demo/outputs/publish_base_resume_check_20261124/test_full_trainer_restores_pol0')
+
+    def test_full_trainer_restores_policy_and_matches_mid_epoch_resume(tmp_path):
+        config = synthetic_experiment(tmp_path/'data', device='cpu')
+        config['training'].update(batch_size=1, activation_checkpointing=True,
+                                  factorized_mer=True, freeze_batchnorm_stats=True)
+        path = tmp_path/'experiment.yaml'; path.write_text(yaml.safe_dump(config))
+        full, _ = train(path, 0, tmp_path/'full', epochs=1)
+        expected = {name:value.clone() for name,value in full.model.state_dict().items()}
+        frozen = bn_buffers(full.model)
+        assert frozen and all(value.item() == 0 for name,value in frozen.items() if name.endswith('num_batches_tracked'))
+        del full
+        _, history = train(path, 0, tmp_path/'resume', epochs=1, checkpoint_every=1, max_seconds=1e-8)
+        assert not history
+&gt;       resumed, history = train(path, 0, tmp_path/'resume', epochs=1,
+                                 resume=tmp_path/'resume/in_progress.pt')
+
+tests\test_frozen_batchnorm.py:80:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts\train_colab.py:71: in train
+    return trainer, trainer.fit(resume=resume, checkpoint_every=checkpoint_every, max_seconds=max_seconds)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\merit_covid\engine\training.py:505: in fit
+    (self.output_dir / "in_progress.pt").unlink(missing_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/1_HDD/paper/merit-covid-ct-train-demo/outputs/publish_base_resume_check_20261124/test_full_trainer_restores_pol0/resume/in_progress.pt')
+missing_ok = True
+
+    def unlink(self, missing_ok=False):
+        """
+        Remove this file or link.
+        If the path is a directory, use rmdir() instead.
+        """
+        try:
+&gt;           os.unlink(self)
+E           PermissionError: [WinError 5] Access is denied: 'C:\\1_HDD\\paper\\merit-covid-ct-train-demo\\outputs\\publish_base_resume_check_20261124\\test_full_trainer_restores_pol0\\resume\\in_progress.pt'
+
+C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py:746: PermissionError</failure></testcase></testsuite></testsuites>

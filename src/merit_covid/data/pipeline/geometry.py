@@ -66,9 +66,7 @@ def inspect_pair(case: Case, config: PreprocessConfig, *, require_mask: bool = T
         return ct, None
     if case.mask is None:
         affine_mm(ct, config.assume_mm)
-        if require_mask:
-            raise ValueError(f"{case.case_id}: mask required")
-        return ct, None
+        raise ValueError(f"{case.case_id}: mask required")
     mask = nib.load(case.mask)
     _validate_header(mask, case.case_id, "mask")
 

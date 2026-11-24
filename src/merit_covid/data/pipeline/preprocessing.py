@@ -33,6 +33,23 @@ def normalize_ct(
     """Preserve scaled intensities by default; window only under explicit policy."""
     if config.intensity_encoding == "native":
         return image_xyz
+    if config.intensity_encoding == 'train_fovaware_clipped_zscore_v1':
+        from .intensity_fit import validate_fit_stats
+        parameters = validate_fit_stats(config.zscore_fit)['parameters']
+        if not np.isfinite(image_xyz).all():
+            raise ValueError(f'{case_id}: V3 requires finite scaled CT')
+        result = np.empty(image_xyz.shape, dtype=np.float32)
+        # All voxels, including padding, receive the same formula. No FOV rule
+        # or GT is consulted here. Bound extra float64 memory to eight planes.
+        for start in range(0, image_xyz.shape[-1], 8):
+            index = (..., slice(start, start+8))
+            block = np.clip(image_xyz[index].astype(np.float64), parameters['lower'], parameters['upper'])
+            block -= parameters['mean']
+            block /= parameters['std']
+            result[index] = block
+        if not np.isfinite(result).all():
+            raise ValueError(f'{case_id}: V3 transform produced nonfinite values')
+        return result
     if config.intensity_encoding == "train_zscore":
         result = (image_xyz.astype(np.float64) - config.zscore_mean) / config.zscore_std
         result = result.astype(np.float32)
@@ -141,11 +158,18 @@ def read_arrays(
     # 2. Standardize to LPS by axis permutation/flips, without interpolation.
     canonical_ct = reorient_to_lps(original_ct)
     canonical_mask = reorient_to_lps(original_mask) if original_mask is not None else None
+    if config.intensity_encoding == 'train_fovaware_clipped_zscore_v1':
+        if canonical_ct.shape[:2] != (512, 512):
+            raise ValueError(f'{case.case_id}: V3 requires native512; refusing to resize')
 
     # 3. NiBabel applies slope/intercept; validate values/labels on the native grid.
     image_xyz = canonical_ct.get_fdata(dtype=np.float32, caching="unchanged")
-    mask_xyz = canonical_mask.get_fdata(dtype=np.float32, caching="unchanged") if canonical_mask is not None else None
+    # Validate scaled GT before float32 conversion can round a nonbinary float64
+    # label to 0 or 1. Permutations/flips are bijective and preserve these values.
+    mask_xyz = canonical_mask.get_fdata(dtype=np.float64, caching="unchanged") if canonical_mask is not None else None
     validate_voxels(image_xyz, mask_xyz, case.case_id)
+    if mask_xyz is not None:
+        mask_xyz = mask_xyz.astype(np.float32)
     intensity_range = [float(image_xyz.min()), float(image_xyz.max())]
     label_values = np.unique(mask_xyz).astype(int).tolist() if mask_xyz is not None else []
     native_lesion_voxels = int(np.count_nonzero(mask_xyz)) if mask_xyz is not None else 0
@@ -194,6 +218,13 @@ def read_arrays(
             "lesion_retention": retention,
         }
     )
+    if config.intensity_encoding == 'train_fovaware_clipped_zscore_v1':
+        if mask_zyx is not None and (int(np.count_nonzero(mask_zyx)) != native_lesion_voxels
+                                    or not np.isin(mask_zyx, [0, 1]).all()):
+            raise ValueError(f'{case.case_id}: V3 must preserve binary GT and lesion count')
+        metadata['intensity_transform'] = dict(formula='(clip(x,L,U)-mean)/std',
+            parameters=config.zscore_fit['parameters'], stats_sha256=config.zscore_fit['stats_sha256'],
+            padding_detection_at_inference=False, all_voxels_transformed=True)
     return image_zyx, mask_zyx, metadata
 
 

@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "synthetic_tests": 19,
+  "synthetic_failures_errors_or_skips": 0,
+  "synthetic_xml_sha256": "f41e98c4508f5c4346448fb99c29d12ff2ba094cbb55fb2179c94327d5659873",
+  "real_case": "volume-covid19-A-0003",
+  "matched_samples": 4656,
+  "exact_tensor_values": 1754529792,
+  "coordinate_max_abs_error_mm": 0.0,
+  "real_geometry_and_full_restore": true,
+  "model_test": false,
+  "depth": 291,
+  "ct_mismatches": 0,
+  "gt_mismatches": 0,
+  "lesion_voxels_before": 738319,
+  "lesion_voxels_after": 738319,
+  "edge_masters_verified": [
+    0,
+    1,
+    5,
+    145,
+    285,
+    290
+  ],
+  "seconds": 19.382646000000022,
+  "export_hashes_verified": true
+}

@@ -30,6 +30,8 @@ class PreprocessConfig:
     intensity_provenance: str | None = None
     zscore_mean: float | None = None
     zscore_std: float | None = None
+    # Historical four-field provenance for train_zscore; complete immutable
+    # fit_stats for V3. YAML paths are resolved by load_experiment before here.
     zscore_fit: dict | None = None
 
     def __post_init__(self) -> None:
@@ -62,10 +64,19 @@ class PreprocessConfig:
                 raise ValueError("size_hw must be two positive integers, or None")
             object.__setattr__(self, "size_hw", tuple(self.size_hw))
 
-        if self.intensity_encoding not in ("native", "auto_hu", "hu", "normalized_0_1", "train_zscore"):
+        if self.intensity_encoding not in ("native", "auto_hu", "hu", "normalized_0_1", "train_zscore",
+                                           "train_fovaware_clipped_zscore_v1"):
             raise ValueError("Unknown intensity encoding")
 
-        if self.intensity_encoding == "train_zscore":
+        if self.intensity_encoding == "train_fovaware_clipped_zscore_v1":
+            from .intensity_fit import validate_fit_stats
+            stats = validate_fit_stats(self.zscore_fit)
+            parameters = stats['parameters']
+            if self.zscore_mean != parameters['mean'] or self.zscore_std != parameters['std']:
+                raise ValueError('V3 mean/std must be loaded from the same fitted stats file')
+            if self.size_hw is not None or self.slab_size != 11 or self.sampling_mode != 'index':
+                raise ValueError('V3 requires native XY, 11 slices, index sampling; no resize/resample')
+        elif self.intensity_encoding == "train_zscore":
             if (type(self.zscore_mean) not in (int, float) or not np.isfinite(self.zscore_mean)
                     or type(self.zscore_std) not in (int, float) or not np.isfinite(self.zscore_std)
                     or self.zscore_std <= 1e-8):

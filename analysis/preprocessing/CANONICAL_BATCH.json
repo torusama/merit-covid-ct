@@ -1,0 +1,81 @@
+{
+  "mode": "inspect_batch_only",
+  "device": "cpu",
+  "intensity_encoding": "train_fovaware_clipped_zscore_v1",
+  "fold": 0,
+  "selected_partition": "train",
+  "volumes_in_partition": {
+    "train": 127,
+    "validation": 32,
+    "test": 40
+  },
+  "master_samples_in_partition": {
+    "train": 8810,
+    "validation": 2322,
+    "test": 2573
+  },
+  "inputs": {
+    "shape": [
+      1,
+      1,
+      11,
+      512,
+      512
+    ],
+    "dtype": "torch.float32",
+    "value_range": [
+      -1.3481241464614868,
+      3.309286117553711
+    ]
+  },
+  "targets": {
+    "shape": [
+      1,
+      1,
+      512,
+      512
+    ],
+    "dtype": "torch.float32",
+    "labels": [
+      0
+    ]
+  },
+  "z_offsets_mm_shape": [
+    1,
+    11
+  ],
+  "case_ids": [
+    "volume-covid19-A-0003"
+  ],
+  "master_indices": [
+    0
+  ],
+  "first_sample_offsets_mm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "first_sample_original_shape_xyz": [
+    512,
+    512,
+    291
+  ],
+  "first_sample_orientation": [
+    "L",
+    "P",
+    "S"
+  ],
+  "first_sample_processed_size_hw": [
+    512,
+    512
+  ],
+  "note": "Patient-level independence remains unverified without trusted patient IDs."
+}

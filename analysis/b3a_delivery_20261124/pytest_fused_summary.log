@@ -1,0 +1,11 @@
+Derived summary of actual pytest_fused.xml (not reconstructed raw stdout)
+{
+  "name": "pytest",
+  "errors": "0",
+  "failures": "0",
+  "skipped": "0",
+  "tests": "19",
+  "time": "27.760",
+  "timestamp": "2026-11-24T09:48:21.331332+07:00",
+  "hostname": "MSI"
+}

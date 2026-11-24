@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "code_cells_compiled": 5,
+  "embedded_source_files": 213,
+  "source_sha256": "c0b71a6fe4c974992209a80482c899f8554dc2c7648e8f5a97d0af97622bd190",
+  "crc": "PASS",
+  "file_hashes": "PASS",
+  "review_links": "PASS",
+  "models_and_bn_support_unchanged": true,
+  "target_branch": "train/merit-unetrpp-colab",
+  "base_commit": "eacbfdc",
+  "kaggle_execution": "NOT_RUN"
+}

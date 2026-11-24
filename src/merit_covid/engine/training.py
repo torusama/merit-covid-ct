@@ -66,6 +66,21 @@ def load_experiment(path, *, target_spacing_mm=None, position_mode=None, weighti
     for key in ("manifest", "split_path", "patient_map"):
         if config["data"].get(key) is not None:
             config["data"][key] = str((path.parent / config["data"][key]).resolve())
+    if config['preprocess'].get('intensity_encoding') == 'train_fovaware_clipped_zscore_v1':
+        fit = config['preprocess'].get('zscore_fit')
+        if isinstance(fit, str):
+            stats_path = (path.parent / fit).resolve()
+            if not stats_path.is_file():
+                raise ValueError(f'V3 NOT_FITTED: missing {stats_path}; run scripts/fit_train_zscore.py --policy train_fovaware_clipped_zscore_v1')
+            fit = json.loads(stats_path.read_text(encoding='utf-8'))
+            config['preprocess']['zscore_fit'] = fit
+        from merit_covid.data.pipeline.intensity_fit import validate_fit_stats
+        validate_fit_stats(fit)
+        if isinstance(fit, dict) and fit.get('status') == 'FITTED':
+            for key, value in (('zscore_mean', fit['parameters']['mean']), ('zscore_std', fit['parameters']['std'])):
+                if config['preprocess'].get(key) is not None and config['preprocess'][key] != value:
+                    raise ValueError('V3 explicit '+key+' disagrees with fitted stats')
+                config['preprocess'][key] = value
     if target_spacing_mm is not None:
         config["preprocess"]["target_spacing_mm"] = target_spacing_mm
     if position_mode is not None:
@@ -119,8 +134,13 @@ def validate_experiment(config):
         raise ValueError("factorized_mer requires activation_checkpointing and use_mer")
     config["loss"] = explicit_parameters(MERITLoss, config["loss"])
     preprocess = PreprocessConfig(**config["preprocess"])
+    if preprocess.intensity_encoding == 'train_fovaware_clipped_zscore_v1':
+        from merit_covid.data.pipeline.intensity_fit import validate_fit_binding
+        validate_fit_binding(preprocess.zscore_fit, config['data']['manifest'], config['data']['split_path'])
     config["preprocess"] = asdict(preprocess)
     grid = tuple(config["model"].get("img_size", (11, 128, 128)))
+    if preprocess.intensity_encoding == 'train_fovaware_clipped_zscore_v1' and grid != (11,512,512):
+        raise ValueError('V3 model input must remain 11x512x512')
     if preprocess.slab_size != grid[0] or (preprocess.size_hw is not None
                                          and tuple(preprocess.size_hw) != grid[1:]):
         raise ValueError("Training requires size_hw/slab_size matching model img_size; size_hw=null preserves native XY")
@@ -170,6 +190,9 @@ def split_datasets(config, fold):
     cases, split, identity, split_hash = load_development_split(config)
     validate_native_grid(cases, PreprocessConfig(**config["preprocess"]), config["model"]["img_size"])
     part = next(f for f in split["folds"] if f["fold"] == fold)
+    if config['preprocess'].get('intensity_encoding') == 'train_fovaware_clipped_zscore_v1':
+        from merit_covid.data.pipeline.intensity_fit import validate_fit_binding
+        validate_fit_binding(config['preprocess']['zscore_fit'], config['data']['manifest'], config['data']['split_path'], fold=fold)
     fit = config["preprocess"].get("zscore_fit")
     if fit is not None and (fit["fold"] != fold or fit["split_sha256_lf"] != split_hash
                             or set(fit["case_ids"]) != set(part["train"]["case_ids"])):
@@ -320,6 +343,12 @@ class Trainer:
             raise ValueError("Training Dataset preprocessing differs from frozen experiment config")
         train_cases = train_loader.dataset.cases
         fit = self.config["preprocess"].get("zscore_fit")
+        if self.config['preprocess']['intensity_encoding'] == 'train_fovaware_clipped_zscore_v1':
+            from merit_covid.data.pipeline.intensity_fit import validate_fit_binding, file_hash
+            validate_fit_binding(fit, self.config['data']['manifest'], self.config['data']['split_path'],
+                                 fold=provenance.get('fold'), cases=train_cases)
+            if any(file_hash(case.image) != fit['source_ct_sha256'][case.case_id] for case in train_cases):
+                raise ValueError('V3 TRAIN CT bytes differ from the fitted source')
         if fit is not None and (fit["fold"] != provenance.get("fold")
                 or fit["split_sha256_lf"] != provenance.get("split_sha256_lf")
                 or set(fit["case_ids"]) != {case.case_id for case in train_cases}):

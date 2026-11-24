@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 
-from .slab import slab_indices as _slab_indices, slice_positions as _slice_positions, sample_arrays
+from .slab import sample_arrays
 
 
 class CTSlabDataset(Dataset):
@@ -94,6 +94,9 @@ class CTSlabDataset(Dataset):
             raise ValueError("Choose fold 0..4 and train/validation/test")
 
         selected_fold = next(item for item in split["folds"] if item["fold"] == fold)
+        if config is not None and config.intensity_encoding == 'train_fovaware_clipped_zscore_v1':
+            from .intensity_fit import validate_fit_binding
+            validate_fit_binding(config.zscore_fit, manifest, split_path, fold=fold)
         selected_ids = set(selected_fold[partition]["case_ids"])
         selected_cases = [case for case in cases if case.case_id in selected_ids]
         dataset = cls(selected_cases, config, require_mask=require_mask)

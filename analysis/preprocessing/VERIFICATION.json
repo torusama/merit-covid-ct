@@ -1,0 +1,73 @@
+{
+  "status": "READY_TO_USE",
+  "scope": "Preprocessing CPU only; not GPU training readiness or quality",
+  "cpu_tests": 76,
+  "cpu_test_seconds": 15.536,
+  "fit_status": "FITTED",
+  "fit_seconds": 150.08012070000018,
+  "parameters": {
+    "lower": -1241.0,
+    "upper": 1032.0,
+    "mean": -583.0622212292245,
+    "std": 488.0394718302036
+  },
+  "padding_counts": {
+    "CONFIDENT": 120,
+    "UNKNOWN": 7
+  },
+  "voxel_counts": {
+    "total": 2309488640,
+    "accepted": 1835675740,
+    "excluded": 473812900,
+    "sentinel": 473812909
+  },
+  "original_source_files_hash_verified": 398,
+  "real_training_representatives": 6,
+  "untouched_tracked_files": 203,
+  "modified_existing_files": [
+    "README.md",
+    "docs/data_pipeline.md",
+    "docs/merit_pipeline.md",
+    "scripts/fit_train_zscore.py",
+    "scripts/read_training_batch.py",
+    "src/merit_covid/data/pipeline/config.py",
+    "src/merit_covid/data/pipeline/dataset.py",
+    "src/merit_covid/data/pipeline/geometry.py",
+    "src/merit_covid/data/pipeline/preprocessing.py",
+    "src/merit_covid/engine/training.py"
+  ],
+  "model_loss_files_unchanged": 18,
+  "trainer_methods_unchanged": [
+    "train_epoch",
+    "validate",
+    "save_checkpoint",
+    "resume",
+    "fit"
+  ],
+  "evaluator_and_protocol_ast_unchanged": true,
+  "native_effective_config_and_fingerprint_unchanged": true,
+  "prior_quick100_files_unchanged": 137,
+  "prior_repair_files_unchanged": 133,
+  "deleted_entire_files": [],
+  "deleted_dead_code": [
+    "dataset private alias imports",
+    "geometry unreachable missing-mask return"
+  ],
+  "new_model_training_updates": 0,
+  "gpu_used_for_training": false,
+  "real_ct_dice_iou_evaluation": false,
+  "synthetic_metric_test_scope_deviation": 2,
+  "python": "3.13.16",
+  "packages": {
+    "numpy": "2.5.4",
+    "nibabel": "5.4.2",
+    "scipy": "1.18.1",
+    "torch": "2.7.1+cu118",
+    "monai": "1.5.2",
+    "PyYAML": "6.0.3"
+  },
+  "git_commit": "13d7695d494b9da40629afd6a45ac294285e2b08",
+  "git_branch": "MADGNet",
+  "committed_or_pushed": false,
+  "stats_sha256": "d80d5f347b004375ef667a767fa8fa10d1ddcbbe9dd8acbfb6f14945d80ab03b"
+}

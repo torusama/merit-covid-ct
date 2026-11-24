@@ -1,0 +1,30 @@
+{
+  "snapshot_phase": "during_benchmark_not_before",
+  "timestamp": "2026-11-24T10:17:50.748612+07:00",
+  "os": "Windows-10-10.0.19045-SP0",
+  "cpu": "Intel64 Family 6 Model 165 Stepping 2, GenuineIntel",
+  "ram_total": 16993009664,
+  "ram_available": 9028403200,
+  "disk_total": 492648263680,
+  "disk_free": 238855196672,
+  "logical_partitions": [
+    {
+      "device": "C:\\",
+      "mountpoint": "C:\\",
+      "fstype": "NTFS"
+    },
+    {
+      "device": "G:\\",
+      "mountpoint": "G:\\",
+      "fstype": "NTFS"
+    }
+  ],
+  "paired_paths": [
+    "C:\\1_HDD\\paper\\merit-covid-ct\\outputs\\b3a_delivery_20261124\\experiment\\storage\\source_v3",
+    "C:\\1_HDD\\paper\\merit-covid-ct\\outputs\\b3a_delivery_20261124\\experiment\\storage\\precomputed"
+  ],
+  "filesystem_devices": [
+    11386438775472232739,
+    11386438775472232739
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "status": "COMPLETE_WITH_PROVENANCE_LIMITATION",
+  "source_identity": "127 TRAIN intensity summaries and 199 CT/GT geometry + GT lesion counts matched; UNCOMPRESSED SOURCE BYTES NOT VERIFIED AGAINST ORIGINAL .nii.gz",
+  "note": "Not a proof of exact voxel-for-voxel identity vs original compressed dataset; do not claim byte-exact equivalence. Does not prove Dice improvement.",
+  "policy": "train_fovaware_clipped_zscore_v1",
+  "count": 199,
+  "train_count": 127,
+  "stats_sha256": "583b32eb4bdeeef36db9dbc10282b221b13cd8add18c7ff18230e7f5aa9a38c4",
+  "parameters": {
+    "lower": -1241.0,
+    "upper": 1032.0,
+    "mean": -583.0622212292245,
+    "std": 488.0394718302036
+  },
+  "source_root": "/kaggle/input/datasets/duonghuynh007/covid19-20-raw-199-ct/Train",
+  "verification_levels": {
+    "TRAIN_NUMERIC_AUDIT_MATCH_NOT_BYTE_SHA": 127,
+    "VAL_TEST_GEOMETRY_GT_MATCH_NOT_BYTE_SHA": 72
+  },
+  "split_ids_unchanged": true,
+  "new_manifest_fingerprint": "f55fa41eea5e429ea2ff5446fa49299198c0fe7e48c6c1f63113aaac944d28e9",
+  "original_manifest_fingerprint": "c1a313cd1e57a8e526108fd413ed052d00afab2b72ac9392595e603a742ffde0"
+}

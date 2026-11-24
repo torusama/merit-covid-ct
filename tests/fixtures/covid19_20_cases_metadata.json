@@ -1,0 +1,2987 @@
+[
+  {
+    "id": "volume-covid19-A-0003",
+    "image": "Train/volume-covid19-A-0003_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0003_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      291
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      1.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0011",
+    "image": "Train/volume-covid19-A-0011_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0011_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      296
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      1.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0013",
+    "image": "Train/volume-covid19-A-0013_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0013_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      208
+    ],
+    "spacing_mm": [
+      0.4490000009536743,
+      0.4490000009536743,
+      0.79998779296875
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0014",
+    "image": "Train/volume-covid19-A-0014_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0014_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      286
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      1.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0016",
+    "image": "Train/volume-covid19-A-0016_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0016_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      361
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      1.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0025",
+    "image": "Train/volume-covid19-A-0025_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0025_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      61
+    ],
+    "spacing_mm": [
+      0.8460000157356262,
+      0.8460000157356262,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0031",
+    "image": "Train/volume-covid19-A-0031_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0031_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0034",
+    "image": "Train/volume-covid19-A-0034_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0034_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      54
+    ],
+    "spacing_mm": [
+      0.9229999780654907,
+      0.9229999780654907,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0038",
+    "image": "Train/volume-covid19-A-0038_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0038_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0039",
+    "image": "Train/volume-covid19-A-0039_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0039_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.8009999990463257,
+      0.8009999990463257,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0041",
+    "image": "Train/volume-covid19-A-0041_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0041_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0044",
+    "image": "Train/volume-covid19-A-0044_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0044_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.8270000219345093,
+      0.8270000219345093,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0046",
+    "image": "Train/volume-covid19-A-0046_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0046_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0047_1",
+    "image": "Train/volume-covid19-A-0047_1_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0047_1_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0053",
+    "image": "Train/volume-covid19-A-0053_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0053_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0054",
+    "image": "Train/volume-covid19-A-0054_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0054_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      50
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0066",
+    "image": "Train/volume-covid19-A-0066_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0066_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      55
+    ],
+    "spacing_mm": [
+      0.9419999718666077,
+      0.9419999718666077,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0070",
+    "image": "Train/volume-covid19-A-0070_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0070_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.8659999966621399,
+      0.8659999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0072",
+    "image": "Train/volume-covid19-A-0072_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0072_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      77
+    ],
+    "spacing_mm": [
+      0.8659999966621399,
+      0.8659999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0073",
+    "image": "Train/volume-covid19-A-0073_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0073_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.7429999709129333,
+      0.7429999709129333,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0074_1",
+    "image": "Train/volume-covid19-A-0074_1_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0074_1_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.9039999842643738,
+      0.9039999842643738,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0077",
+    "image": "Train/volume-covid19-A-0077_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0077_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      65
+    ],
+    "spacing_mm": [
+      0.8164060115814209,
+      0.8164060115814209,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0083",
+    "image": "Train/volume-covid19-A-0083_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0083_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7509999871253967,
+      0.7509999871253967,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0090",
+    "image": "Train/volume-covid19-A-0090_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0090_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      65
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0092",
+    "image": "Train/volume-covid19-A-0092_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0092_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      53
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0096",
+    "image": "Train/volume-covid19-A-0096_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0096_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7850000262260437,
+      0.7850000262260437,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0106",
+    "image": "Train/volume-covid19-A-0106_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0106_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      61
+    ],
+    "spacing_mm": [
+      0.8920000195503235,
+      0.8920000195503235,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0110",
+    "image": "Train/volume-covid19-A-0110_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0110_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0112",
+    "image": "Train/volume-covid19-A-0112_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0112_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      75
+    ],
+    "spacing_mm": [
+      0.4560000002384186,
+      0.4560000002384186,
+      2.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0114",
+    "image": "Train/volume-covid19-A-0114_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0114_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      56
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0120",
+    "image": "Train/volume-covid19-A-0120_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0120_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      70
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0129",
+    "image": "Train/volume-covid19-A-0129_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0129_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0130",
+    "image": "Train/volume-covid19-A-0130_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0130_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0133",
+    "image": "Train/volume-covid19-A-0133_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0133_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.6819999814033508,
+      0.6819999814033508,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0147",
+    "image": "Train/volume-covid19-A-0147_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0147_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.8880000114440918,
+      0.8880000114440918,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0151",
+    "image": "Train/volume-covid19-A-0151_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0151_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.8769999742507935,
+      0.8769999742507935,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0154",
+    "image": "Train/volume-covid19-A-0154_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0154_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      70
+    ],
+    "spacing_mm": [
+      0.8389999866485596,
+      0.8389999866485596,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0161",
+    "image": "Train/volume-covid19-A-0161_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0161_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      53
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0164",
+    "image": "Train/volume-covid19-A-0164_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0164_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0165",
+    "image": "Train/volume-covid19-A-0165_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0165_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.796999990940094,
+      0.796999990940094,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0167_1",
+    "image": "Train/volume-covid19-A-0167_1_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0167_1_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      65
+    ],
+    "spacing_mm": [
+      0.7379999756813049,
+      0.7379999756813049,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0173",
+    "image": "Train/volume-covid19-A-0173_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0173_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      70
+    ],
+    "spacing_mm": [
+      1.0490000247955322,
+      1.0490000247955322,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0178",
+    "image": "Train/volume-covid19-A-0178_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0178_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0179",
+    "image": "Train/volume-covid19-A-0179_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0179_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      53
+    ],
+    "spacing_mm": [
+      0.781000018119812,
+      0.781000018119812,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0181",
+    "image": "Train/volume-covid19-A-0181_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0181_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.8920000195503235,
+      0.8920000195503235,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0187",
+    "image": "Train/volume-covid19-A-0187_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0187_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      54
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0196_0",
+    "image": "Train/volume-covid19-A-0196_0_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0196_0_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      54
+    ],
+    "spacing_mm": [
+      0.7549999952316284,
+      0.7549999952316284,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0199",
+    "image": "Train/volume-covid19-A-0199_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0199_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.8500000238418579,
+      0.8500000238418579,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0201",
+    "image": "Train/volume-covid19-A-0201_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0201_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.8730000257492065,
+      0.8730000257492065,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0202_0",
+    "image": "Train/volume-covid19-A-0202_0_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0202_0_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.8539999723434448,
+      0.8539999723434448,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0214",
+    "image": "Train/volume-covid19-A-0214_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0214_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      59
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0215",
+    "image": "Train/volume-covid19-A-0215_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0215_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0228",
+    "image": "Train/volume-covid19-A-0228_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0228_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      69
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0233",
+    "image": "Train/volume-covid19-A-0233_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0233_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      59
+    ],
+    "spacing_mm": [
+      0.8460000157356262,
+      0.8460000157356262,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0236",
+    "image": "Train/volume-covid19-A-0236_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0236_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      49
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0237",
+    "image": "Train/volume-covid19-A-0237_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0237_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0239",
+    "image": "Train/volume-covid19-A-0239_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0239_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0240",
+    "image": "Train/volume-covid19-A-0240_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0240_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.8769999742507935,
+      0.8769999742507935,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0246",
+    "image": "Train/volume-covid19-A-0246_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0246_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0247",
+    "image": "Train/volume-covid19-A-0247_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0247_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0251",
+    "image": "Train/volume-covid19-A-0251_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0251_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      52
+    ],
+    "spacing_mm": [
+      0.8880000114440918,
+      0.8880000114440918,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0252",
+    "image": "Train/volume-covid19-A-0252_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0252_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.9570000171661377,
+      0.9570000171661377,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0255",
+    "image": "Train/volume-covid19-A-0255_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0255_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0256_1",
+    "image": "Train/volume-covid19-A-0256_1_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0256_1_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0263",
+    "image": "Train/volume-covid19-A-0263_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0263_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0264",
+    "image": "Train/volume-covid19-A-0264_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0264_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      69
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0267",
+    "image": "Train/volume-covid19-A-0267_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0267_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.9150000214576721,
+      0.9150000214576721,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0270",
+    "image": "Train/volume-covid19-A-0270_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0270_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.8659999966621399,
+      0.8659999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0282",
+    "image": "Train/volume-covid19-A-0282_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0282_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      69
+    ],
+    "spacing_mm": [
+      0.8539999723434448,
+      0.8539999723434448,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0285",
+    "image": "Train/volume-covid19-A-0285_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0285_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.8920000195503235,
+      0.8920000195503235,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0288",
+    "image": "Train/volume-covid19-A-0288_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0288_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.9300000071525574,
+      0.9300000071525574,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0295",
+    "image": "Train/volume-covid19-A-0295_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0295_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      48
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0296",
+    "image": "Train/volume-covid19-A-0296_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0296_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      69
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0299",
+    "image": "Train/volume-covid19-A-0299_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0299_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0301",
+    "image": "Train/volume-covid19-A-0301_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0301_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      65
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0307",
+    "image": "Train/volume-covid19-A-0307_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0307_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.8769999742507935,
+      0.8769999742507935,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0313",
+    "image": "Train/volume-covid19-A-0313_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0313_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      69
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0314",
+    "image": "Train/volume-covid19-A-0314_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0314_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0315",
+    "image": "Train/volume-covid19-A-0315_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0315_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.8009999990463257,
+      0.8009999990463257,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0316",
+    "image": "Train/volume-covid19-A-0316_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0316_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      65
+    ],
+    "spacing_mm": [
+      0.8009999990463257,
+      0.8009999990463257,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0319",
+    "image": "Train/volume-covid19-A-0319_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0319_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      53
+    ],
+    "spacing_mm": [
+      0.8080000281333923,
+      0.8080000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0320",
+    "image": "Train/volume-covid19-A-0320_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0320_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.8309999704360962,
+      0.8309999704360962,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0323",
+    "image": "Train/volume-covid19-A-0323_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0323_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      86
+    ],
+    "spacing_mm": [
+      0.4449999928474426,
+      0.4449999928474426,
+      2.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0329",
+    "image": "Train/volume-covid19-A-0329_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0329_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.9380000233650208,
+      0.9380000233650208,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0331",
+    "image": "Train/volume-covid19-A-0331_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0331_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      70
+    ],
+    "spacing_mm": [
+      0.8309999704360962,
+      0.8309999704360962,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0332",
+    "image": "Train/volume-covid19-A-0332_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0332_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0338",
+    "image": "Train/volume-covid19-A-0338_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0338_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0339",
+    "image": "Train/volume-covid19-A-0339_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0339_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.8769999742507935,
+      0.8769999742507935,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0342",
+    "image": "Train/volume-covid19-A-0342_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0342_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.8309999704360962,
+      0.8309999704360962,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0347",
+    "image": "Train/volume-covid19-A-0347_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0347_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.8690000176429749,
+      0.8690000176429749,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0351",
+    "image": "Train/volume-covid19-A-0351_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0351_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.8270000219345093,
+      0.8270000219345093,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0354",
+    "image": "Train/volume-covid19-A-0354_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0354_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      52
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0355",
+    "image": "Train/volume-covid19-A-0355_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0355_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.8159999847412109,
+      0.8159999847412109,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0360",
+    "image": "Train/volume-covid19-A-0360_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0360_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0361",
+    "image": "Train/volume-covid19-A-0361_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0361_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0366",
+    "image": "Train/volume-covid19-A-0366_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0366_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      72
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0372",
+    "image": "Train/volume-covid19-A-0372_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0372_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.6830000281333923,
+      0.6830000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0377",
+    "image": "Train/volume-covid19-A-0377_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0377_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      51
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0380",
+    "image": "Train/volume-covid19-A-0380_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0380_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.8619999885559082,
+      0.8619999885559082,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0382",
+    "image": "Train/volume-covid19-A-0382_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0382_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0383_1",
+    "image": "Train/volume-covid19-A-0383_1_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0383_1_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      54
+    ],
+    "spacing_mm": [
+      0.8460000157356262,
+      0.8460000157356262,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0386",
+    "image": "Train/volume-covid19-A-0386_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0386_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      51
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0387",
+    "image": "Train/volume-covid19-A-0387_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0387_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0388",
+    "image": "Train/volume-covid19-A-0388_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0388_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.9039999842643738,
+      0.9039999842643738,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0391",
+    "image": "Train/volume-covid19-A-0391_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0391_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      70
+    ],
+    "spacing_mm": [
+      0.8500000238418579,
+      0.8500000238418579,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0392",
+    "image": "Train/volume-covid19-A-0392_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0392_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      51
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0394",
+    "image": "Train/volume-covid19-A-0394_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0394_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.7720000147819519,
+      0.7720000147819519,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0397",
+    "image": "Train/volume-covid19-A-0397_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0397_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.9990000128746033,
+      0.9990000128746033,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0400",
+    "image": "Train/volume-covid19-A-0400_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0400_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      59
+    ],
+    "spacing_mm": [
+      0.8769999742507935,
+      0.8769999742507935,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0402",
+    "image": "Train/volume-covid19-A-0402_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0402_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.875,
+      0.875,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0407",
+    "image": "Train/volume-covid19-A-0407_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0407_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0413",
+    "image": "Train/volume-covid19-A-0413_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0413_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      64
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0414",
+    "image": "Train/volume-covid19-A-0414_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0414_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      94
+    ],
+    "spacing_mm": [
+      0.7699999809265137,
+      0.7699999809265137,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0416",
+    "image": "Train/volume-covid19-A-0416_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0416_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      55
+    ],
+    "spacing_mm": [
+      0.7020000219345093,
+      0.7020000219345093,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0417",
+    "image": "Train/volume-covid19-A-0417_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0417_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.796999990940094,
+      0.796999990940094,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0418",
+    "image": "Train/volume-covid19-A-0418_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0418_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0421",
+    "image": "Train/volume-covid19-A-0421_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0421_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.8309999704360962,
+      0.8309999704360962,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0422",
+    "image": "Train/volume-covid19-A-0422_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0422_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      61
+    ],
+    "spacing_mm": [
+      0.8199999928474426,
+      0.8199999928474426,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0423",
+    "image": "Train/volume-covid19-A-0423_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0423_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.8920000195503235,
+      0.8920000195503235,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0435",
+    "image": "Train/volume-covid19-A-0435_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0435_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0437",
+    "image": "Train/volume-covid19-A-0437_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0437_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      55
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0443",
+    "image": "Train/volume-covid19-A-0443_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0443_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0445",
+    "image": "Train/volume-covid19-A-0445_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0445_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      45
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0455",
+    "image": "Train/volume-covid19-A-0455_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0455_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      75
+    ],
+    "spacing_mm": [
+      0.8809999823570251,
+      0.8809999823570251,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0462",
+    "image": "Train/volume-covid19-A-0462_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0462_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      56
+    ],
+    "spacing_mm": [
+      0.8389999866485596,
+      0.8389999866485596,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0463",
+    "image": "Train/volume-covid19-A-0463_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0463_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.6819999814033508,
+      0.6819999814033508,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0464",
+    "image": "Train/volume-covid19-A-0464_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0464_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.703125,
+      0.703125,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0472",
+    "image": "Train/volume-covid19-A-0472_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0472_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.796999990940094,
+      0.796999990940094,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0473",
+    "image": "Train/volume-covid19-A-0473_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0473_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      59
+    ],
+    "spacing_mm": [
+      0.6830000281333923,
+      0.6830000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0475",
+    "image": "Train/volume-covid19-A-0475_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0475_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.8867189884185791,
+      0.8867189884185791,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0476",
+    "image": "Train/volume-covid19-A-0476_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0476_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.7820000052452087,
+      0.7820000052452087,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0479",
+    "image": "Train/volume-covid19-A-0479_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0479_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      44
+    ],
+    "spacing_mm": [
+      0.6830000281333923,
+      0.6830000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0483",
+    "image": "Train/volume-covid19-A-0483_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0483_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.8539999723434448,
+      0.8539999723434448,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0494",
+    "image": "Train/volume-covid19-A-0494_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0494_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.828125,
+      0.828125,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0495",
+    "image": "Train/volume-covid19-A-0495_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0495_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      59
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0498",
+    "image": "Train/volume-covid19-A-0498_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0498_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      41
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0500",
+    "image": "Train/volume-covid19-A-0500_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0500_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.8080000281333923,
+      0.8080000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0502",
+    "image": "Train/volume-covid19-A-0502_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0502_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      72
+    ],
+    "spacing_mm": [
+      0.8619999885559082,
+      0.8619999885559082,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0504",
+    "image": "Train/volume-covid19-A-0504_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0504_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.9649999737739563,
+      0.9649999737739563,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0511",
+    "image": "Train/volume-covid19-A-0511_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0511_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      39
+    ],
+    "spacing_mm": [
+      0.5860000252723694,
+      0.5860000252723694,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0521",
+    "image": "Train/volume-covid19-A-0521_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0521_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.8009999990463257,
+      0.8009999990463257,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0522",
+    "image": "Train/volume-covid19-A-0522_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0522_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      61
+    ],
+    "spacing_mm": [
+      0.8539999723434448,
+      0.8539999723434448,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0524",
+    "image": "Train/volume-covid19-A-0524_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0524_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.8460000157356262,
+      0.8460000157356262,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0525",
+    "image": "Train/volume-covid19-A-0525_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0525_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      53
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0526",
+    "image": "Train/volume-covid19-A-0526_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0526_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.8009999990463257,
+      0.8009999990463257,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0530",
+    "image": "Train/volume-covid19-A-0530_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0530_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7739999890327454,
+      0.7739999890327454,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0531",
+    "image": "Train/volume-covid19-A-0531_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0531_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      64
+    ],
+    "spacing_mm": [
+      0.8960000276565552,
+      0.8960000276565552,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0534",
+    "image": "Train/volume-covid19-A-0534_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0534_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      65
+    ],
+    "spacing_mm": [
+      0.8539999723434448,
+      0.8539999723434448,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0537",
+    "image": "Train/volume-covid19-A-0537_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0537_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0547",
+    "image": "Train/volume-covid19-A-0547_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0547_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      56
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0548",
+    "image": "Train/volume-covid19-A-0548_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0548_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      50
+    ],
+    "spacing_mm": [
+      0.7636719942092896,
+      0.7636719942092896,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0553",
+    "image": "Train/volume-covid19-A-0553_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0553_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.7630000114440918,
+      0.7630000114440918,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0557",
+    "image": "Train/volume-covid19-A-0557_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0557_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0559",
+    "image": "Train/volume-covid19-A-0559_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0559_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.8199999928474426,
+      0.8199999928474426,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0560",
+    "image": "Train/volume-covid19-A-0560_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0560_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.8429999947547913,
+      0.8429999947547913,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0562",
+    "image": "Train/volume-covid19-A-0562_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0562_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      42
+    ],
+    "spacing_mm": [
+      0.5320000052452087,
+      0.5320000052452087,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0566",
+    "image": "Train/volume-covid19-A-0566_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0566_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.9380000233650208,
+      0.9380000233650208,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0567",
+    "image": "Train/volume-covid19-A-0567_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0567_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      50
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0569",
+    "image": "Train/volume-covid19-A-0569_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0569_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0570",
+    "image": "Train/volume-covid19-A-0570_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0570_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      54
+    ],
+    "spacing_mm": [
+      0.8320310115814209,
+      0.8320310115814209,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0573",
+    "image": "Train/volume-covid19-A-0573_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0573_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.8579999804496765,
+      0.8579999804496765,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0575",
+    "image": "Train/volume-covid19-A-0575_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0575_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      60
+    ],
+    "spacing_mm": [
+      0.746999979019165,
+      0.746999979019165,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0576",
+    "image": "Train/volume-covid19-A-0576_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0576_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      64
+    ],
+    "spacing_mm": [
+      0.7929689884185791,
+      0.7929689884185791,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0579",
+    "image": "Train/volume-covid19-A-0579_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0579_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      61
+    ],
+    "spacing_mm": [
+      0.7379999756813049,
+      0.7379999756813049,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0581",
+    "image": "Train/volume-covid19-A-0581_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0581_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      68
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0585",
+    "image": "Train/volume-covid19-A-0585_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0585_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      81
+    ],
+    "spacing_mm": [
+      0.42800000309944153,
+      0.42800000309944153,
+      2.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0586",
+    "image": "Train/volume-covid19-A-0586_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0586_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      64
+    ],
+    "spacing_mm": [
+      0.7578120231628418,
+      0.7578120231628418,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0589",
+    "image": "Train/volume-covid19-A-0589_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0589_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0590",
+    "image": "Train/volume-covid19-A-0590_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0590_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.968999981880188,
+      0.968999981880188,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0599",
+    "image": "Train/volume-covid19-A-0599_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0599_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      44
+    ],
+    "spacing_mm": [
+      0.5860000252723694,
+      0.5860000252723694,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0600",
+    "image": "Train/volume-covid19-A-0600_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0600_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      59
+    ],
+    "spacing_mm": [
+      0.8460000157356262,
+      0.8460000157356262,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0604",
+    "image": "Train/volume-covid19-A-0604_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0604_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.6830000281333923,
+      0.6830000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0612",
+    "image": "Train/volume-covid19-A-0612_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0612_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      67
+    ],
+    "spacing_mm": [
+      0.703125,
+      0.703125,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0614",
+    "image": "Train/volume-covid19-A-0614_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0614_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      55
+    ],
+    "spacing_mm": [
+      0.7229999899864197,
+      0.7229999899864197,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0623",
+    "image": "Train/volume-covid19-A-0623_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0623_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.7402340173721313,
+      0.7402340173721313,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0626",
+    "image": "Train/volume-covid19-A-0626_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0626_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      48
+    ],
+    "spacing_mm": [
+      0.9110000133514404,
+      0.9110000133514404,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0627",
+    "image": "Train/volume-covid19-A-0627_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0627_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.7129999995231628,
+      0.7129999995231628,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0629",
+    "image": "Train/volume-covid19-A-0629_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0629_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0635",
+    "image": "Train/volume-covid19-A-0635_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0635_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      72
+    ],
+    "spacing_mm": [
+      0.9229999780654907,
+      0.9229999780654907,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0636",
+    "image": "Train/volume-covid19-A-0636_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0636_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.7409999966621399,
+      0.7409999966621399,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0638",
+    "image": "Train/volume-covid19-A-0638_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0638_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      57
+    ],
+    "spacing_mm": [
+      0.7820000052452087,
+      0.7820000052452087,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0643",
+    "image": "Train/volume-covid19-A-0643_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0643_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      1.1100000143051147,
+      1.1100000143051147,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0648",
+    "image": "Train/volume-covid19-A-0648_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0648_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      64
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0652",
+    "image": "Train/volume-covid19-A-0652_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0652_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      122
+    ],
+    "spacing_mm": [
+      0.45399999618530273,
+      0.45399999618530273,
+      2.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0656",
+    "image": "Train/volume-covid19-A-0656_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0656_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      63
+    ],
+    "spacing_mm": [
+      0.6830000281333923,
+      0.6830000281333923,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0657",
+    "image": "Train/volume-covid19-A-0657_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0657_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      66
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0658",
+    "image": "Train/volume-covid19-A-0658_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0658_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      77
+    ],
+    "spacing_mm": [
+      0.7929999828338623,
+      0.7929999828338623,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0659",
+    "image": "Train/volume-covid19-A-0659_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0659_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      81
+    ],
+    "spacing_mm": [
+      0.7890620231628418,
+      0.7890620231628418,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0660",
+    "image": "Train/volume-covid19-A-0660_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0660_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      91
+    ],
+    "spacing_mm": [
+      0.4729999899864197,
+      0.4729999899864197,
+      2.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0665",
+    "image": "Train/volume-covid19-A-0665_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0665_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      96
+    ],
+    "spacing_mm": [
+      0.5559999942779541,
+      0.5559999942779541,
+      2.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0666",
+    "image": "Train/volume-covid19-A-0666_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0666_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      73
+    ],
+    "spacing_mm": [
+      0.7739999890327454,
+      0.7739999890327454,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0669",
+    "image": "Train/volume-covid19-A-0669_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0669_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      62
+    ],
+    "spacing_mm": [
+      0.7400000095367432,
+      0.7400000095367432,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0670",
+    "image": "Train/volume-covid19-A-0670_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0670_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      54
+    ],
+    "spacing_mm": [
+      0.8730000257492065,
+      0.8730000257492065,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0678",
+    "image": "Train/volume-covid19-A-0678_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0678_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      64
+    ],
+    "spacing_mm": [
+      0.8199999928474426,
+      0.8199999928474426,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0685",
+    "image": "Train/volume-covid19-A-0685_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0685_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      72
+    ],
+    "spacing_mm": [
+      0.9380000233650208,
+      0.9380000233650208,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0686",
+    "image": "Train/volume-covid19-A-0686_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0686_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      58
+    ],
+    "spacing_mm": [
+      0.7260000109672546,
+      0.7260000109672546,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0694",
+    "image": "Train/volume-covid19-A-0694_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0694_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      51
+    ],
+    "spacing_mm": [
+      0.8429999947547913,
+      0.8429999947547913,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0696",
+    "image": "Train/volume-covid19-A-0696_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0696_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      71
+    ],
+    "spacing_mm": [
+      0.9300000071525574,
+      0.9300000071525574,
+      5.0
+    ]
+  },
+  {
+    "id": "volume-covid19-A-0698",
+    "image": "Train/volume-covid19-A-0698_ct.nii.gz",
+    "mask": "Train/volume-covid19-A-0698_seg.nii.gz",
+    "shape": [
+      512,
+      512,
+      49
+    ],
+    "spacing_mm": [
+      0.8144530057907104,
+      0.8144530057907104,
+      5.0
+    ]
+  }
+]

@@ -21,6 +21,7 @@ from merit_covid import PreprocessConfig, build_fold_loaders
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--config', type=Path, help='Canonical experiment YAML; uses its shared fitted preprocessing')
     parser.add_argument("--manifest", type=Path, default=ROOT / "data/covid19_20/cases.json")
     parser.add_argument("--split", type=Path, default=ROOT / "splits/covid19_20_5fold.json")
     parser.add_argument("--fold", type=int, choices=range(5), default=0)
@@ -34,9 +35,19 @@ def main():
     parser.add_argument("--patient-map", type=Path)
     args = parser.parse_args()
     torch.set_num_threads(min(4, torch.get_num_threads()))
-    preprocess = PreprocessConfig(slab_size=args.slab_size,
-        size_hw=tuple(args.size) if args.size else None,
-        intensity_encoding="native", assume_mm=args.assume_mm)
+    if args.config is not None:
+        from merit_covid.engine.training import load_experiment
+        incompatible = ('--manifest','--split','--patient-map','--size','--slab-size','--assume-mm')
+        if any(option in sys.argv for option in incompatible):
+            parser.error('--config owns data/preprocessing; do not combine it with legacy geometry/data overrides')
+        config = load_experiment(args.config)
+        args.manifest, args.split = Path(config['data']['manifest']), Path(config['data']['split_path'])
+        args.patient_map = config['data'].get('patient_map')
+        preprocess = PreprocessConfig(**config['preprocess'])
+    else:
+        preprocess = PreprocessConfig(slab_size=args.slab_size,
+            size_hw=tuple(args.size) if args.size else None,
+            intensity_encoding="native", assume_mm=args.assume_mm)
     loaders = build_fold_loaders(manifest=args.manifest, split_path=args.split,
         fold=args.fold, preprocess=preprocess, batch_size=args.batch_size,
         shuffle_train=False, seed=args.seed, num_workers=args.workers,
@@ -45,6 +56,7 @@ def main():
     inputs, targets, offsets = batch["image_slab"], batch["master_mask"], batch["z_offsets_mm"]
     report = {
         "mode": "inspect_batch_only", "device": str(inputs.device),
+        "intensity_encoding": preprocess.intensity_encoding,
         "fold": args.fold, "selected_partition": args.partition,
         "volumes_in_partition": {name: len(getattr(loaders, name).dataset.cases)
                                   for name in ("train", "validation", "test")},

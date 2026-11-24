@@ -1,0 +1,39 @@
+{
+  "environment": {
+    "os": "Windows-10-10.0.19045-SP0",
+    "cpu": "Intel64 Family 6 Model 165 Stepping 2, GenuineIntel",
+    "ram_total": 16993009664,
+    "ram_available": 9546506240,
+    "python": "3.13.16 (tags/v3.13.16:cbc944f, Sep 30 2026, 19:17:50) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.5.4",
+    "nibabel": "5.4.2",
+    "torch": "2.15.0+cpu",
+    "psutil": "7.2.2",
+    "cpu_logical": 12,
+    "cpu_physical": 6,
+    "torch_threads": 1,
+    "gpu_used": false,
+    "model_loaded": false,
+    "training_updates": 0
+  },
+  "source": {
+    "files": {
+      "tools/b3a_delivery.py": "cdfd1c87db7c41042b1aa7034e1f4a0981ff7c631d6e7d2338dcb083d9aa5d06",
+      "tools/b3a_compare.py": "e7980d75f251b37bc40c6f429cdc972b30ed78c6e11bb76a25b843308329109e",
+      "tools/qc_tiling128.py": "b242f93426ce412cf15742f302a8515cab9daaa17e3d3c3abfe3a5a6844f55f4",
+      "tests/test_b3a_delivery.py": "2567925ee649a7f3fa6d307ae195ceb2a2f7fe861a416777f2f8ef111814ee78",
+      "src/merit_covid/data/pipeline/dataset.py": "3169ef587ba892452cb89b10d0acccfdb7520ee8a905b647f7b07c3759218994",
+      "src/merit_covid/data/pipeline/dataloader.py": "6743d25ba256c107d19e5521439d39e72b44fa2fcf7387d0225a95529a9e5f63",
+      "src/merit_covid/data/pipeline/slab.py": "c21aef34662ff534983117ac9de49068d46bb8497555dd5d0e9e2dce0e484c95",
+      "src/merit_covid/data/pipeline/preprocessing.py": "abb41dc59f313b26119dc91e3bd0340bb80870a977ee87f995c89856099f3c11",
+      "src/merit_covid/data/pipeline/config.py": "78a4301bc4dc88a6a9c39df39bdb568d972f17534d5b5517b0220561b775d00f",
+      "src/merit_covid/data/pipeline/geometry.py": "3e350d29a5870f43b8a77bac2f3aca715bfc81a51d5c3bb37454b4cefc916ece",
+      "src/merit_covid/data/pipeline/cases.py": "8bca66c921ee4fc82641363868d56e577b4fd5d1acb7a932f73088fe8e1ee182",
+      "src/merit_covid/data/pipeline/splits.py": "eb588e1c5b17e679516ff9e4fafec9a8a4cfc8e9fdff8876e39a18b0d1445dc5",
+      "src/merit_covid/engine/slab_inference.py": "d123ba613ded8948fefd0250eb4d2ecaaa2e43f0ed6d0fc30eae18a4797f4abd"
+    },
+    "head": "13d7695d494b9da40629afd6a45ac294285e2b08",
+    "branch": "MADGNet",
+    "status": "M CHANGELOG.md\n M README.md\n M docs/data_pipeline.md\n M docs/merit_pipeline.md\n M docs/validation.md\n M pyproject.toml\n M scripts/fit_train_zscore.py\n M scripts/read_training_batch.py\n M src/merit_covid/data/pipeline/config.py\n M src/merit_covid/data/pipeline/dataset.py\n M src/merit_covid/data/pipeline/geometry.py\n M src/merit_covid/data/pipeline/preprocessing.py\n M src/merit_covid/engine/training.py\n M tests/test_attention_pilot_notebook.py\n M tools/prepare_attention_notebook.py\n?? AGENTS.md\n?? CONVERSATION_HANDOFF.md\n?? analysis/b3a_delivery_20261124/\n?? analysis/baseline_search/\n?? analysis/madgnet/\n?? analysis/mednext/\n?? analysis/phnet/\n?? analysis/preprocessing/\n?? analysis/preprocessing_team_handoff_20261121/\n?? analysis/tiling128_b2_20261124/\n?? configs/madgnet_epochs.yaml\n?? configs/madgnet_model.yaml\n?? configs/madgnet_training_step.yaml\n?? configs/merit_preprocessing.yaml\n?? docs/B2_TILING128_QC.md\n?? docs/PREPROCESSING_HANDOFF.md\n?? docs/TONG_KET_LUA_CHON_MO_HINH_SO_SANH.md\n?? docs/TONG_KET_TIEN_XU_LY_DU_LIEU.md\n?? docs/madgnet.md\n?? docs/research/\n?? scripts/madgnet_smoke.py\n?? scripts/madgnet_train_epochs.py\n?? scripts/madgnet_train_smoke.py\n?? scripts/qc_preprocessing.py\n?? src/merit_covid/data/pipeline/intensity_fit.py\n?? src/merit_covid/engine/madgnet_epochs.py\n?? src/merit_covid/engine/madgnet_training.py\n?? src/merit_covid/models/madgnet/\n?? tests/test_b3a_delivery.py\n?? tests/test_intensity_fit.py\n?? tests/test_madgnet.py\n?? tests/test_madgnet_contract.py\n?? tests/test_madgnet_epochs.py\n?? tests/test_madgnet_loss.py\n?? tests/test_madgnet_paper.py\n?? tests/test_madgnet_training.py\n?? tests/test_qc_preprocessing.py\n?? tests/test_tiling128_qc.py\n?? tools/audit_madgnet_conformance.py\n?? tools/audit_madgnet_paper.py\n?? tools/b3a_compare.py\n?? tools/b3a_delivery.py\n?? tools/qc_tiling128.py\n?? tools/verify_madgnet_architecture.py"
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "status": "PASS",
+  "scope": "Post-fit QC; 6 TRAIN CT/GT representative volumes; all199 headers only; no VAL/TEST voxel fitting/evaluation",
+  "representatives": [
+    {
+      "case_id": "volume-covid19-A-0074_1",
+      "status": "PASS",
+      "gt_voxels": 28511,
+      "exact_gt_coordinates_unchanged": true,
+      "original_roundtrip": true,
+      "formula_exact": true,
+      "shape_zyx": [
+        68,
+        512,
+        512
+      ],
+      "orientation": [
+        "L",
+        "P",
+        "S"
+      ],
+      "source_sha256": {
+        "CT": "e027ae880559bc3202127abe163822eef257b10be3bb5e62e5fa8c166f8638dc",
+        "GT": "50213d2e4dd448002d06bba117c12a62d98167357c3471aa5ab8ea174356ca7c"
+      }
+    },
+    {
+      "case_id": "volume-covid19-A-0120",
+      "status": "PASS",
+      "gt_voxels": 14317,
+      "exact_gt_coordinates_unchanged": true,
+      "original_roundtrip": true,
+      "formula_exact": true,
+      "shape_zyx": [
+        70,
+        512,
+        512
+      ],
+      "orientation": [
+        "L",
+        "P",
+        "S"
+      ],
+      "source_sha256": {
+        "CT": "868cab0bf26841f4183a4df7a6a15d83529c5a94d1dc8624faedc4f539438af3",
+        "GT": "d2bfaadb397f19533df95cf6ed7904c542aad6c7ab7d95c2522c013f9136c500"
+      }
+    },
+    {
+      "case_id": "volume-covid19-A-0295",
+      "status": "PASS",
+      "gt_voxels": 28556,
+      "exact_gt_coordinates_unchanged": true,
+      "original_roundtrip": true,
+      "formula_exact": true,
+      "shape_zyx": [
+        48,
+        512,
+        512
+      ],
+      "orientation": [
+        "L",
+        "P",
+        "S"
+      ],
+      "source_sha256": {
+        "CT": "a8c40c0bbb639b6ce1e52c19420285f0a37e0d4344f764343a77598698db58d1",
+        "GT": "e802299984da902640ca3f4588d503f370acd01537d9599c336e9768915962e5"
+      }
+    },
+    {
+      "case_id": "volume-covid19-A-0402",
+      "status": "PASS",
+      "gt_voxels": 14003,
+      "exact_gt_coordinates_unchanged": true,
+      "original_roundtrip": true,
+      "formula_exact": true,
+      "shape_zyx": [
+        63,
+        512,
+        512
+      ],
+      "orientation": [
+        "L",
+        "P",
+        "S"
+      ],
+      "source_sha256": {
+        "CT": "98ada56c3cdab45237cdce8b14f876adb7aa30f14d37c0b5ed85a77627b1eecd",
+        "GT": "110136bd1eeb3c458f125d238fef9f6b0e9d4a9c0ff73b4cd795a2b67c420f13"
+      }
+    },
+    {
+      "case_id": "volume-covid19-A-0599",
+      "status": "PASS",
+      "gt_voxels": 57936,
+      "exact_gt_coordinates_unchanged": true,
+      "original_roundtrip": true,
+      "formula_exact": true,
+      "shape_zyx": [
+        44,
+        512,
+        512
+      ],
+      "orientation": [
+        "L",
+        "P",
+        "S"
+      ],
+      "source_sha256": {
+        "CT": "30e1bd840243258262ed52e7767c61444f7d21ca5e1e08e67a62d13680314d8a",
+        "GT": "79a2273c2bcacd55d9d746e0bf621962ed21a0f2bb049331617a318504a692ad"
+      }
+    },
+    {
+      "case_id": "volume-covid19-A-0698",
+      "status": "PASS",
+      "gt_voxels": 113059,
+      "exact_gt_coordinates_unchanged": true,
+      "original_roundtrip": true,
+      "formula_exact": true,
+      "shape_zyx": [
+        49,
+        512,
+        512
+      ],
+      "orientation": [
+        "L",
+        "P",
+        "S"
+      ],
+      "source_sha256": {
+        "CT": "c997dd0fbd28679fc8c8bf7d50d29e6acac841ea42651cfcddda8b853d51db6f",
+        "GT": "b5a447717b29c8e028721385ceab807b4d9d16e03543c6416a2bde7848ddeb2b"
+      }
+    }
+  ],
+  "loader_shape": [
+    1,
+    1,
+    11,
+    512,
+    512
+  ],
+  "inference_without_gt": true,
+  "fit_read_scope_pass": true,
+  "source_files_match_verified_prior_cache": 398,
+  "source_dataset": {
+    "repo": "MedOtter/COVID-19-20",
+    "revision": "e6ce5e1c01f59b29843e6a969655a42d33a52729"
+  },
+  "qc_seconds": 26.01652389999981,
+  "total_with_final_hash_seconds": 35.38251919999993,
+  "model_or_optimizer_created": false,
+  "dice_iou_evaluation": false,
+  "cuda_visible_devices": ""
+}

@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "scope": "CPU production preprocessing QC, not model evaluation or fitting",
+  "expected_cases": 199,
+  "partition_counts_expected": {
+    "train": 127,
+    "validation": 32,
+    "test": 40
+  },
+  "stats_file_sha256": "583b32eb4bdeeef36db9dbc10282b221b13cd8add18c7ff18230e7f5aa9a38c4",
+  "stats_provenance_sha256": "d80d5f347b004375ef667a767fa8fa10d1ddcbbe9dd8acbfb6f14945d80ab03b",
+  "stats_parameters": {
+    "lower": -1241.0,
+    "upper": 1032.0,
+    "mean": -583.0622212292245,
+    "std": 488.0394718302036
+  },
+  "normalization_refitted": false,
+  "gpu_used": false,
+  "training_updates": 0,
+  "dice_iou_computed": false,
+  "identity": {
+    "group_source": "volume_id_fallback",
+    "patient_ids_available": false,
+    "identity_note": "Patient identity is unverified. Group/volume independence does not establish patient independence across series."
+  },
+  "qc_completed": 199,
+  "passed": 199,
+  "failed": 0,
+  "partitions": {
+    "train": {
+      "total": 127,
+      "passed": 127
+    },
+    "validation": {
+      "total": 32,
+      "passed": 32
+    },
+    "test": {
+      "total": 40,
+      "passed": 40
+    }
+  },
+  "failures": [],
+  "protected_metadata_unchanged": true,
+  "gt_coordinate_mismatches": 0,
+  "source_files_hash_unchanged": 199,
+  "elapsed_seconds": 516.8741558000002,
+  "identity_limit": "Manifest/filenames and geometry; patient independence/HU not established"
+}

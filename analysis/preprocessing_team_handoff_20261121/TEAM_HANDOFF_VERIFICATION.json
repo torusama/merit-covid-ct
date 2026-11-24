@@ -1,0 +1,42 @@
+{
+  "status": "READY_FOR_TEAM_HANDOFF",
+  "scope": "CT/GT preprocessing handoff only",
+  "qc_pairs": 199,
+  "source_files": 398,
+  "partitions": {
+    "train": {
+      "total": 127,
+      "passed": 127
+    },
+    "validation": {
+      "total": 32,
+      "passed": 32
+    },
+    "test": {
+      "total": 40,
+      "passed": 40
+    }
+  },
+  "qc_seconds": 516.8741558000002,
+  "all_gt_counts_unchanged": true,
+  "all_gt_coordinates_unchanged": true,
+  "all_source_files_match_prior_verified_cache": true,
+  "stats_raw_sha256": "583b32eb4bdeeef36db9dbc10282b221b13cd8add18c7ff18230e7f5aa9a38c4",
+  "stats_provenance_sha256": "d80d5f347b004375ef667a767fa8fa10d1ddcbbe9dd8acbfb6f14945d80ab03b",
+  "protected_existing_files_unchanged": 124,
+  "normalization_refitted": false,
+  "production_algorithms_changed": false,
+  "qc_unit_tests": 7,
+  "isolated_source_cpu_tests": 31,
+  "isolated_source_import_verified": true,
+  "offline_wheel_build": "PASS",
+  "isolated_real_cpu_batch": "PASS",
+  "source_bundle_file_count": 74,
+  "source_snapshot_sha256": "447518c303e44b098352dff52c4924b41d52c4b9321535d31adf37075fac744f",
+  "gpu_used": false,
+  "model_or_optimizer_training_updates": 0,
+  "dice_iou_evaluated": false,
+  "git_commit_push_merge": false,
+  "no_entire_production_files_deleted": true,
+  "spacing": "DEFERRED_OUT_OF_SCOPE; sampling/position/weighting remain index"
+}

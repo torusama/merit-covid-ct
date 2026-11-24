@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "native_effective_config_identical": true,
+  "native_protocol_fingerprint_identical": true,
+  "fingerprint": "f5213830269ab32c5767504876664ca3641b16fcbbfb0841bc662073acded3ea",
+  "scope": "Serialization/protocol identity only; no checkpoint was loaded or trained",
+  "baseline_source": "outputs/handoff_smoke_20261120/source"
+}

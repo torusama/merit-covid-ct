@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "b2_gate_pass": true,
+  "expected_cases": 199,
+  "tested_cases": 199,
+  "passed_cases": 199,
+  "failed_cases": 0,
+  "not_tested_cases": 0,
+  "fold": 0,
+  "failures": [],
+  "scope": "B2 standalone CPU tiling QC of exported V3; no model integration",
+  "protocol": {
+    "tile_size": 128,
+    "rows": 4,
+    "cols": 4,
+    "overlap": 0,
+    "interpolation": false,
+    "coordinate_frame": "production read_arrays canonical LPS array [Z,Y,X]",
+    "coordinates": "zero-based, half-open; row=Y, col=X; master_z is canonical Z",
+    "preprocessing": "native PASS-THROUGH of already V3 CT; no second normalization",
+    "slab_size": 11,
+    "boundary_policy": "edge",
+    "duplicate_slice_policy": "unique"
+  },
+  "gpu_used": false,
+  "training_updates": 0,
+  "model_loaded": false,
+  "data_root": "C:\\1_HDD\\paper\\material\\merit_v3_precomputed_nii",
+  "code": {
+    "file_sha256": {
+      "tools/qc_tiling128.py": "b242f93426ce412cf15742f302a8515cab9daaa17e3d3c3abfe3a5a6844f55f4",
+      "src/merit_covid/data/pipeline/cases.py": "8bca66c921ee4fc82641363868d56e577b4fd5d1acb7a932f73088fe8e1ee182",
+      "src/merit_covid/data/pipeline/config.py": "78a4301bc4dc88a6a9c39df39bdb568d972f17534d5b5517b0220561b775d00f",
+      "src/merit_covid/data/pipeline/preprocessing.py": "abb41dc59f313b26119dc91e3bd0340bb80870a977ee87f995c89856099f3c11",
+      "src/merit_covid/data/pipeline/geometry.py": "3e350d29a5870f43b8a77bac2f3aca715bfc81a51d5c3bb37454b4cefc916ece",
+      "src/merit_covid/data/pipeline/slab.py": "c21aef34662ff534983117ac9de49068d46bb8497555dd5d0e9e2dce0e484c95",
+      "src/merit_covid/data/pipeline/splits.py": "eb588e1c5b17e679516ff9e4fafec9a8a4cfc8e9fdff8876e39a18b0d1445dc5"
+    },
+    "git_head": "13d7695d494b9da40629afd6a45ac294285e2b08",
+    "git_branch": "MADGNet",
+    "git_status": "M CHANGELOG.md\n M README.md\n M docs/data_pipeline.md\n M docs/merit_pipeline.md\n M docs/validation.md\n M pyproject.toml\n M scripts/fit_train_zscore.py\n M scripts/read_training_batch.py\n M src/merit_covid/data/pipeline/config.py\n M src/merit_covid/data/pipeline/dataset.py\n M src/merit_covid/data/pipeline/geometry.py\n M src/merit_covid/data/pipeline/preprocessing.py\n M src/merit_covid/engine/training.py\n M tests/test_attention_pilot_notebook.py\n M tools/prepare_attention_notebook.py\n?? AGENTS.md\n?? CONVERSATION_HANDOFF.md\n?? analysis/baseline_search/\n?? analysis/madgnet/\n?? analysis/mednext/\n?? analysis/phnet/\n?? analysis/preprocessing/\n?? analysis/preprocessing_team_handoff_20261121/\n?? configs/madgnet_epochs.yaml\n?? configs/madgnet_model.yaml\n?? configs/madgnet_training_step.yaml\n?? configs/merit_preprocessing.yaml\n?? docs/PREPROCESSING_HANDOFF.md\n?? docs/TONG_KET_LUA_CHON_MO_HINH_SO_SANH.md\n?? docs/TONG_KET_TIEN_XU_LY_DU_LIEU.md\n?? docs/madgnet.md\n?? docs/research/\n?? scripts/madgnet_smoke.py\n?? scripts/madgnet_train_epochs.py\n?? scripts/madgnet_train_smoke.py\n?? scripts/qc_preprocessing.py\n?? src/merit_covid/data/pipeline/intensity_fit.py\n?? src/merit_covid/engine/madgnet_epochs.py\n?? src/merit_covid/engine/madgnet_training.py\n?? src/merit_covid/models/madgnet/\n?? tests/test_intensity_fit.py\n?? tests/test_madgnet.py\n?? tests/test_madgnet_contract.py\n?? tests/test_madgnet_epochs.py\n?? tests/test_madgnet_loss.py\n?? tests/test_madgnet_paper.py\n?? tests/test_madgnet_training.py\n?? tests/test_qc_preprocessing.py\n?? tests/test_tiling128_qc.py\n?? tools/audit_madgnet_conformance.py\n?? tools/audit_madgnet_paper.py\n?? tools/qc_tiling128.py\n?? tools/verify_madgnet_architecture.py"
+  },
+  "identity": {
+    "group_source": "volume_id_fallback",
+    "patient_ids_available": false,
+    "identity_note": "Patient identity is unverified. Group/volume independence does not establish patient independence across series."
+  },
+  "input_metadata": {
+    "manifest": {
+      "path": "C:\\1_HDD\\paper\\material\\merit_v3_precomputed_nii\\cases.json",
+      "sha256_before": "2e5d45547c196efb99bbfb2030b666085e862b57c1addcad9f0dda34f8124830",
+      "sha256_after": "2e5d45547c196efb99bbfb2030b666085e862b57c1addcad9f0dda34f8124830",
+      "unchanged": true
+    },
+    "split": {
+      "path": "C:\\1_HDD\\paper\\material\\merit_v3_precomputed_nii\\splits_covid19_20_5fold.json",
+      "sha256_before": "61520433e7747db7cdf3fe786731920e5aecd03d2c66480f356f2cad73167193",
+      "sha256_after": "61520433e7747db7cdf3fe786731920e5aecd03d2c66480f356f2cad73167193",
+      "unchanged": true
+    },
+    "config": {
+      "path": "C:\\1_HDD\\paper\\material\\merit_v3_precomputed_nii\\merit_precomputed_v3.yaml",
+      "sha256_before": "485acb259ede94805fab7f879dd3ffd2462addb60f842a08ee68940223b222e3",
+      "sha256_after": "485acb259ede94805fab7f879dd3ffd2462addb60f842a08ee68940223b222e3",
+      "unchanged": true
+    },
+    "export": {
+      "path": "C:\\1_HDD\\paper\\material\\merit_v3_precomputed_nii\\EXPORT_COMPLETE.json",
+      "sha256_before": "05341df2f981c120bf80aa974ee2221d53bb9dee68148b87a767201f2102a5e0",
+      "sha256_after": "05341df2f981c120bf80aa974ee2221d53bb9dee68148b87a767201f2102a5e0",
+      "unchanged": true
+    }
+  },
+  "export_provenance": {
+    "status": "COMPLETE_WITH_PROVENANCE_LIMITATION",
+    "source_identity": "127 TRAIN intensity summaries and 199 CT/GT geometry + GT lesion counts matched; UNCOMPRESSED SOURCE BYTES NOT VERIFIED AGAINST ORIGINAL .nii.gz",
+    "note": "Not a proof of exact voxel-for-voxel identity vs original compressed dataset; do not claim byte-exact equivalence. Does not prove Dice improvement.",
+    "policy": "train_fovaware_clipped_zscore_v1",
+    "count": 199,
+    "train_count": 127,
+    "stats_sha256": "583b32eb4bdeeef36db9dbc10282b221b13cd8add18c7ff18230e7f5aa9a38c4",
+    "parameters": {
+      "lower": -1241.0,
+      "upper": 1032.0,
+      "mean": -583.0622212292245,
+      "std": 488.0394718302036
+    },
+    "source_root": "/kaggle/input/datasets/duonghuynh007/covid19-20-raw-199-ct/Train",
+    "verification_levels": {
+      "TRAIN_NUMERIC_AUDIT_MATCH_NOT_BYTE_SHA": 127,
+      "VAL_TEST_GEOMETRY_GT_MATCH_NOT_BYTE_SHA": 72
+    },
+    "split_ids_unchanged": true,
+    "new_manifest_fingerprint": "f55fa41eea5e429ea2ff5446fa49299198c0fe7e48c6c1f63113aaac944d28e9",
+    "original_manifest_fingerprint": "c1a313cd1e57a8e526108fd413ed052d00afab2b72ac9392595e603a742ffde0"
+  },
+  "warnings": [
+    "QC proves tiling preservation of this exported V3 dataset, not equivalence to original raw/compressed CT.",
+    "Volume/group separation does not verify patient-level identity.",
+    "Exporter reports COMPLETE_WITH_PROVENANCE_LIMITATION; this QC does not remove that limitation."
+  ],
+  "selected_cases": 199,
+  "partition_case_counts": {
+    "train": 127,
+    "validation": 32,
+    "test": 40
+  },
+  "input_validation_seconds": 0.1944599999987986,
+  "partition_totals_passed_cases_only": {
+    "train": {
+      "cases": 127,
+      "tiles_total": 140960,
+      "tiles_lesion": 8507,
+      "tiles_empty": 132453,
+      "gt_lesion_before": 10283591,
+      "gt_lesion_after": 10283591,
+      "voxel_pairs_checked": 2309488640,
+      "ct_mismatched_pixels": 0,
+      "ct_mismatched_bits": 0,
+      "gt_mismatched_pixels": 0,
+      "slab_checks_passed": 1143
+    },
+    "validation": {
+      "cases": 32,
+      "tiles_total": 37152,
+      "tiles_lesion": 2097,
+      "tiles_empty": 35055,
+      "gt_lesion_before": 1642366,
+      "gt_lesion_after": 1642366,
+      "voxel_pairs_checked": 608698368,
+      "ct_mismatched_pixels": 0,
+      "ct_mismatched_bits": 0,
+      "gt_mismatched_pixels": 0,
+      "slab_checks_passed": 288
+    },
+    "test": {
+      "cases": 40,
+      "tiles_total": 41168,
+      "tiles_lesion": 2458,
+      "tiles_empty": 38710,
+      "gt_lesion_before": 2892750,
+      "gt_lesion_after": 2892750,
+      "voxel_pairs_checked": 674496512,
+      "ct_mismatched_pixels": 0,
+      "ct_mismatched_bits": 0,
+      "gt_mismatched_pixels": 0,
+      "slab_checks_passed": 360
+    }
+  },
+  "totals_passed_cases_only": {
+    "tiles_total": 219280,
+    "tiles_lesion": 13062,
+    "tiles_empty": 206218,
+    "gt_lesion_before": 14818707,
+    "gt_lesion_after": 14818707,
+    "voxel_pairs_checked": 3592683520,
+    "ct_mismatched_pixels": 0,
+    "ct_mismatched_bits": 0,
+    "gt_mismatched_pixels": 0,
+    "slab_checks_passed": 1791
+  },
+  "seconds_total": 361.45170289999805,
+  "artifact_sha256": {
+    "tiling128_qc_199.csv": "aa30837eb96becaa53cdfc3174ee7db39e1739002e846d0b35c33a35fc077dee",
+    "tiling128_tile_metadata.jsonl.gz": "9e06f541b50c7f887d245cd07094d5b0ae74f347a27081da3f3bdd6b483704c8"
+  }
+}
